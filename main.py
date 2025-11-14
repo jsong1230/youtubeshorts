@@ -33,9 +33,21 @@ class ShortsBot:
             print("📹 영상 생성 중...")
             video_path = self.video_generator.generate_video(topic=topic, duration=None)  # None이면 자동 계산
             
+            # 제목 생성
+            if topic:
+                title = topic
+            else:
+                title = datetime.now().strftime('%Y년 %m월 %d일')
+            
+            # 썸네일 생성
+            print("\n🖼️ 썸네일 생성 중...")
+            thumbnail_path = self.video_generator.generate_thumbnail(video_path, title)
+            
             print(f"\n✅ 영상 생성 완료!")
             print(f"📁 파일 위치: {video_path}")
+            print(f"🖼️ 썸네일 위치: {thumbnail_path}")
             print(f"🔍 확인 방법: open {video_path}")
+            print(f"🔍 썸네일 확인: open {thumbnail_path}")
             
             return video_path
             
@@ -62,18 +74,48 @@ class ShortsBot:
             else:
                 title = datetime.now().strftime('%Y년 %m월 %d일')
             
-            description = f"{config.DEFAULT_DESCRIPTION}\n\n"
-            description += f"📅 업로드 날짜: {datetime.now().strftime('%Y-%m-%d')}\n"
-            description += f"#shorts #ai #자동생성"
+            # 3. 매력적인 썸네일 생성
+            print("\n🖼️ 썸네일 생성 중...")
+            thumbnail_path = self.video_generator.generate_thumbnail(video_path, title)
             
-            # 3. YouTube에 업로드
+            description = f"{config.DEFAULT_DESCRIPTION}\n\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "📺 영상 정보\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += f"📅 업로드 날짜: {datetime.now().strftime('%Y년 %m월 %d일')}\n"
+            if topic:
+                description += f"📌 영상 주제: {topic}\n"
+            description += f"⏱️ 영상 길이: 약 55초 (YouTube Shorts 최적화)\n\n"
+            
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "💡 이 영상에 대해\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "이 영상은 최신 AI 기술을 활용하여 자동으로 생성되었습니다.\n"
+            description += "매일 새로운 주제로 유용한 정보와 실용적인 팁을 제공합니다.\n"
+            description += "생활에 도움이 되는 다양한 콘텐츠를 지속적으로 업로드할 예정입니다.\n\n"
+            
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "🙏 여러분의 참여를 기다립니다\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "👍 좋아요: 영상이 도움이 되셨다면 좋아요를 눌러주세요!\n"
+            description += "🔔 구독: 매일 새로운 영상을 받아보시려면 구독해주세요!\n"
+            description += "💬 댓글: 궁금한 점이나 원하시는 주제가 있으시면 댓글로 알려주세요!\n"
+            description += "📤 공유: 친구들과 함께 보시면 더욱 좋습니다!\n\n"
+            
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "🏷️ 태그\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "#shorts #쇼츠 #ai #인공지능 #자동생성 #유용한정보 #팁 #라이프스타일 #일상 #정보 #꿀팁 #생활정보"
+            
+            # 4. YouTube에 업로드 (썸네일 포함)
             print("\n📤 2단계: YouTube 업로드 중...")
             video_id = self.uploader.upload_video(
                 video_path=video_path,
                 title=title,
                 description=description,
                 tags=config.DEFAULT_TAGS,
-                privacy_status='public'
+                privacy_status='public',
+                thumbnail_path=thumbnail_path
             )
             
             # 4. 수익화 추적에 추가

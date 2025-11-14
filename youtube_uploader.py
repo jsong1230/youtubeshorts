@@ -156,7 +156,8 @@ class YouTubeUploader:
         description: str,
         tags: list = None,
         category_id: str = '22',  # People & Blogs
-        privacy_status: str = 'public'
+        privacy_status: str = 'public',
+        thumbnail_path: str = None
     ):
         """
         영상 업로드
@@ -215,6 +216,16 @@ class YouTubeUploader:
             print(f"✅ 영상 업로드 완료! 영상 ID: {video_id}")
             print(f"🔗 URL: https://www.youtube.com/watch?v={video_id}")
             
+            # 썸네일 업로드 (있는 경우)
+            if thumbnail_path and os.path.exists(thumbnail_path):
+                try:
+                    print("\n🖼️ 썸네일 업로드 중...")
+                    self.upload_thumbnail(video_id, thumbnail_path)
+                    print("✅ 썸네일 업로드 완료!")
+                except Exception as e:
+                    print(f"⚠️ 썸네일 업로드 실패: {e}")
+                    print("   영상은 정상적으로 업로드되었습니다.")
+            
             return video_id
             
         except Exception as e:
@@ -242,7 +253,27 @@ class YouTubeUploader:
                 retry += 1
                 print(f"재시도 중... ({retry}/3)")
         
-        raise Exception(f"업로드 실패: {error}")
+        if error:
+            raise error
+        return response
+    
+    def upload_thumbnail(self, video_id: str, thumbnail_path: str):
+        """썸네일 업로드"""
+        if not os.path.exists(thumbnail_path):
+            raise FileNotFoundError(f"썸네일 파일을 찾을 수 없습니다: {thumbnail_path}")
+        
+        # 썸네일 파일 업로드
+        media = MediaFileUpload(
+            thumbnail_path,
+            mimetype='image/jpeg',
+            resumable=True
+        )
+        
+        # 썸네일 업로드 요청
+        self.youtube.thumbnails().set(
+            videoId=video_id,
+            media_body=media
+        ).execute()
     
     def get_video_stats(self, video_id: str):
         """영상 통계 정보 가져오기"""
