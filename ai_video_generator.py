@@ -253,11 +253,15 @@ class AIVideoGenerator:
             removed_count = 0
             original_script_len = len(script)
             while total_audio_duration > max_safe_duration and len(script) > 1:
+                # pop 전 길이 저장 (동기화 확인용)
+                script_len_before_pop = len(script)
                 # 마지막 문장 제거
                 removed_sentence = script.pop()
                 removed_audio_duration = sentence_audio_durations.pop()
-                # audio_clips는 인덱스로 접근해야 함 (리스트 길이가 다를 수 있음)
-                if len(audio_clips) > len(script):
+                # audio_clips도 동기화를 위해 제거
+                # script와 sentence_audio_durations는 항상 같은 길이이므로,
+                # audio_clips의 길이가 pop 전 script 길이와 같거나 더 크면 pop
+                if len(audio_clips) >= script_len_before_pop:
                     audio_clips.pop()
                 total_audio_duration -= removed_audio_duration
                 removed_count += 1
