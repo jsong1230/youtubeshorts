@@ -73,12 +73,14 @@ class AIVideoGenerator:
         # 영상 스크립트 생성
         script = self._generate_script(topic)
         
-        # duration이 없으면 스크립트 길이에 따라 자동 계산
+        # duration이 없으면 스크립트 길이에 따라 자동 계산 (55초 목표, 60초 초과 방지)
         if duration is None:
-            # 각 문장당 약 3-4초, 최소 15초, 최대 60초
+            # 각 문장당 약 3-4초, 목표 55초 (60초 초과 방지를 위한 안전 마진)
+            # 55초를 목표로 하되, 스크립트가 짧으면 최소 15초
+            target_duration = config.SHORTS_TARGET_DURATION  # 55초 목표
             calculated_duration = len(script) * 3.5
-            duration = max(15, min(60, int(calculated_duration)))
-            print(f"📏 스크립트 기반 자동 길이: {duration}초 ({len(script)}개 문장)")
+            duration = max(15, min(target_duration, int(calculated_duration)))
+            print(f"📏 스크립트 기반 자동 길이: {duration}초 ({len(script)}개 문장, 목표: {target_duration}초)")
         
         # 영상 생성
         video_path = self._create_video_from_script(script, topic, duration, output_filename)
@@ -118,14 +120,14 @@ class AIVideoGenerator:
                     messages=[
                         {
                             "role": "system",
-                            "content": "당신은 YouTube Shorts용 영상 스크립트 작성 전문가입니다. 내용에 따라 15초~60초 분량의 스크립트를 작성하세요. 각 문장은 3-4초 분량입니다."
+                            "content": "당신은 YouTube Shorts용 영상 스크립트 작성 전문가입니다. 설명이 충분하도록 자세하게 작성하세요. 목표는 약 55초 분량이며, 각 문장은 3-4초 분량입니다. YouTube Shorts는 최대 60초이므로 55초 이내로 작성해야 합니다."
                         },
                         {
                             "role": "user",
-                            "content": f"'{topic}'에 대한 YouTube Shorts 영상 스크립트를 작성해주세요. 내용이 많으면 더 많은 문장을, 간단하면 적은 문장을 작성하세요. 각 문장은 3-4초 분량이며, 총 4-15개 문장으로 작성해주세요. 중요한 점: 순수한 대사나 설명만 작성하고, '배경음악', '자막', '시작' 같은 제작 지시사항은 절대 포함하지 마세요."
+                            "content": f"'{topic}'에 대한 YouTube Shorts 영상 스크립트를 작성해주세요. 설명이 충분하도록 자세하게 작성해주세요. 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성해주세요 (약 55초 분량, 최대 60초 제한). 중요한 점: 순수한 대사나 설명만 작성하고, '배경음악', '자막', '시작' 같은 제작 지시사항은 절대 포함하지 마세요."
                         }
                     ],
-                            max_tokens=300,  # 더 긴 스크립트를 위해 토큰 증가
+                            max_tokens=500,  # 1분 분량을 위해 토큰 증가
                             temperature=0.7
                         )
                         script_text = response.choices[0].message.content
@@ -156,7 +158,7 @@ class AIVideoGenerator:
                             if s and len(s) >= 5:
                                 filtered_sentences.append(s)
                         
-                        return filtered_sentences[:15]  # 최대 15개 문장 (약 60초)
+                        return filtered_sentences[:16]  # 최대 16개 문장 (약 55초)
                     except Exception as e:
                         last_error = e
                         continue  # 다음 모델 시도
@@ -242,11 +244,31 @@ class AIVideoGenerator:
         total_audio_duration = sum(sentence_audio_durations)
         print(f"📏 실제 음성 총 길이: {total_audio_duration:.2f}초")
         
-        # 음성 길이를 기준으로 영상 길이 조정 (음성이 잘리지 않도록)
-        # 목표 duration보다 실제 음성이 길면 음성 길이를 사용
-        if total_audio_duration > duration:
-            duration = total_audio_duration
-            print(f"   영상 길이를 음성 길이에 맞춤: {duration:.2f}초")
+        # 음성 길이를 기준으로 영상 길이 조정 (60초 초과 방지)
+        max_safe_duration = 58  # 60초 초과 방지를 위한 안전 마진
+        if total_audio_duration > max_safe_duration:
+            print(f"⚠️ 음성 길이가 {max_safe_duration}초를 초과합니다. 마지막 문장들을 제거하여 {max_safe_duration}초 이내로 맞춥니다.")
+            
+            # 마지막 문장부터 제거하여 58초 이내로 맞추기
+            removed_count = 0
+            original_script_len = len(script)
+            while total_audio_duration > max_safe_duration and len(script) > 1:
+                # 마지막 문장 제거
+                removed_sentence = script.pop()
+                removed_audio_duration = sentence_audio_durations.pop()
+                # audio_clips는 인덱스로 접근해야 함 (리스트 길이가 다를 수 있음)
+                if len(audio_clips) > len(script):
+                    audio_clips.pop()
+                total_audio_duration -= removed_audio_duration
+                removed_count += 1
+                print(f"   문장 제거: '{removed_sentence[:30]}...' ({removed_audio_duration:.2f}초)")
+            
+            duration = min(total_audio_duration, max_safe_duration)
+            print(f"   최종 음성 길이: {total_audio_duration:.2f}초 ({removed_count}개 문장 제거됨)")
+        elif total_audio_duration > duration:
+            # duration이 max_safe_duration 이하인 경우에만 조정
+            duration = min(total_audio_duration, max_safe_duration)
+            print(f"   영상 길이를 음성 길이에 맞춤: {duration:.2f}초 (최대 {max_safe_duration}초)")
         elif abs(total_audio_duration - duration) > 1.0:
             # 목표 duration이 더 길면 각 문장의 비율을 유지하면서 조정
             scale_factor = duration / total_audio_duration
@@ -381,12 +403,19 @@ class AIVideoGenerator:
                     actual_video_duration = actual_audio_duration
                     final_video = final_video.subclip(0, actual_video_duration)
                 
+                # 최종 길이 확인 및 60초 초과 방지
+                max_safe_duration = 58  # 60초 초과 방지를 위한 안전 마진
+                if actual_video_duration > max_safe_duration:
+                    print(f"⚠️ 최종 영상 길이가 {max_safe_duration}초를 초과합니다. {max_safe_duration}초로 제한합니다.")
+                    actual_video_duration = max_safe_duration
+                    final_video = final_video.subclip(0, actual_video_duration)
+                
                 # 음성과 영상 길이 정확히 일치하도록 설정
                 final_audio = final_audio.set_duration(actual_video_duration)
                 final_video = final_video.set_audio(final_audio)
                 final_video = final_video.set_duration(actual_video_duration)
                 
-                print(f"✅ 음성-영상 동기화 완료: {actual_video_duration:.2f}초 (마지막 음성 보호)")
+                print(f"✅ 음성-영상 동기화 완료: {actual_video_duration:.2f}초 (60초 초과 방지)")
             except Exception as e:
                 print(f"⚠️ 음성 추가 실패: {e}")
                 import traceback
@@ -971,46 +1000,137 @@ class AIVideoGenerator:
         return mapping.get(keyword, 'nature')
     
     def generate_thumbnail(self, video_path: str, title: str) -> str:
-        """썸네일 이미지 생성"""
+        """매력적인 썸네일 이미지 생성"""
         import datetime
+        import numpy as np
+        
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         thumbnail_path = os.path.join(config.THUMBNAIL_OUTPUT_DIR, f"thumb_{timestamp}.jpg")
         
-        # 영상에서 첫 프레임 추출
+        # 영상에서 여러 프레임 중 가장 좋은 프레임 선택 (중간 부분)
         video = VideoFileClip(video_path)
-        frame = video.get_frame(0)
-        
-        # PIL 이미지로 변환
-        img = Image.fromarray(frame)
-        
-        # 텍스트 오버레이 추가
-        draw = ImageDraw.Draw(img)
-        try:
-            font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 80)
-        except:
-            font = ImageFont.load_default()
-        
-        # 텍스트 배경 (반투명)
-        text_bbox = draw.textbbox((0, 0), title, font=font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
-        
-        # 텍스트 위치 (하단 중앙)
-        x = (1080 - text_width) // 2
-        y = 1920 - text_height - 100
-        
-        # 배경 박스
-        padding = 20
-        draw.rectangle(
-            [x - padding, y - padding, x + text_width + padding, y + text_height + padding],
-            fill=(0, 0, 0, 180)
-        )
-        
-        # 텍스트 그리기
-        draw.text((x, y), title, fill=(255, 255, 255), font=font)
-        
-        img.save(thumbnail_path)
+        duration = video.duration
+        # 영상의 30-40% 지점에서 프레임 추출 (일반적으로 가장 매력적인 부분)
+        frame_time = duration * 0.35
+        frame = video.get_frame(frame_time)
         video.close()
         
+        # PIL 이미지로 변환
+        img = Image.fromarray(frame.astype('uint8'), 'RGB')
+        
+        # 이미지 크기 확인 및 조정 (1080x1920)
+        if img.size != (1080, 1920):
+            img = img.resize((1080, 1920), Image.Resampling.LANCZOS)
+        
+        # 한글 폰트 로드
+        font_large = None
+        font_medium = None
+        font_paths = [
+            "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+            "/System/Library/Fonts/AppleGothic.ttf",
+            "/System/Library/Fonts/Supplemental/NanumGothic.ttf",
+            "/System/Library/Fonts/Helvetica.ttc"
+        ]
+        
+        for font_path in font_paths:
+            try:
+                if os.path.exists(font_path):
+                    font_large = ImageFont.truetype(font_path, 120)
+                    font_medium = ImageFont.truetype(font_path, 70)
+                    break
+            except:
+                continue
+        
+        if font_large is None:
+            font_large = ImageFont.load_default()
+            font_medium = ImageFont.load_default()
+        
+        draw = ImageDraw.Draw(img)
+        
+        # 1. 상단에 "SHORTS" 배지 추가
+        badge_text = "SHORTS"
+        badge_font = font_medium
+        badge_bbox = draw.textbbox((0, 0), badge_text, font=badge_font)
+        badge_width = badge_bbox[2] - badge_bbox[0]
+        badge_height = badge_bbox[3] - badge_bbox[1]
+        badge_x = 50
+        badge_y = 50
+        badge_padding = 15
+        
+        # 배지 배경 (빨간색 그라데이션 효과)
+        badge_bg = Image.new('RGBA', (badge_width + badge_padding * 2, badge_height + badge_padding * 2), (255, 0, 0, 230))
+        img.paste(badge_bg, (badge_x - badge_padding, badge_y - badge_padding), badge_bg)
+        draw.text((badge_x, badge_y), badge_text, fill=(255, 255, 255), font=badge_font)
+        
+        # 2. 하단에 제목 텍스트 추가 (더 크고 눈에 띄게)
+        # 텍스트를 여러 줄로 분할
+        max_width = 1000
+        words = title.split()
+        lines = []
+        current_line = ""
+        
+        for word in words:
+            test_line = current_line + (" " if current_line else "") + word
+            bbox = draw.textbbox((0, 0), test_line, font=font_large)
+            if bbox[2] - bbox[0] <= max_width:
+                current_line = test_line
+            else:
+                if current_line:
+                    lines.append(current_line)
+                current_line = word
+        
+        if current_line:
+            lines.append(current_line)
+        
+        # 최대 2줄까지만 표시
+        if len(lines) > 2:
+            lines = lines[:2]
+        
+        # 텍스트 높이 계산
+        line_height = 140
+        total_text_height = len(lines) * line_height + 40
+        
+        # 텍스트 위치 (하단 중앙)
+        text_y_start = 1920 - total_text_height - 80
+        
+        # 배경 그라데이션 오버레이 (하단)
+        overlay = Image.new('RGBA', (1080, 1920), (0, 0, 0, 0))
+        overlay_draw = ImageDraw.Draw(overlay)
+        
+        # 하단에서 위로 그라데이션 (검은색 반투명)
+        for i in range(400):
+            alpha = int(180 * (1 - i / 400))
+            overlay_draw.rectangle([0, 1920 - 400 + i, 1080, 1920 - 400 + i + 1], fill=(0, 0, 0, alpha))
+        
+        img = Image.alpha_composite(img.convert('RGBA'), overlay).convert('RGB')
+        draw = ImageDraw.Draw(img)
+        
+        # 각 줄의 텍스트 그리기 (그림자 효과 포함)
+        for i, line in enumerate(lines):
+            bbox = draw.textbbox((0, 0), line, font=font_large)
+            text_width = bbox[2] - bbox[0]
+            text_x = (1080 - text_width) // 2
+            text_y = text_y_start + i * line_height
+            
+            # 그림자 효과 (약간 오른쪽 아래)
+            shadow_offset = 5
+            draw.text((text_x + shadow_offset, text_y + shadow_offset), line, 
+                     fill=(0, 0, 0, 200), font=font_large)
+            
+            # 메인 텍스트 (흰색, 굵게)
+            draw.text((text_x, text_y), line, fill=(255, 255, 255), font=font_large)
+        
+        # 3. 강조 아이콘 추가 (선택적)
+        # 상단 오른쪽에 작은 아이콘 텍스트
+        icon_text = "✨"
+        icon_bbox = draw.textbbox((0, 0), icon_text, font=font_medium)
+        icon_x = 1080 - (icon_bbox[2] - icon_bbox[0]) - 50
+        icon_y = 50
+        draw.text((icon_x, icon_y), icon_text, fill=(255, 215, 0), font=font_medium)
+        
+        # 4. 이미지 저장 (고품질)
+        img.save(thumbnail_path, 'JPEG', quality=95, optimize=True)
+        
+        print(f"✅ 썸네일 생성 완료: {thumbnail_path}")
         return thumbnail_path
 
