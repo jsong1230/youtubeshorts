@@ -1,0 +1,27 @@
+# YouTube API
+google-api-python-client==2.108.0
+google-auth-httplib2==0.1.1
+google-auth-oauthlib==1.1.0
+
+# 영상 처리
+moviepy==1.0.3
+Pillow==10.1.0
+opencv-python==4.8.1.78
+
+# AI 및 텍스트 처리
+openai>=2.0.0
+httpx>=0.24.0
+requests==2.31.0
+
+# 음성 생성 (TTS)
+gTTS==2.5.1
+pydub==0.25.1
+
+# 스케줄링
+schedule==1.2.0
+python-dotenv==1.0.0
+
+# 유틸리티
+python-dateutil==2.8.2
+pytz==2023.3
+
