@@ -97,6 +97,8 @@ pip install -r requirements.txt
 
 프로젝트 루트에 `.env` 파일을 생성하고 다음 내용을 입력하세요:
 
+> 💡 **참고**: 자세한 설정 방법은 [docs/SETUP_GUIDE.md](./docs/SETUP_GUIDE.md)와 [docs/API_SETUP.md](./docs/API_SETUP.md)를 참고하세요.
+
 ```env
 # YouTube API 설정
 YOUTUBE_CLIENT_ID=your_client_id_here
@@ -121,7 +123,7 @@ DEFAULT_TAGS=shorts,쇼츠,ai,인공지능,자동생성,유용한정보,팁,라�
 
 ### 3. YouTube API 인증 설정
 
-자세한 설정 방법은 [SETUP_GUIDE.md](./SETUP_GUIDE.md)를 참고하세요.
+자세한 설정 방법은 [docs/SETUP_GUIDE.md](./docs/SETUP_GUIDE.md)를 참고하세요.
 
 #### Google Cloud Console 설정
 
@@ -158,40 +160,59 @@ python main.py upload
 
 ```
 youtubeshorts/
-├── main.py                    # 메인 실행 파일
-├── config.py                  # 설정 파일
-├── requirements.txt            # Python 의존성
-├── .env                       # 환경 변수 (생성 필요)
-├── README.md                  # 프로젝트 문서
-├── SETUP_GUIDE.md             # YouTube API 설정 가이드
-├── API_SETUP.md               # OpenAI API 설정 가이드
-├── AUTO_START_GUIDE.md        # 자동 시작 가이드
-├── CONTENT_OPTIMIZATION.md    # 콘텐츠 최적화 전략
-├── COPYRIGHT_SAFETY.md         # 저작권 안전 가이드
+├── main.py                      # 메인 실행 파일
+├── config.py                    # 설정 관리 (환경 변수 로드)
+├── requirements.txt             # Python 의존성
+├── .env                         # 환경 변수 (생성 필요)
+├── README.md                    # 프로젝트 메인 문서
 │
-├── src/                       # 소스코드
-│   ├── generators/           # 영상 생성 모듈
+├── src/                        # 소스코드
+│   ├── generators/             # 영상 생성 모듈
 │   │   └── video_generator.py
-│   ├── uploaders/             # 업로드 모듈
+│   ├── uploaders/              # 업로드 모듈
 │   │   └── youtube_uploader.py
-│   ├── analytics/            # 분석 모듈
+│   ├── analytics/              # 분석 모듈
 │   │   └── monetization.py
-│   ├── pipeline/              # 파이프라인 모듈
-│   │   ├── bot.py             # 메인 봇 클래스
-│   │   ├── database.py        # SQLite 데이터베이스
-│   │   └── tts_engine.py      # TTS 엔진 추상화
-│   └── utils/                 # 유틸리티
+│   ├── pipeline/               # 파이프라인 모듈
+│   │   ├── bot.py              # 메인 봇 클래스
+│   │   ├── database.py         # SQLite 데이터베이스
+│   │   └── tts_engine.py       # TTS 엔진 추상화
+│   └── utils/                  # 유틸리티
 │       └── create_client_secrets.py
 │
-├── output/                    # 출력 파일
-│   ├── videos/                # 생성된 영상
+├── docs/                       # 문서
+│   ├── API_SETUP.md            # OpenAI API 설정 가이드
+│   ├── AUTO_START_GUIDE.md     # 자동 시작 가이드
+│   ├── CONTENT_OPTIMIZATION.md # 콘텐츠 최적화 전략
+│   ├── COPYRIGHT_SAFETY.md     # 저작권 안전 가이드
+│   ├── SETUP_GUIDE.md          # YouTube API 설정 가이드
+│   ├── PROJECT_STRUCTURE.md    # 프로젝트 구조 문서
+│   └── 3month_roadmap.md       # 3개월 수익화 로드맵
+│
+├── templates/                  # 템플릿
+│   └── copyright_free_templates.json  # 저작권 0% AI 쇼츠 템플릿 10종
+│
+├── prompts/                    # 프롬프트
+│   └── viral_formats.txt       # 조회수 잘 터지는 포맷 프롬프트 20개
+│
+├── scripts/                    # 스크립트
+│   ├── start_daemon.sh         # 데몬 시작 스크립트
+│   └── com.youtubeshorts.bot.plist  # macOS LaunchAgent 설정
+│
+├── data/                       # 데이터 파일
+│   ├── videos.db               # SQLite 데이터베이스
+│   └── monetization_data.json  # 수익화 데이터
+│
+├── output/                     # 출력 파일
+│   ├── videos/                 # 생성된 영상
 │   ├── thumbnails/            # 썸네일
 │   └── temp/                  # 임시 파일
 │
-├── videos.db                  # SQLite 데이터베이스
-├── token.json                 # YouTube 인증 토큰
-└── client_secrets.json        # Google OAuth 설정
+├── token.json                  # YouTube 인증 토큰 (자동 생성)
+└── client_secrets.json         # Google OAuth 설정 (생성 필요)
 ```
+
+자세한 프로젝트 구조는 [docs/PROJECT_STRUCTURE.md](./docs/PROJECT_STRUCTURE.md)를 참고하세요.
 
 ## 📖 사용법
 
@@ -267,7 +288,7 @@ tail -f output/bot.log
 launchctl unload ~/Library/LaunchAgents/com.youtubeshorts.bot.plist
 ```
 
-자세한 내용은 `AUTO_START_GUIDE.md` 파일을 참고하세요.
+자세한 내용은 [docs/AUTO_START_GUIDE.md](./docs/AUTO_START_GUIDE.md) 파일을 참고하세요.
 
 ## 📊 수익화 추적
 
@@ -462,7 +483,7 @@ python main.py upload
 - ✅ **배경 영상**: Pexels Video (CC0 라이선스)
 - ✅ **배경 이미지**: Pexels/Unsplash/Pixabay (무료 라이선스)
 
-자세한 내용은 [COPYRIGHT_SAFETY.md](./COPYRIGHT_SAFETY.md)를 참고하세요.
+자세한 내용은 [docs/COPYRIGHT_SAFETY.md](./docs/COPYRIGHT_SAFETY.md)를 참고하세요.
 
 ## 🎯 콘텐츠 최적화
 
@@ -479,7 +500,16 @@ python main.py upload
 - 짧아서 Click-Through Rate 좋음
 - 조회수 폭발 확률 높음
 
-자세한 내용은 [CONTENT_OPTIMIZATION.md](./CONTENT_OPTIMIZATION.md)를 참고하세요.
+자세한 내용은 [docs/CONTENT_OPTIMIZATION.md](./docs/CONTENT_OPTIMIZATION.md)를 참고하세요.
+
+## 📚 추가 리소스
+
+### 템플릿 및 프롬프트
+- **저작권 0% AI 쇼츠 템플릿 10종**: [templates/copyright_free_templates.json](./templates/copyright_free_templates.json)
+- **조회수 잘 터지는 포맷 프롬프트 20개**: [prompts/viral_formats.txt](./prompts/viral_formats.txt)
+
+### 로드맵
+- **3개월 수익화 도달 로드맵**: [docs/3month_roadmap.md](./docs/3month_roadmap.md)
 
 ## 📝 라이선스
 
@@ -493,7 +523,7 @@ python main.py upload
 
 문제가 발생하거나 질문이 있으시면:
 1. GitHub Issues에 이슈 등록
-2. `AUTO_START_GUIDE.md` 및 `SETUP_GUIDE.md` 참고
+2. [docs/AUTO_START_GUIDE.md](./docs/AUTO_START_GUIDE.md) 및 [docs/SETUP_GUIDE.md](./docs/SETUP_GUIDE.md) 참고
 
 ---
 

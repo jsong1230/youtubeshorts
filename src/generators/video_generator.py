@@ -5,7 +5,7 @@ import os
 import random
 import re
 from moviepy.editor import (
-    VideoFileClip, ImageClip,
+    VideoFileClip, ImageClip, TextClip,
     concatenate_videoclips, AudioFileClip, CompositeVideoClip
 )
 from moviepy.video.fx.all import fadein, fadeout
@@ -24,13 +24,14 @@ except ImportError:
     TTS_AVAILABLE = False
 
 import requests
+import json
 import config
 from enum import Enum
+from pathlib import Path
 
 # 새로운 TTS 엔진 사용 (선택적)
 try:
     import sys
-    from pathlib import Path
     # 프로젝트 루트를 경로에 추가
     project_root = Path(__file__).parent.parent.parent
     sys.path.insert(0, str(project_root))
@@ -42,7 +43,7 @@ except ImportError:
 
 class ContentType(Enum):
     """콘텐츠 타입"""
-    HOOK = "hook"  # 영어/한국어 한 문장 학습 (짧고 강한 Hook)
+    HOOK = "hook"  # 한국어 속담/관용어 한 문장 학습 (짧고 강한 Hook)
     QUOTE = "quote"  # AI·비즈니스·명언·지식 한 줄
     STORY = "story"  # 스토리텔링 (심리/역사/부자습관)
     FACT = "fact"  # 숏폼 팩트 기반 영상
@@ -97,56 +98,56 @@ class AIVideoGenerator:
         performance_prompt: str = None
     ) -> tuple:
         """
-        AI로 YouTube Shorts 영상 생성 (15초~60초)
+        AI로 YouTube Shorts 영상 생성 (55초 목표, 매번 새로운 아이디어)
         
         Args:
-            topic: 영상 주제 (None이면 자동 생성)
-            duration: 영상 길이 (초, None이면 스크립트에 따라 자동 계산)
+            topic: 영상 주제 (None이면 AI로 자동 생성 - 매번 새로운 아이디어)
+            duration: 영상 길이 (초, None이면 자동 계산, 목표 55초)
             output_filename: 출력 파일명 (None이면 자동 생성)
             performance_prompt: 성과 기반 프롬프트 (선택)
         
         Returns:
             (생성된 영상 파일 경로, 스크립트 리스트, 주제) 튜플
         """
-        # 주제가 없으면 AI로 생성
+        # 주제가 없으면 AI로 새로운 주제 생성 (템플릿 사용 안 함)
         content_type = None
         if not topic:
             topic, content_type = self._generate_topic()
         else:
             # 주제가 주어진 경우 콘텐츠 타입 자동 감지
-            content_type_str = getattr(config, 'CONTENT_TYPE', 'auto')
-            try:
-                content_type = ContentType(content_type_str.lower())
-            except ValueError:
-                content_type = ContentType.AUTO
-        
+            if not content_type:
+                content_type_str = getattr(config, "CONTENT_TYPE", "auto")
+                try:
+                    content_type = ContentType(content_type_str.lower())
+                except ValueError:
+                    content_type = ContentType.AUTO
         print(f"📹 영상 생성 시작: '{topic}' (타입: {content_type.value})")
         
-        # 영상 스크립트 생성
-        script = self._generate_script(topic, performance_prompt=performance_prompt, content_type=content_type)
+        # 영상 스크립트 생성 (55초 목표, 매번 새로운 아이디어로 생성)
+        script = self._generate_script(
+            topic, 
+            performance_prompt=performance_prompt,
+            content_type=content_type
+        )
         
-        # duration이 없으면 스크립트 길이에 따라 자동 계산 (콘텐츠 타입별 최적화)
+        print(f"📝 AI 생성 스크립트: {len(script)}개 문장")
+        
+        # duration이 없으면 스크립트 길이에 따라 자동 계산 (55초 목표)
         if duration is None:
-            # 콘텐츠 타입별 목표 길이 설정
-            prefer_short = getattr(config, 'PREFER_SHORT_VIDEOS', True)
+            # 모든 콘텐츠 타입에서 55초 목표로 설정 (충분한 이야기 포함)
+            target_duration = config.SHORTS_TARGET_DURATION  # 55초
             
-            if content_type == ContentType.HOOK:
-                target_duration = 20 if prefer_short else 30
-            elif content_type == ContentType.QUOTE:
-                target_duration = 20 if prefer_short else 30
-            elif content_type == ContentType.STORY:
-                target_duration = 30 if prefer_short else 45
-            elif content_type == ContentType.FACT:
-                target_duration = 20 if prefer_short else 30
-            elif content_type == ContentType.SHORT_STORY:
-                target_duration = 25 if prefer_short else 35
-            else:
-                target_duration = config.SHORTS_TARGET_DURATION  # 기본 55초
-            
-            # 각 문장당 약 2-4초 (콘텐츠 타입에 따라)
-            avg_sentence_duration = 2.5 if prefer_short else 3.5
+            # 각 문장당 약 3-4초 (충분한 내용을 담기 위해)
+            avg_sentence_duration = 3.5
             calculated_duration = len(script) * avg_sentence_duration
+            
+            # 목표 duration(55초)과 계산된 duration 중 작은 값 사용, 최소 15초
             duration = max(15, min(target_duration, int(calculated_duration)))
+            
+            # 스크립트가 짧으면 더 긴 문장을 생성하도록 프롬프트 조정
+            if calculated_duration < target_duration * 0.8:  # 목표의 80% 미만이면
+                print(f"📝 스크립트가 짧아서 더 긴 내용 생성 필요 (현재: {calculated_duration:.1f}초, 목표: {target_duration}초)")
+            
             print(f"📏 스크립트 기반 자동 길이: {duration}초 ({len(script)}개 문장, 목표: {target_duration}초, 타입: {content_type.value})")
         
         # 영상 생성
@@ -179,14 +180,14 @@ class AIVideoGenerator:
         # 타입별 주제 생성
         if content_type == ContentType.HOOK:
             topics = [
-                "영어 한 문장으로 배우는 실생활 표현",
                 "한국어 속담 한 줄로 배우기",
-                "영어 회화 필수 한 문장",
-                "일상 영어 표현 한 줄",
                 "한국어 관용어 한 문장",
-                "비즈니스 영어 한 줄",
-                "영어 명언 한 문장",
                 "한국어 속담 한 줄",
+                "일상에서 쓰는 한국어 표현",
+                "한국어 명언 한 줄",
+                "한국어 격언 한 줄",
+                "한국어 속담의 지혜",
+                "한국어 관용 표현",
             ]
         elif content_type == ContentType.QUOTE:
             topics = [
@@ -253,8 +254,8 @@ class AIVideoGenerator:
                 response = None
                 last_error = None
                 
-                # 콘텐츠 타입별 설정
-                prefer_short = getattr(config, 'PREFER_SHORT_VIDEOS', True)
+                # 콘텐츠 타입별 설정 (55초 목표로 충분한 내용 생성)
+                prefer_short = False  # 55초 목표이므로 짧은 영상 비활성화
                 
                 if content_type is None:
                     content_type_str = getattr(config, 'CONTENT_TYPE', 'auto')
@@ -263,54 +264,62 @@ class AIVideoGenerator:
                     except ValueError:
                         content_type = ContentType.AUTO
                 
-                # 타입별 시스템 프롬프트 구성
+                # 타입별 시스템 프롬프트 구성 (모두 55초 목표)
+                target_duration = config.SHORTS_TARGET_DURATION  # 55초
+                
                 if content_type == ContentType.HOOK:
                     system_prompt = """당신은 YouTube Shorts용 Hook 영상 스크립트 작성 전문가입니다.
 - 첫 3초 안에 강력한 Hook 문장으로 시청자의 관심을 끌어야 합니다
-- 영어/한국어 한 문장 학습에 집중하세요
-- 짧고 임팩트 있게 작성하세요 (15-30초 권장)
-- 각 문장은 2-3초 분량이며, 총 5-10개 문장으로 작성하세요
-- Hook 문장을 반복하거나 강조하세요"""
-                    target_duration = 20 if prefer_short else 30
-                    max_sentences = 10
+- 한국어 속담, 관용어, 명언 등에 집중하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 충분한 설명과 예시를 포함하세요
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
+- Hook 문장을 반복하거나 강조하고, 자세한 설명을 추가하세요"""
+                    max_sentences = 16
                 elif content_type == ContentType.QUOTE:
                     system_prompt = """당신은 YouTube Shorts용 명언/지식 한 줄 영상 스크립트 작성 전문가입니다.
 - 첫 문장에 강력한 명언이나 인사이트를 배치하세요
 - AI, 비즈니스, 자기계발, 투자 등 지식 한 줄에 집중하세요
-- 짧고 강렬하게 작성하세요 (15-25초 권장)
-- 각 문장은 2-3초 분량이며, 총 5-8개 문장으로 작성하세요
-- 명언을 설명하고 실생활 적용법을 제시하세요"""
-                    target_duration = 20 if prefer_short else 30
-                    max_sentences = 8
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 충분한 설명과 실생활 적용법을 포함하세요
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
+- 명언을 자세히 설명하고 실생활 적용법과 예시를 제시하세요"""
+                    max_sentences = 16
                 elif content_type == ContentType.STORY:
                     system_prompt = """당신은 YouTube Shorts용 스토리텔링 영상 스크립트 작성 전문가입니다.
 - 첫 문장에 강력한 Hook으로 시작하세요
 - 심리, 역사, 부자습관 등 스토리를 통해 교훈을 전달하세요
-- 스토리 구조: Hook → 전개 → 교훈 → 마무리
-- 각 문장은 3-4초 분량이며, 총 8-12개 문장으로 작성하세요 (25-40초 권장)"""
-                    target_duration = 30 if prefer_short else 45
-                    max_sentences = 12
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 스토리를 자세히 전개하세요
+- 스토리 구조: Hook → 전개 → 세부 설명 → 교훈 → 마무리
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요"""
+                    max_sentences = 16
                 elif content_type == ContentType.FACT:
                     system_prompt = """당신은 YouTube Shorts용 팩트 기반 영상 스크립트 작성 전문가입니다.
 - 첫 문장에 놀라운 팩트를 배치하여 Hook을 만드세요
 - 과학, 역사, 인체, 우주 등 놀라운 사실을 전달하세요
-- 짧고 임팩트 있게 작성하세요 (15-25초 권장)
-- 각 문장은 2-3초 분량이며, 총 5-8개 문장으로 작성하세요
-- 팩트를 설명하고 왜 놀라운지 강조하세요"""
-                    target_duration = 20 if prefer_short else 30
-                    max_sentences = 8
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 팩트를 자세히 설명하세요
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
+- 팩트를 설명하고 왜 놀라운지, 어떻게 발견되었는지 등 자세한 배경을 포함하세요"""
+                    max_sentences = 16
                 elif content_type == ContentType.SHORT_STORY:
                     system_prompt = """당신은 YouTube Shorts용 짧은 스토리 영상 스크립트 작성 전문가입니다.
 - 첫 문장에 강력한 Hook으로 시작하세요
-- 인생 교훈, 영감, 성공 스토리 등을 짧게 전달하세요
-- 스토리 구조: Hook → 사건 → 교훈 → 마무리
-- 각 문장은 3-4초 분량이며, 총 6-10개 문장으로 작성하세요 (20-35초 권장)"""
-                    target_duration = 25 if prefer_short else 35
-                    max_sentences = 10
+- 인생 교훈, 영감, 성공 스토리 등을 자세히 전달하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 스토리를 충분히 전개하세요
+- 스토리 구조: Hook → 사건 전개 → 세부 설명 → 교훈 → 마무리
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요"""
+                    max_sentences = 16
                 else:
                     # 기본 설정
-                    system_prompt = "당신은 YouTube Shorts용 영상 스크립트 작성 전문가입니다. 설명이 충분하도록 자세하게 작성하세요. 목표는 약 55초 분량이며, 각 문장은 3-4초 분량입니다. YouTube Shorts는 최대 60초이므로 55초 이내로 작성해야 합니다."
-                    target_duration = 30 if prefer_short else 55
+                    system_prompt = """당신은 YouTube Shorts용 영상 스크립트 작성 전문가입니다.
+- 설명이 충분하도록 자세하게 작성하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 각 문장은 3-4초 분량입니다
+- YouTube Shorts는 최대 60초이므로 55초 이내로 작성해야 합니다
+- 총 12-16개 문장으로 작성하여 충분한 내용을 담으세요"""
                     max_sentences = 16
                 
                 # 성과 기반 프롬프트 추가
@@ -318,7 +327,7 @@ class AIVideoGenerator:
                     system_prompt += "\n\n" + performance_prompt
                 
                 # 사용자 프롬프트 구성
-                user_prompt = f"'{topic}'에 대한 YouTube Shorts 영상 스크립트를 작성해주세요. 각 문장은 2-4초 분량이며, 총 {max_sentences}개 문장 이하로 작성해주세요 (약 {target_duration}초 분량, 최대 60초 제한). 중요한 점: 순수한 대사나 설명만 작성하고, '배경음악', '자막', '시작' 같은 제작 지시사항은 절대 포함하지 마세요. 첫 문장은 반드시 강력한 Hook이어야 합니다."
+                user_prompt = f"'{topic}'에 대한 YouTube Shorts 영상 스크립트를 작성해주세요. 각 문장은 3-4초 분량이며, 총 {max_sentences}개 문장으로 작성하여 약 {target_duration}초 분량이 되도록 충분히 자세하게 작성해주세요 (최대 60초 제한). **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요.** 중요한 점: 순수한 대사나 설명만 작성하고, '배경음악', '자막', '시작' 같은 제작 지시사항은 절대 포함하지 마세요. 첫 문장은 반드시 강력한 Hook이어야 하며, 내용을 충분히 전개하여 시청자가 이해할 수 있도록 자세히 설명하세요."
                 
                 for model in models_to_try:
                     try:
@@ -334,12 +343,22 @@ class AIVideoGenerator:
                             "content": user_prompt
                         }
                     ],
-                            max_tokens=500,  # 1분 분량을 위해 토큰 증가
+                            max_tokens=800,  # 55초 분량을 위해 토큰 증가
                             temperature=0.7
                         )
                         script_text = response.choices[0].message.content
-                        # 문장별로 분리
-                        sentences = [s.strip() for s in script_text.split('\n') if s.strip()]
+                        # 문장별로 분리 (줄바꿈과 마침표 모두 고려)
+                        sentences = []
+                        # 줄바꿈으로 분리
+                        for line in script_text.split('\n'):
+                            line = line.strip()
+                            if not line:
+                                continue
+                            # 마침표로도 분리 (긴 문장을 여러 문장으로 나눔)
+                            for sent in re.split(r'[.!?。！？]\s+', line):
+                                sent = sent.strip()
+                                if sent:
+                                    sentences.append(sent)
                         
                         # 불필요한 텍스트 필터링
                         filter_keywords = [
@@ -351,10 +370,11 @@ class AIVideoGenerator:
                         filtered_sentences = []
                         for s in sentences:
                             # 숫자나 불필요한 기호로 시작하는 것 제거
-                            if s.startswith(('1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.', '-', '*', '•')):
-                                continue
-                            # 너무 짧은 문장 제거
-                            if len(s) < 5:
+                            if s.startswith(('1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.', '10.', '11.', '12.', '13.', '14.', '15.', '16.', '-', '*', '•')):
+                                # 숫자 제거 후 문장만 추출
+                                s = re.sub(r'^\d+\.\s*', '', s).strip()
+                            # 너무 짧은 문장 제거 (최소 10자 이상)
+                            if len(s) < 10:
                                 continue
                             # 필터 키워드가 포함된 문장 제거
                             if any(keyword in s for keyword in filter_keywords):
@@ -362,10 +382,25 @@ class AIVideoGenerator:
                             # 괄호 안의 설명 제거 (예: "텍스트 (참고사항)" -> "텍스트")
                             s = re.sub(r'\([^)]*\)', '', s).strip()
                             s = re.sub(r'\[[^\]]*\]', '', s).strip()
-                            if s and len(s) >= 5:
+                            if s and len(s) >= 10:
                                 filtered_sentences.append(s)
                         
-                        return filtered_sentences[:16]  # 최대 16개 문장 (약 55초)
+                        # 최소 문장 수 확인 (55초 목표를 위해 최소 12개 이상 필요)
+                        if len(filtered_sentences) < 12:
+                            print(f"⚠️ 생성된 문장이 부족합니다 ({len(filtered_sentences)}개). 원본 스크립트를 다시 확인합니다.")
+                            # 원본 텍스트에서 더 많은 문장 추출 시도
+                            all_sentences = re.split(r'[.!?。！？]\s+', script_text)
+                            for sent in all_sentences:
+                                sent = sent.strip()
+                                if len(sent) >= 10 and sent not in filtered_sentences:
+                                    # 필터링 다시 적용
+                                    if not any(keyword in sent for keyword in filter_keywords):
+                                        filtered_sentences.append(sent)
+                                        if len(filtered_sentences) >= max_sentences:
+                                            break
+                        
+                        print(f"📝 생성된 문장 수: {len(filtered_sentences)}개 (목표: {max_sentences}개)")
+                        return filtered_sentences[:max_sentences]  # 최대 문장 수 (약 55초)
                     except Exception as e:
                         last_error = e
                         continue  # 다음 모델 시도
@@ -491,6 +526,9 @@ class AIVideoGenerator:
         group_size = 2  # 2개 문장마다 배경 변경
         use_background_video = getattr(config, 'USE_BACKGROUND_VIDEO', True)
         
+        # 각 그룹에서 사용할 배경 영상의 시작 시간을 추적
+        video_start_times = {}  # {bg_video_path: current_start_time}
+        
         for i in range(0, len(script), group_size):
             group_end = min(i + group_size, len(script))
             group_sentence = script[i]
@@ -508,6 +546,10 @@ class AIVideoGenerator:
                 if bg_image is None:
                     # 이미지 다운로드 실패 시 그라데이션 배경 사용
                     bg_image = self._create_gradient_background(i, len(script))
+            
+            # 배경 영상이 있으면 시작 시간 초기화 (아직 사용하지 않았으면)
+            if bg_video_path and bg_video_path not in video_start_times:
+                video_start_times[bg_video_path] = 0.0
             
             background_groups.append((i, group_end, bg_video_path, bg_image))
             media_type = "영상" if bg_video_path else "이미지"
@@ -530,48 +572,174 @@ class AIVideoGenerator:
             # 배경 영상이 있으면 영상 클립 사용
             if bg_video_path and os.path.exists(bg_video_path):
                 try:
+                    print(f"   📹 배경 영상 사용: {bg_video_path}")
                     source_video = VideoFileClip(bg_video_path)
                     source_duration = source_video.duration
+                    print(f"   원본 영상 길이: {source_duration:.2f}초, 필요한 길이: {sentence_duration:.2f}초")
                     
                     # 필요한 길이에 맞춰 자르기
                     if source_duration >= sentence_duration:
-                        # 영상이 충분히 길면, 각 문장마다 다른 시작점 사용 (반복 방지)
-                        # 문장 인덱스에 따라 시작점을 다르게 설정
-                        start_time = (i * 0.5) % max(1.0, source_duration - sentence_duration)
-                        start_time = min(start_time, source_duration - sentence_duration)
-                        video_clip = source_video.subclip(start_time, start_time + sentence_duration)
-                    else:
-                        # 영상이 짧으면 루프 (하지만 부드럽게)
-                        # 루프 횟수 계산
-                        loops_needed = int(sentence_duration / source_duration) + 1
-                        looped_clips = []
-                        
-                        # 각 루프마다 약간씩 다른 시작점 사용 (반복 감소)
-                        for loop_idx in range(loops_needed):
-                            loop_start = (loop_idx * 0.3) % max(0.1, source_duration - 0.5)
-                            loop_start = min(loop_start, source_duration - 0.5)
-                            loop_clip = source_video.subclip(loop_start, min(loop_start + source_duration, source_duration))
-                            looped_clips.append(loop_clip)
-                        
-                        # 루프된 클립 연결
-                        if len(looped_clips) > 1:
-                            video_clip = concatenate_videoclips(looped_clips).subclip(0, sentence_duration)
+                        # 같은 배경 영상 파일을 여러 문장에서 사용할 때, 순차적으로 재생
+                        # 각 문장마다 이전 문장의 끝 지점부터 시작 (전체 영상을 순차적으로 재생)
+                        if bg_video_path in video_start_times:
+                            start_time = video_start_times[bg_video_path]
                         else:
-                            video_clip = looped_clips[0].subclip(0, sentence_duration)
-                    
-                    source_video.close()
+                            # 처음 사용하는 경우 0부터 시작
+                            start_time = 0.0
+                            video_start_times[bg_video_path] = 0.0
+                        
+                        # 시작점이 영상 끝을 넘어가면 처음으로 돌아가지 않고, 영상 끝에서 멈춤
+                        if start_time >= source_duration - sentence_duration:
+                            # 영상 끝에 도달했으면, 마지막 부분을 반복하지 않고 처음부터 다시 시작
+                            # 하지만 사용자가 원하는 것은 전체 영상을 순차적으로 재생하는 것이므로
+                            # 영상 끝에 도달하면 처음부터 다시 시작 (하지만 이전 문장과 겹치지 않도록)
+                            start_time = 0.0
+                        
+                        end_time = start_time + sentence_duration
+                        # end_time이 영상 길이를 넘어가면 조정
+                        if end_time > source_duration:
+                            # 영상 끝에 도달했으면, 남은 부분만 사용하고 다음 문장은 처음부터
+                            end_time = source_duration
+                            # 다음 문장을 위해 시작점을 0으로 리셋
+                            video_start_times[bg_video_path] = 0.0
+                        else:
+                            # 다음 문장을 위해 시작점 업데이트
+                            video_start_times[bg_video_path] = end_time
+                        
+                        # subclip으로 정확히 자르기 (반복 방지)
+                        # 정확한 시간 범위로 자르기 (소수점 오차 방지)
+                        # end_time을 약간 줄여서 경계 중복 방지
+                        safe_end_time = min(end_time, source_duration - 0.01)  # 0.01초 여유
+                        video_clip = source_video.subclip(start_time, safe_end_time)
+                        
+                        print(f"   📍 배경 영상 재생 위치: {start_time:.2f}초~{safe_end_time:.2f}초 (원본: {source_duration:.2f}초)")
+                        
+                        # subclip이 정확한 길이로 잘렸는지 확인하고, 필요시 다시 정확히 자르기
+                        actual_clip_duration = video_clip.duration
+                        if abs(actual_clip_duration - sentence_duration) > 0.01:
+                            # 정확한 길이로 다시 자르기 (경계 중복 방지)
+                            if actual_clip_duration > sentence_duration:
+                                video_clip = video_clip.subclip(0, sentence_duration)
+                                actual_clip_duration = video_clip.duration
+                        
+                        # set_duration은 메타데이터만 변경하므로, 실제 프레임이 정확한지 확인
+                        # 정확한 duration으로 강제 설정 (경계 중복 방지)
+                        video_clip = video_clip.set_duration(sentence_duration)
+                        print(f"   문장 {i+1} 배경 영상 클립: {start_time:.2f}초~{safe_end_time:.2f}초 (원본: {source_duration:.2f}초, 실제: {actual_clip_duration:.2f}초, 설정: {video_clip.duration:.2f}초)")
+                    else:
+                        # 영상이 짧으면 단순 반복 (정확한 길이로)
+                        if source_duration > 0:
+                            # 필요한 만큼만 반복하고 정확히 자르기
+                            if sentence_duration <= source_duration:
+                                # 문장이 영상보다 짧으면 처음부터 자르기
+                                # 정확한 시간 범위로 자르기 (반복 방지, 경계 중복 방지)
+                                safe_end = min(sentence_duration, source_duration - 0.01)  # 0.01초 여유
+                                video_clip = source_video.subclip(0, safe_end)
+                                actual_clip_duration = video_clip.duration
+                                # subclip이 정확한 길이로 잘렸는지 확인
+                                if abs(actual_clip_duration - sentence_duration) > 0.01:
+                                    # 정확한 길이로 다시 자르기 (경계 중복 방지)
+                                    if actual_clip_duration > sentence_duration:
+                                        video_clip = video_clip.subclip(0, sentence_duration)
+                                        actual_clip_duration = video_clip.duration
+                                video_clip = video_clip.set_duration(sentence_duration)  # 강제 duration 설정
+                                print(f"   문장 {i+1} 짧은 영상 클립: 0초~{safe_end:.2f}초 (원본: {source_duration:.2f}초, 실제: {actual_clip_duration:.2f}초)")
+                            else:
+                                # 문장이 영상보다 길면 반복 (각 클립을 독립적으로 생성)
+                                looped_parts = []
+                                remaining_duration = sentence_duration
+                                
+                                while remaining_duration > 0.01:  # 0.01초 이상 남아있으면 계속
+                                    # 필요한 만큼만 자르기
+                                    clip_duration = min(source_duration, remaining_duration)
+                                    # 각 루프마다 새로운 subclip 생성 (독립적)
+                                    loop_clip = source_video.subclip(0, clip_duration)
+                                    loop_clip = loop_clip.set_duration(clip_duration)  # 정확한 duration 설정
+                                    looped_parts.append(loop_clip)
+                                    remaining_duration -= clip_duration
+                                    print(f"      루프 클립 추가: {clip_duration:.2f}초 (남은 시간: {remaining_duration:.2f}초)")
+                                
+                                if len(looped_parts) > 1:
+                                    print(f"      {len(looped_parts)}개 루프 클립 연결 중...")
+                                    # 각 루프 클립의 duration을 다시 한 번 확인하고 강제 설정
+                                    for lp_idx, lp_clip in enumerate(looped_parts):
+                                        expected_lp_dur = min(source_duration, sentence_duration - sum(p.duration for p in looped_parts[:lp_idx]))
+                                        if abs(lp_clip.duration - expected_lp_dur) > 0.01:
+                                            print(f"         루프 클립 {lp_idx+1} duration 조정: {lp_clip.duration:.2f}초 -> {expected_lp_dur:.2f}초")
+                                            looped_parts[lp_idx] = lp_clip.set_duration(expected_lp_dur)
+                                    
+                                    video_clip = concatenate_videoclips(looped_parts, method="chain", transition=None)
+                                    # 정확한 길이로 강제 자르기 (반복 방지)
+                                    # concatenate 후 실제 duration 확인 및 조정
+                                    actual_looped_duration = sum(p.duration for p in looped_parts)
+                                    if abs(video_clip.duration - sentence_duration) > 0.01 or abs(actual_looped_duration - sentence_duration) > 0.01:
+                                        print(f"      루프 클립 길이 조정: {video_clip.duration:.2f}초 (합계: {actual_looped_duration:.2f}초) -> {sentence_duration:.2f}초")
+                                        # 정확한 길이로 자르기
+                                        video_clip = video_clip.subclip(0, sentence_duration)
+                                    video_clip = video_clip.set_duration(sentence_duration)  # 강제 설정
+                                    print(f"      루프 클립 최종 duration: {video_clip.duration:.2f}초")
+                                else:
+                                    video_clip = looped_parts[0]
+                                    if abs(video_clip.duration - sentence_duration) > 0.01:
+                                        video_clip = video_clip.set_duration(sentence_duration)
+                                    print(f"      루프 클립 최종 duration: {video_clip.duration:.2f}초")
+                        else:
+                            # source_duration이 0 이하인 경우
+                            clip_end = min(sentence_duration, source_duration)
+                            video_clip = source_video.subclip(0, clip_end)
+                            video_clip = video_clip.set_duration(clip_end)  # 강제 duration 설정
                     
                     # 해상도 설정
                     video_clip = video_clip.resize((1080, 1920))
+                    # duration은 이미 설정되었지만, resize 후에도 확인
+                    if abs(video_clip.duration - sentence_duration) > 0.01:
+                        print(f"   문장 {i+1} duration 재설정: {video_clip.duration:.2f}초 -> {sentence_duration:.2f}초")
                     video_clip = video_clip.set_duration(sentence_duration)
+                    print(f"   문장 {i+1} 최종 클립 duration: {video_clip.duration:.2f}초 (목표: {sentence_duration:.2f}초)")
                     
-                    # 페이드 효과
+                    # 자막 추가
+                    try:
+                        print(f"   문장 {i+1} 배경 영상 자막 추가 시도: {sentence[:30]}...")
+                        subtitle_clip = self._create_subtitle_clip(sentence, sentence_duration)
+                        if subtitle_clip:
+                            video_clip = CompositeVideoClip([video_clip, subtitle_clip])
+                            # CompositeVideoClip 후 duration 강제 설정 (반복 방지)
+                            video_clip = video_clip.set_duration(sentence_duration)
+                            print(f"   ✅ 배경 영상 자막 추가 성공 (duration: {video_clip.duration:.2f}초)")
+                        else:
+                            print(f"   ⚠️ 자막 클립이 None입니다")
+                    except Exception as e:
+                        print(f"   ❌ 자막 추가 실패 (계속 진행): {e}")
+                        import traceback
+                        traceback.print_exc()
+                    
+                    # 페이드 효과 (duration 유지)
                     if i == 0:
                         video_clip = video_clip.fx(fadein, 0.5)
+                        video_clip = video_clip.set_duration(sentence_duration)  # 페이드 후 duration 재설정
                     elif i == len(script) - 1:
                         video_clip = video_clip.fx(fadeout, 0.5)
+                        video_clip = video_clip.set_duration(sentence_duration)  # 페이드 후 duration 재설정
+                    
+                    # 최종 duration 확인 및 강제 설정 (반복 방지)
+                    if abs(video_clip.duration - sentence_duration) > 0.01:
+                        print(f"   문장 {i+1} 최종 duration 재설정: {video_clip.duration:.2f}초 -> {sentence_duration:.2f}초")
+                        video_clip = video_clip.set_duration(sentence_duration)
+                    
+                    # source_video는 나중에 닫기 (video_clip이 완전히 생성된 후)
+                    print(f"   ✅ 문장 {i+1} 클립 추가: {video_clip.duration:.2f}초 (목표: {sentence_duration:.2f}초)")
+                    print(f"   📁 사용한 배경 영상: {bg_video_path}")
+                    
+                    # 클립 전환 지점 확인을 위한 로깅
+                    if i > 0 and len(clips) > 0:
+                        prev_clip = clips[-1]
+                        prev_end_time = sum(c.duration for c in clips)
+                        print(f"   🔄 클립 전환: 이전 클립({prev_clip.duration:.2f}초) -> 현재 클립({video_clip.duration:.2f}초)")
+                        print(f"      이전 클립 끝 시간: {prev_end_time:.2f}초")
+                        print(f"      현재 클립 시작 시간: {prev_end_time:.2f}초")
                     
                     clips.append(video_clip)
+                    # source_video는 나중에 정리 (close하지 않음 - subclip이 참조하고 있음)
                     continue
                 except Exception as e:
                     print(f"   배경 영상 사용 실패, 이미지로 대체: {e}")
@@ -582,8 +750,9 @@ class AIVideoGenerator:
             if bg_image is None:
                 bg_image = self._create_gradient_background(i, len(script))
             
-            # 텍스트를 그리지 않음 (자막 제거)
-            text_image = bg_image.copy()
+            # 자막 추가 (이미지에 텍스트 그리기)
+            text_image = self._draw_text_on_image(bg_image.copy(), sentence)
+            print(f"   문장 {i+1} 자막 추가: {sentence[:30]}...")
             
             # 이미지 저장 (RGB 모드로 저장)
             bg_path = os.path.join(config.TEMP_DIR, f"frame_{i}.png")
@@ -611,24 +780,41 @@ class AIVideoGenerator:
             # 해상도 명시적 설정
             img_clip = img_clip.resize((1080, 1920))
             
-            # 페이드 효과 제거 (이미지가 리프레시되지 않도록)
-            # 첫 번째와 마지막 클립만 약간의 페이드 효과 적용
+            # 페이드 효과 (duration 유지)
             if i == 0:
                 # 첫 클립만 페이드 인
                 img_clip = img_clip.fx(fadein, 0.5)
+                img_clip = img_clip.set_duration(sentence_duration)  # 페이드 후 duration 재설정
             elif i == len(script) - 1:
                 # 마지막 클립만 페이드 아웃
                 img_clip = img_clip.fx(fadeout, 0.5)
+                img_clip = img_clip.set_duration(sentence_duration)  # 페이드 후 duration 재설정
             # 중간 클립들은 페이드 효과 없음 (부드러운 전환)
             
-            # 정확한 duration 보장
+            # 최종 duration 확인 및 강제 설정 (반복 방지)
+            if abs(img_clip.duration - sentence_duration) > 0.01:
+                print(f"   문장 {i+1} 이미지 클립 duration 재설정: {img_clip.duration:.2f}초 -> {sentence_duration:.2f}초")
             img_clip = img_clip.set_duration(sentence_duration)
+            
+            print(f"   ✅ 문장 {i+1} 이미지 클립 추가: {img_clip.duration:.2f}초 (목표: {sentence_duration:.2f}초)")
+            
+            # 클립 전환 지점 확인을 위한 로깅
+            if i > 0 and len(clips) > 0:
+                prev_clip = clips[-1]
+                print(f"   🔄 클립 전환: 이전 클립({prev_clip.duration:.2f}초) -> 현재 클립({img_clip.duration:.2f}초)")
+                print(f"      이전 클립 끝 시간: {sum(c.duration for c in clips):.2f}초")
+                print(f"      현재 클립 시작 시간: {sum(c.duration for c in clips):.2f}초")
             
             clips.append(img_clip)
         
         # 모든 클립 연결 (영상이 잘리지 않도록 정확한 duration 설정)
         if not clips:
             raise ValueError("생성된 클립이 없습니다.")
+        
+        # 각 클립의 duration 확인 및 중복 제거
+        print(f"📊 생성된 클립 수: {len(clips)}")
+        for idx, clip in enumerate(clips):
+            print(f"   클립 {idx+1}: {clip.duration:.2f}초")
         
         # 각 클립의 duration 확인
         total_clip_duration = sum(clip.duration for clip in clips)
@@ -643,10 +829,132 @@ class AIVideoGenerator:
                 clips[-1] = last_clip.set_duration(adjustment)
                 print(f"   마지막 클립 duration 조정: {adjustment:.2f}초")
         
-        final_video = concatenate_videoclips(clips, method="compose")
+        # 클립 연결 (중복 방지)
+        print(f"🔗 클립 연결 중... (총 {len(clips)}개)")
+        # 각 클립의 duration을 확인하고 정확히 설정
+        for idx, clip in enumerate(clips):
+            if idx < len(sentence_audio_durations):
+                expected_duration = sentence_audio_durations[idx]
+                if abs(clip.duration - expected_duration) > 0.01:
+                    print(f"   클립 {idx+1} duration 조정: {clip.duration:.2f}초 -> {expected_duration:.2f}초")
+                    clips[idx] = clip.set_duration(expected_duration)
         
-        # 정확한 duration 보장
-        final_video = final_video.set_duration(duration)
+        # 클립 연결 전에 각 클립의 duration 확인
+        print(f"📊 연결 전 클립 duration 확인:")
+        for idx, clip in enumerate(clips):
+            print(f"   클립 {idx+1}: {clip.duration:.2f}초")
+        
+        # 클립 연결 (각 클립이 정상인지 확인 후 연결)
+        print(f"🔗 클립 연결 시작 (총 {len(clips)}개 클립)")
+        # 각 클립이 None이 아닌지 확인
+        valid_clips = []
+        for idx, clip in enumerate(clips):
+            if clip is None:
+                print(f"   ⚠️ 클립 {idx+1}이 None입니다. 건너뜁니다.")
+                continue
+            try:
+                # 클립이 유효한지 확인
+                _ = clip.duration
+                valid_clips.append(clip)
+            except Exception as e:
+                print(f"   ⚠️ 클립 {idx+1}이 유효하지 않습니다: {e}")
+                continue
+        
+        if len(valid_clips) != len(clips):
+            print(f"⚠️ 유효한 클립 수: {len(valid_clips)}/{len(clips)}")
+        
+        if not valid_clips:
+            raise ValueError("유효한 클립이 없습니다.")
+        
+        # 클립 연결 (method를 명시하지 않으면 기본값 사용, 각 클립을 순차적으로 연결)
+        # method="compose"는 오디오 트랙이 있을 때 사용하지만, 비디오만 있을 때는 기본값이 더 안전
+        print(f"   각 클립 정보:")
+        for idx, clip in enumerate(valid_clips):
+            print(f"      클립 {idx+1}: duration={clip.duration:.2f}초, size={clip.size}")
+        
+        # 기본 method 사용 (각 클립을 순차적으로 연결, 중복 없음)
+        # 각 클립의 duration을 다시 한 번 확인하고 강제 설정
+        print(f"   클립 duration 최종 확인 및 조정:")
+        for idx, clip in enumerate(valid_clips):
+            expected_dur = sentence_audio_durations[idx] if idx < len(sentence_audio_durations) else clip.duration
+            if abs(clip.duration - expected_dur) > 0.01:
+                print(f"      클립 {idx+1} duration 조정: {clip.duration:.2f}초 -> {expected_dur:.2f}초")
+                valid_clips[idx] = clip.set_duration(expected_dur)
+            else:
+                print(f"      클립 {idx+1}: {clip.duration:.2f}초 (정상)")
+        
+        # 클립 연결 (각 클립을 순차적으로 연결)
+        # method를 명시하지 않으면 기본값이 사용되지만, 명시적으로 지정하여 중복 방지
+        print(f"   클립 연결 실행 중...")
+        # 각 클립이 정확히 한 번만 연결되도록 보장
+        print(f"   연결할 클립 목록:")
+        for idx, clip in enumerate(valid_clips):
+            print(f"      클립 {idx+1}: {clip.duration:.2f}초")
+        
+        # method를 명시하지 않으면 기본적으로 순차 연결 (중복 없음)
+        # 각 클립을 연결하기 전에 duration을 다시 한 번 강제 설정 (반복 방지)
+        print(f"   연결 전 각 클립 duration 최종 확인 및 강제 설정:")
+        for idx, clip in enumerate(valid_clips):
+            expected_dur = sentence_audio_durations[idx] if idx < len(sentence_audio_durations) else clip.duration
+            # duration을 정확히 설정하고, subclip으로도 확인
+            if abs(clip.duration - expected_dur) > 0.01:
+                print(f"      클립 {idx+1} duration 재설정: {clip.duration:.2f}초 -> {expected_dur:.2f}초")
+                # duration을 설정하고, 필요시 subclip으로도 정확히 자르기
+                valid_clips[idx] = clip.set_duration(expected_dur)
+                # 추가 안전장치: duration이 여전히 맞지 않으면 subclip으로 강제 자르기
+                if abs(valid_clips[idx].duration - expected_dur) > 0.01:
+                    print(f"         클립 {idx+1} subclip으로 강제 자르기: {valid_clips[idx].duration:.2f}초 -> {expected_dur:.2f}초")
+                    valid_clips[idx] = valid_clips[idx].subclip(0, expected_dur)
+                    valid_clips[idx] = valid_clips[idx].set_duration(expected_dur)
+            print(f"      클립 {idx+1} 최종 duration: {valid_clips[idx].duration:.2f}초")
+        
+        # 클립 연결 (각 클립이 정확히 한 번만 재생되도록)
+        # 중복 방지를 위해 명시적으로 method를 지정하지 않음 (기본값 사용)
+        print(f"   클립 연결 실행 중... (총 {len(valid_clips)}개 클립)")
+        
+        # 각 클립이 정확히 한 번만 포함되도록 확인
+        print(f"   연결 전 최종 검증:")
+        for idx, clip in enumerate(valid_clips):
+            expected_dur = sentence_audio_durations[idx] if idx < len(sentence_audio_durations) else clip.duration
+            print(f"      클립 {idx+1}: duration={clip.duration:.2f}초 (예상: {expected_dur:.2f}초)")
+        
+        # concatenate_videoclips 호출 (각 클립을 정확히 한 번씩만 연결)
+        # method="chain"은 기본값이지만 명시적으로 지정하여 중복 방지
+        # transition=None으로 설정하여 클립 경계에서 중복 방지
+        print(f"   최종 연결: {len(valid_clips)}개 클립을 순차적으로 연결 (경계 중복 방지)")
+        final_video = concatenate_videoclips(valid_clips, method="chain", transition=None)
+        
+        # 연결 직후 즉시 정확한 길이로 자르기 (반복 방지)
+        clips_total = sum(c.duration for c in valid_clips)
+        actual_total_duration = sum(sentence_audio_durations)
+        target_duration = clips_total  # 클립 합계를 기준으로 사용 (가장 정확함)
+        
+        print(f"📏 예상 총 길이: {actual_total_duration:.2f}초, 클립 합계: {clips_total:.2f}초, 연결 후: {final_video.duration:.2f}초")
+        
+        # 연결 직후 즉시 정확한 길이로 자르기 (반복 방지)
+        if abs(final_video.duration - target_duration) > 0.01:
+            print(f"⚠️ 연결 직후 길이 불일치 감지! ({final_video.duration:.2f}초 vs {target_duration:.2f}초)")
+            print(f"   즉시 정확한 길이로 자르는 중...")
+            final_video = final_video.subclip(0, target_duration)
+            final_video = final_video.set_duration(target_duration)
+            print(f"   조정 후: {final_video.duration:.2f}초")
+        
+        # 연결된 영상의 실제 프레임 수 확인
+        if final_video.duration > 0:
+            expected_frames = int(target_duration * 30)  # 30fps 기준
+            actual_frames = int(final_video.duration * 30)
+            print(f"📊 예상 프레임 수: {expected_frames}, 실제 프레임 수: {actual_frames}")
+            
+            # 프레임 수가 예상보다 많으면 강제로 정확한 길이로 자르기 (반복 감지)
+            if actual_frames > expected_frames * 1.05:  # 5% 이상 차이나면
+                print(f"⚠️ 프레임 수가 예상보다 많습니다! ({actual_frames} > {expected_frames}) - 반복 가능성")
+                print(f"   강제로 정확한 길이로 자르는 중...")
+                final_video = final_video.subclip(0, target_duration)
+                final_video = final_video.set_duration(target_duration)
+                actual_frames_after = int(final_video.duration * 30)
+                print(f"   강제 조정 후: {final_video.duration:.2f}초, 프레임 수: {actual_frames_after}")
+        
+        print(f"✅ 최종 영상 길이: {final_video.duration:.2f}초")
         
         # 음성 추가 (각 문장별로 정확히 매칭, 마지막 음성이 잘리지 않도록)
         if audio_clips:
@@ -664,17 +972,29 @@ class AIVideoGenerator:
                 if actual_audio_duration > actual_video_duration:
                     # 음성이 더 길면 영상 길이를 음성에 맞춤
                     actual_video_duration = actual_audio_duration
-                    # 마지막 클립의 duration 조정
-                    if clips:
-                        last_clip = clips[-1]
-                        current_total = sum(c.duration for c in clips[:-1])
-                        last_clip_duration = actual_video_duration - current_total
-                        if last_clip_duration > 0:
-                            clips[-1] = last_clip.set_duration(last_clip_duration)
-                            print(f"   마지막 클립 duration 조정: {last_clip_duration:.2f}초 (음성 보호)")
-                    # 영상 다시 생성
-                    final_video = concatenate_videoclips(clips, method="compose")
-                    final_video = final_video.set_duration(actual_video_duration)
+                    # 이미 만들어진 final_video를 사용하고, 마지막 부분을 반복하여 길이를 늘림
+                    # 다시 연결하지 않고, 기존 final_video를 확장
+                    current_video_duration = final_video.duration
+                    if actual_video_duration > current_video_duration:
+                        # 마지막 클립을 반복하여 길이를 늘림
+                        extension_needed = actual_video_duration - current_video_duration
+                        # 마지막 1초를 반복하여 확장
+                        last_second = final_video.subclip(max(0, current_video_duration - 1.0), current_video_duration)
+                        extension_clips = []
+                        while sum(c.duration for c in extension_clips) < extension_needed:
+                            clip_duration = min(1.0, extension_needed - sum(c.duration for c in extension_clips))
+                            ext_clip = last_second.subclip(0, clip_duration)
+                            ext_clip = ext_clip.set_duration(clip_duration)
+                            extension_clips.append(ext_clip)
+                        
+                        if extension_clips:
+                            extension_video = concatenate_videoclips(extension_clips, method="chain", transition=None)
+                            final_video = concatenate_videoclips([final_video, extension_video], method="chain", transition=None)
+                            final_video = final_video.set_duration(actual_video_duration)
+                        else:
+                            final_video = final_video.set_duration(actual_video_duration)
+                    else:
+                        final_video = final_video.set_duration(actual_video_duration)
                 elif actual_audio_duration < actual_video_duration:
                     # 음성이 짧으면 영상 길이를 음성에 맞춤 (음성 끝까지만)
                     actual_video_duration = actual_audio_duration
@@ -705,7 +1025,17 @@ class AIVideoGenerator:
         if final_video.size[0] != 1080 or final_video.size[1] != 1920:
             final_video = final_video.resize((1080, 1920))
         
+        # 영상 저장 전 최종 duration 확인 및 강제 조정 (반복 방지)
+        actual_total_duration = sum(sentence_audio_durations)
+        if abs(final_video.duration - actual_total_duration) > 0.01:
+            print(f"⚠️ 저장 전 최종 확인: duration 불일치 ({final_video.duration:.2f}초 vs {actual_total_duration:.2f}초)")
+            print(f"   강제로 정확한 길이로 자르는 중...")
+            final_video = final_video.subclip(0, actual_total_duration)
+            final_video = final_video.set_duration(actual_total_duration)
+            print(f"   최종 조정 완료: {final_video.duration:.2f}초")
+        
         # 영상 저장
+        print(f"💾 영상 저장 중... (최종 duration: {final_video.duration:.2f}초)")
         final_video.write_videofile(
             output_path,
             codec='libx264',
@@ -723,9 +1053,11 @@ class AIVideoGenerator:
             temp_audio = os.path.join(config.TEMP_DIR, f"audio_{i}.mp3")
             if os.path.exists(temp_audio):
                 os.remove(temp_audio)
+            # 배경 영상 파일 삭제
             temp_bg_video = os.path.join(config.TEMP_DIR, f"bg_video_{i}.mp4")
             if os.path.exists(temp_bg_video):
                 os.remove(temp_bg_video)
+                print(f"🗑️ 임시 배경 영상 삭제: {temp_bg_video}")
         
         return output_path
     
@@ -862,10 +1194,6 @@ class AIVideoGenerator:
             draw.text((line_x, current_y), line, fill=(255, 255, 255), font=font)
             
             current_y += line_heights[i] + 20  # 줄 간격
-        
-        # 디버그: 텍스트가 실제로 그려졌는지 확인
-        # 간단한 테스트 - 이미지 중앙에 작은 점 찍기
-        draw.ellipse([540-5, 960-5, 540+5, 960+5], fill=(255, 255, 0))  # 노란 점
         
         return image
     
@@ -1019,7 +1347,7 @@ class AIVideoGenerator:
             return None
     
     def _download_image_for_sentence(self, sentence: str, index: int) -> Image.Image:
-        """문장에 맞는 이미지 다운로드 (키워드 기반)"""
+        """문장에 맞는 이미지 다운로드 (키워드 기반, Pexels와 Unsplash 번갈아 사용)"""
         try:
             # 문장에서 키워드 추출
             keywords = self._extract_keywords(sentence)
@@ -1034,64 +1362,46 @@ class AIVideoGenerator:
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
             }
             
-            # 방법 1: Pexels API 사용 (키워드 기반 검색, API 키 필요)
-            if config.PEXELS_API_KEY:
-                try:
-                    pexels_url = f"https://api.pexels.com/v1/search?query={english_keyword}&per_page=3&orientation=portrait"
-                    pexels_headers = {
-                        **headers,
-                        'Authorization': config.PEXELS_API_KEY
-                    }
-                    response = requests.get(pexels_url, timeout=10, headers=pexels_headers)
-                    if response.status_code == 200:
-                        data = response.json()
-                        if data.get('photos') and len(data['photos']) > 0:
-                            # 첫 번째 이미지 선택
-                            image_url = data['photos'][0]['src']['large']
-                            # 세로형 이미지 우선
-                            if 'portrait' in data['photos'][0]['src']:
-                                image_url = data['photos'][0]['src']['portrait']
-                            
-                            img_response = requests.get(image_url, timeout=10, headers=headers)
-                            if img_response.status_code == 200:
-                                from io import BytesIO
-                                img = Image.open(BytesIO(img_response.content))
-                                if img.mode != 'RGB':
-                                    img = img.convert('RGB')
-                                img = self._resize_and_crop(img, 1080, 1920)
-                                print(f"✅ Pexels 이미지 다운로드 성공: {english_keyword}")
-                                return img
-                except Exception as e:
-                    print(f"   Pexels API 실패: {e}")
+            # Pexels와 Unsplash를 번갈아가며 사용 (인덱스 기반)
+            # 인덱스가 짝수면 Pexels 먼저, 홀수면 Unsplash 먼저
+            use_pexels_first = (index % 2 == 0)
             
-            # 방법 2: Unsplash API 사용 (키워드 기반 검색, API 키 필요)
-            if config.UNSPLASH_ACCESS_KEY:
-                try:
-                    unsplash_url = f"https://api.unsplash.com/search/photos?query={english_keyword}&orientation=portrait&per_page=3"
-                    unsplash_headers = {
-                        **headers,
-                        'Authorization': f'Client-ID {config.UNSPLASH_ACCESS_KEY}'
-                    }
-                    response = requests.get(unsplash_url, timeout=10, headers=unsplash_headers)
-                    if response.status_code == 200:
-                        data = response.json()
-                        if data.get('results') and len(data['results']) > 0:
-                            # 첫 번째 이미지 선택
-                            image_url = data['results'][0]['urls']['regular']
-                            
-                            img_response = requests.get(image_url, timeout=10, headers=headers)
-                            if img_response.status_code == 200:
-                                from io import BytesIO
-                                img = Image.open(BytesIO(img_response.content))
-                                if img.mode != 'RGB':
-                                    img = img.convert('RGB')
-                                img = self._resize_and_crop(img, 1080, 1920)
-                                print(f"✅ Unsplash 이미지 다운로드 성공: {english_keyword}")
-                                return img
-                except Exception as e:
-                    print(f"   Unsplash API 실패: {e}")
+            # 사용 가능한 API 확인
+            has_pexels = bool(config.PEXELS_API_KEY)
+            has_unsplash = bool(config.UNSPLASH_ACCESS_KEY)
             
-            # 방법 3: Pixabay API 사용 (무료, 공개 API 키)
+            # 둘 다 있으면 번갈아가며 사용
+            if has_pexels and has_unsplash:
+                if use_pexels_first:
+                    # Pexels 먼저 시도
+                    img = self._try_pexels_api(english_keyword, headers)
+                    if img:
+                                return img
+                    # 실패하면 Unsplash 시도
+                    img = self._try_unsplash_api(english_keyword, headers)
+                    if img:
+                        return img
+                else:
+                    # Unsplash 먼저 시도
+                    img = self._try_unsplash_api(english_keyword, headers)
+                    if img:
+                        return img
+                    # 실패하면 Pexels 시도
+                    img = self._try_pexels_api(english_keyword, headers)
+                    if img:
+                        return img
+            elif has_pexels:
+                # Pexels만 사용
+                img = self._try_pexels_api(english_keyword, headers)
+                if img:
+                    return img
+            elif has_unsplash:
+                # Unsplash만 사용
+                img = self._try_unsplash_api(english_keyword, headers)
+                if img:
+                    return img
+            
+            # 방법 3: Pixabay API 사용 (무료, 공개 API 키, 폴백)
             try:
                 pixabay_api_key = "9656065-a4094594c34c9ac8a7e8c5c4e"  # 공개 데모 키
                 pixabay_url = f"https://pixabay.com/api/?key={pixabay_api_key}&q={english_keyword}&image_type=photo&orientation=vertical&safesearch=true&per_page=3"
@@ -1363,6 +1673,30 @@ class AIVideoGenerator:
                                     try:
                                         video_clip = VideoFileClip(video_path)
                                         video_duration = video_clip.duration
+                                        
+                                        # 다운로드한 원본 영상 분석 (반복 여부 확인)
+                                        print(f"📹 다운로드한 영상 분석: {video_path}")
+                                        print(f"   원본 길이: {video_duration:.2f}초")
+                                        
+                                        # 원본 영상이 반복되어 있는지 확인
+                                        if video_duration > 2.0:
+                                            # 시작, 중간, 끝 지점 비교
+                                            start_frame = video_clip.get_frame(0.5)
+                                            mid_frame = video_clip.get_frame(video_duration / 2)
+                                            end_frame = video_clip.get_frame(video_duration - 0.5)
+                                            
+                                            start_rgb = start_frame[540, 960] if len(start_frame.shape) == 3 else [0, 0, 0]
+                                            mid_rgb = mid_frame[540, 960] if len(mid_frame.shape) == 3 else [0, 0, 0]
+                                            end_rgb = end_frame[540, 960] if len(end_frame.shape) == 3 else [0, 0, 0]
+                                            
+                                            import numpy as np
+                                            start_mid_diff = np.abs(start_rgb - mid_rgb).sum()
+                                            start_end_diff = np.abs(start_rgb - end_rgb).sum()
+                                            
+                                            print(f"   시작-중간 차이: {start_mid_diff}, 시작-끝 차이: {start_end_diff}")
+                                            if start_mid_diff < 20 or start_end_diff < 20:
+                                                print(f"   ⚠️ 원본 영상이 반복되어 있을 가능성이 있습니다!")
+                                        
                                         video_clip.close()
                                         
                                         # 원본 영상만 저장 (루프 처리는 _create_video_from_script에서 수행)
@@ -1373,7 +1707,7 @@ class AIVideoGenerator:
                                                 os.remove(video_path)
                                             return None
                                         
-                                        print(f"✅ Pexels 배경 영상 다운로드 성공: {english_keyword} (원본: {video_duration:.1f}초)")
+                                        print(f"✅ Pexels 배경 영상 다운로드 성공: {english_keyword} (원본: {video_duration:.1f}초, 파일: {video_path})")
                                         return video_path
                                     except Exception as e:
                                         print(f"   영상 처리 실패: {e}")
@@ -1406,6 +1740,7 @@ class AIVideoGenerator:
         thumbnail_path = os.path.join(config.THUMBNAIL_OUTPUT_DIR, f"thumb_{timestamp}.jpg")
         
         # 영상에서 여러 프레임 중 가장 좋은 프레임 선택 (중간 부분)
+        # 자막이 없는 원본 배경을 사용하기 위해 영상에서 프레임 추출 후 자막 영역 제거
         video = VideoFileClip(video_path)
         duration = video.duration
         # 영상의 30-40% 지점에서 프레임 추출 (일반적으로 가장 매력적인 부분)
@@ -1415,6 +1750,15 @@ class AIVideoGenerator:
         
         # PIL 이미지로 변환
         img = Image.fromarray(frame.astype('uint8'), 'RGB')
+        
+        # 자막 영역 제거 (하단 중앙 부분 블러 처리 또는 제거)
+        # 자막은 보통 하단 중앙에 위치하므로, 해당 영역을 블러 처리하여 제거
+        from PIL import ImageFilter
+        width, height = img.size
+        # 하단 30% 영역을 블러 처리 (자막 제거)
+        bottom_region = img.crop((0, int(height * 0.7), width, height))
+        blurred_bottom = bottom_region.filter(ImageFilter.GaussianBlur(radius=20))
+        img.paste(blurred_bottom, (0, int(height * 0.7)))
         
         # 이미지 크기 확인 및 조정 (1080x1920)
         if img.size != (1080, 1920):
@@ -1686,4 +2030,225 @@ class AIVideoGenerator:
             attractive_title = f"놀라운 사실! {title}"
         
         return (attractive_title, None)
+    
+    def _try_pexels_api(self, english_keyword: str, headers: dict) -> Image.Image:
+        """Pexels API로 이미지 다운로드 시도"""
+        try:
+            pexels_url = f"https://api.pexels.com/v1/search?query={english_keyword}&per_page=3&orientation=portrait"
+            pexels_headers = {
+                **headers,
+                'Authorization': config.PEXELS_API_KEY
+            }
+            response = requests.get(pexels_url, timeout=10, headers=pexels_headers)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('photos') and len(data['photos']) > 0:
+                    # 첫 번째 이미지 선택
+                    image_url = data['photos'][0]['src']['large']
+                    # 세로형 이미지 우선
+                    if 'portrait' in data['photos'][0]['src']:
+                        image_url = data['photos'][0]['src']['portrait']
+                    
+                    img_response = requests.get(image_url, timeout=10, headers=headers)
+                    if img_response.status_code == 200:
+                        from io import BytesIO
+                        img = Image.open(BytesIO(img_response.content))
+                        if img.mode != 'RGB':
+                            img = img.convert('RGB')
+                        img = self._resize_and_crop(img, 1080, 1920)
+                        print(f"✅ Pexels 이미지 다운로드 성공: {english_keyword}")
+                        return img
+        except Exception as e:
+            print(f"   Pexels API 실패: {e}")
+        return None
+    
+    def _try_unsplash_api(self, english_keyword: str, headers: dict) -> Image.Image:
+        """Unsplash API로 이미지 다운로드 시도"""
+        try:
+            unsplash_url = f"https://api.unsplash.com/search/photos?query={english_keyword}&orientation=portrait&per_page=3"
+            unsplash_headers = {
+                **headers,
+                'Authorization': f'Client-ID {config.UNSPLASH_ACCESS_KEY}'
+            }
+            response = requests.get(unsplash_url, timeout=10, headers=unsplash_headers)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('results') and len(data['results']) > 0:
+                    # 첫 번째 이미지 선택
+                    image_url = data['results'][0]['urls']['regular']
+                    
+                    img_response = requests.get(image_url, timeout=10, headers=headers)
+                    if img_response.status_code == 200:
+                        from io import BytesIO
+                        img = Image.open(BytesIO(img_response.content))
+                        if img.mode != 'RGB':
+                            img = img.convert('RGB')
+                        img = self._resize_and_crop(img, 1080, 1920)
+                        print(f"✅ Unsplash 이미지 다운로드 성공: {english_keyword}")
+                        return img
+        except Exception as e:
+            print(f"   Unsplash API 실패: {e}")
+        return None
+    
+    
+    def _create_subtitle_clip(self, text: str, duration: float) -> TextClip:
+        """자막 클립 생성 (배경 영상용)"""
+        try:
+            # 한글 폰트 경로 찾기
+            font_path = None
+            font_size = 80
+            
+            # macOS 한글 폰트 경로
+            for path in [
+                "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+                "/System/Library/Fonts/AppleGothic.ttf",
+                "/System/Library/Fonts/Supplemental/NanumGothic.ttf",
+                "/Library/Fonts/AppleGothic.ttf",
+            ]:
+                if os.path.exists(path):
+                    font_path = path
+                    break
+            
+            # TextClip 생성 (ImageMagick 사용 시도, 실패하면 PIL로 대체)
+            try:
+                # 먼저 ImageMagick으로 시도
+                if font_path:
+                    try:
+                        txt_clip = TextClip(
+                            text,
+                            fontsize=font_size,
+                            font=font_path,
+                            color='white',
+                            stroke_color='black',
+                            stroke_width=2,
+                            method='caption',
+                            size=(1000, None),
+                            align='center'
+                        )
+                        txt_clip = txt_clip.set_duration(duration)
+                        # 위치 설정
+                        try:
+                            frame = txt_clip.get_frame(0)
+                            clip_height = frame.shape[0]
+                            y_pos = 1920 - clip_height - 100
+                            txt_clip = txt_clip.set_position(('center', y_pos))
+                        except:
+                            txt_clip = txt_clip.set_position(('center', 'bottom'))
+                        return txt_clip
+                    except Exception as e1:
+                        print(f"   ImageMagick TextClip 실패, PIL로 대체: {e1}")
+                
+                # ImageMagick 실패 시 PIL로 이미지 생성 후 ImageClip 사용
+                # PIL로 자막 이미지 생성 (더 큰 크기로)
+                from PIL import Image, ImageDraw, ImageFont
+                # 자막 영역을 더 크게 (텍스트가 잘리지 않도록)
+                subtitle_height = 300
+                subtitle_img = Image.new('RGBA', (1080, subtitle_height), (0, 0, 0, 0))
+                draw = ImageDraw.Draw(subtitle_img)
+                
+                # 폰트 로드
+                pil_font = None
+                if font_path and os.path.exists(font_path):
+                    try:
+                        pil_font = ImageFont.truetype(font_path, font_size)
+                    except:
+                        pass
+                
+                if pil_font is None:
+                    # 기본 폰트 시도
+                    for path in [
+                        "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+                        "/System/Library/Fonts/AppleGothic.ttf",
+                    ]:
+                        if os.path.exists(path):
+                            try:
+                                pil_font = ImageFont.truetype(path, font_size)
+                                break
+                            except:
+                                continue
+                
+                if pil_font is None:
+                    pil_font = ImageFont.load_default()
+                
+                # 텍스트를 여러 줄로 분할 (너비 고려)
+                max_width = 1000
+                words = text.split()
+                lines = []
+                current_line = []
+                
+                for word in words:
+                    test_line = ' '.join(current_line + [word])
+                    bbox = draw.textbbox((0, 0), test_line, font=pil_font)
+                    if bbox[2] - bbox[0] <= max_width:
+                        current_line.append(word)
+                    else:
+                        if current_line:
+                            lines.append(' '.join(current_line))
+                        current_line = [word]
+                if current_line:
+                    lines.append(' '.join(current_line))
+                
+                if not lines:
+                    lines = [text]
+                
+                # 텍스트 그리기
+                y_offset = 20
+                total_text_height = 0
+                for line in lines[:3]:  # 최대 3줄
+                    if line.strip():
+                        # 텍스트 크기 계산
+                        bbox = draw.textbbox((0, 0), line, font=pil_font)
+                        text_width = bbox[2] - bbox[0]
+                        text_height = bbox[3] - bbox[1]
+                        x_pos = (1080 - text_width) // 2
+                        
+                        # 배경 박스 (반투명 검은색)
+                        padding = 10
+                        overlay = Image.new('RGBA', (1080, subtitle_height), (0, 0, 0, 0))
+                        overlay_draw = ImageDraw.Draw(overlay)
+                        overlay_draw.rectangle(
+                            [x_pos - padding, y_offset - padding, 
+                             x_pos + text_width + padding, y_offset + text_height + padding],
+                            fill=(0, 0, 0, 180)
+                        )
+                        subtitle_img = Image.alpha_composite(subtitle_img, overlay)
+                        draw = ImageDraw.Draw(subtitle_img)
+                        
+                        # 그림자 효과
+                        draw.text((x_pos + 3, y_offset + 3), line, fill=(0, 0, 0, 255), font=pil_font)
+                        # 메인 텍스트
+                        draw.text((x_pos, y_offset), line, fill=(255, 255, 255, 255), font=pil_font)
+                        y_offset += text_height + 15
+                        total_text_height = y_offset
+                
+                # 실제 텍스트가 있는 부분만 크롭
+                if total_text_height > 0:
+                    subtitle_img = subtitle_img.crop((0, 0, 1080, min(total_text_height + 20, subtitle_height)))
+                
+                # PIL 이미지를 ImageClip으로 변환
+                import numpy as np
+                # RGBA를 RGB로 변환 (MoviePy 호환성)
+                if subtitle_img.mode == 'RGBA':
+                    # 알파 채널이 있는 경우 배경과 합성
+                    rgb_img = Image.new('RGB', subtitle_img.size, (0, 0, 0))
+                    rgb_img.paste(subtitle_img, mask=subtitle_img.split()[3])  # 알파 채널을 마스크로 사용
+                    subtitle_img = rgb_img
+                
+                subtitle_array = np.array(subtitle_img)
+                txt_clip = ImageClip(subtitle_array).set_duration(duration)
+                # 하단 중앙 위치 (실제 높이 고려, 더 명확하게)
+                actual_height = subtitle_array.shape[0]
+                y_pos = max(100, 1920 - actual_height - 150)  # 최소 100px, 하단에서 150px 위
+                txt_clip = txt_clip.set_position(('center', y_pos))
+                
+                print(f"   ✅ PIL 자막 생성 성공: 높이={actual_height}px, 위치 y={y_pos}")
+                return txt_clip
+            except Exception as e:
+                print(f"   자막 클립 생성 실패: {e}")
+                import traceback
+                traceback.print_exc()
+                return None
+        except Exception as e:
+            print(f"   자막 클립 생성 실패: {e}")
+            return None
 

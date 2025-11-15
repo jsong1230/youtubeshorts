@@ -56,5 +56,6 @@ SHORTS_ASPECT_RATIO = (9, 16)  # 세로형 (1080x1920)
 # 영상 길이는 스크립트 내용에 따라 자동으로 조정되며, 목표는 55초 (60초 초과 방지)
 
 # 데이터베이스 설정
-DATABASE_PATH = os.getenv('DATABASE_PATH', 'videos.db')
+DATABASE_PATH = os.getenv('DATABASE_PATH', 'data/videos.db')
+MONETIZATION_DATA_PATH = os.getenv('MONETIZATION_DATA_PATH', 'data/monetization_data.json')
 

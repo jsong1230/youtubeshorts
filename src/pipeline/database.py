@@ -12,7 +12,7 @@ from pathlib import Path
 class VideoDatabase:
     """영상 데이터베이스 관리 클래스"""
     
-    def __init__(self, db_path: str = "videos.db"):
+    def __init__(self, db_path: str = "data/videos.db"):
         """
         데이터베이스 초기화
         
@@ -20,6 +20,10 @@ class VideoDatabase:
             db_path: 데이터베이스 파일 경로
         """
         self.db_path = db_path
+        # data 폴더가 없으면 생성
+        data_dir = os.path.dirname(db_path)
+        if data_dir and not os.path.exists(data_dir):
+            os.makedirs(data_dir, exist_ok=True)
         self._init_database()
     
     def _init_database(self):

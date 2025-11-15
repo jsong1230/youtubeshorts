@@ -78,9 +78,13 @@ class ShortsBot:
             print(f"📹 영상 생성 테스트 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             print(f"{'='*50}\n")
             
-            # AI로 영상 생성 (길이 자동 조정)
+            # AI로 영상 생성 (매번 새로운 아이디어로)
             print("📹 영상 생성 중...")
-            video_path, script, generated_topic = self.video_generator.generate_video(topic=topic, duration=None)
+            video_path, script, generated_topic = self.video_generator.generate_video(
+                topic=topic, 
+                duration=None,
+                performance_prompt=None
+            )
             
             # 실제 사용된 주제
             actual_topic = generated_topic if generated_topic else topic
@@ -127,7 +131,7 @@ class ShortsBot:
                 print("📊 성과 기반 프롬프트 적용 중...")
                 print(f"   {performance_prompt[:100]}...")
             
-            # 1. AI로 영상 생성 (길이 자동 조정, 성과 기반 프롬프트 포함)
+            # 1. AI로 영상 생성 (길이 자동 조정, 성과 기반 프롬프트 포함, 템플릿 사용)
             print("📹 1단계: AI 영상 생성 중...")
             video_path, script, generated_topic = self.video_generator.generate_video(
                 topic=topic, 

@@ -13,7 +13,11 @@ class MonetizationTracker:
     """YouTube 수익화 추적 및 분석 클래스"""
     
     def __init__(self):
-        self.data_file = 'monetization_data.json'
+        self.data_file = getattr(config, 'MONETIZATION_DATA_PATH', 'data/monetization_data.json')
+        # data 폴더가 없으면 생성
+        data_dir = os.path.dirname(self.data_file)
+        if data_dir and not os.path.exists(data_dir):
+            os.makedirs(data_dir, exist_ok=True)
         self.uploader = YouTubeUploader()
         self._load_data()
     
