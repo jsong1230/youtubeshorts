@@ -61,7 +61,6 @@ class AIVideoGenerator:
                 self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
             except Exception as e:
                 print(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
-                print("   기본 템플릿을 사용합니다.")
                 self.openai_client = None
         else:
             self.openai_client = None
@@ -414,34 +413,35 @@ class AIVideoGenerator:
                 if "does not have access" in error_msg or "model_not_found" in error_msg:
                     print(f"⚠️ OpenAI API 키가 모델에 접근할 수 없습니다.")
                     print(f"   OpenAI Platform에서 모델 접근 권한을 확인하세요.")
-                    print(f"   기본 템플릿을 사용합니다.")
                 else:
-                    print(f"⚠️ AI 스크립트 생성 실패, 기본 템플릿 사용: {e}")
+                    print(f"⚠️ AI 스크립트 생성 실패: {e}")
+                
+                # AI 생성 실패 시 기본 스크립트 반환 (템플릿 없이)
+                print(f"⚠️ AI 스크립트 생성 실패로 기본 스크립트를 사용합니다.")
+                return [
+                    f"{topic}에 대해 알아보겠습니다.",
+                    "중요한 포인트를 알려드립니다.",
+                    "실천하면 효과를 볼 수 있습니다.",
+                    "지금 바로 시작하세요!"
+                ]
         
-        # 기본 템플릿
-        templates = {
-            "5가지 생산성 팁": [
-                "생산성을 높이는 5가지 방법",
-                "첫째, 아침 루틴을 만드세요",
-                "둘째, 할 일을 우선순위로 정리하세요",
-                "셋째, 집중 방해 요소를 제거하세요",
+        # AI 생성이 성공하지 못한 경우 (self.openai_client가 None인 경우)
+        if not self.openai_client:
+            print(f"⚠️ OpenAI 클라이언트가 없어 기본 스크립트를 사용합니다.")
+            return [
+                f"{topic}에 대해 알아보겠습니다.",
+                "중요한 포인트를 알려드립니다.",
+                "실천하면 효과를 볼 수 있습니다.",
                 "지금 바로 시작하세요!"
-            ],
-            "요리 초보자를 위한 레시피": [
-                "초보자도 쉽게 만드는 요리",
-                "필요한 재료는 간단합니다",
-                "단계별로 따라하면 완성",
-                "맛있고 건강한 한 끼",
-                "지금 바로 도전해보세요!"
             ]
-        }
         
-        return templates.get(topic, [
-            f"{topic}에 대해 알아보겠습니다",
-            "중요한 포인트를 알려드립니다",
-            "실천하면 효과를 볼 수 있습니다",
+        # 이 코드는 실행되지 않아야 하지만 안전을 위해 추가
+        return [
+            f"{topic}에 대해 알아보겠습니다.",
+            "중요한 포인트를 알려드립니다.",
+            "실천하면 효과를 볼 수 있습니다.",
             "지금 바로 시작하세요!"
-        ])
+        ]
     
     def _create_video_from_script(
         self,
