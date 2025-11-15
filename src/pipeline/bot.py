@@ -15,6 +15,7 @@ sys.path.insert(0, str(project_root))
 
 from src.generators.video_generator import AIVideoGenerator
 from src.uploaders.youtube_uploader import YouTubeUploader
+from src.uploaders.multi_platform_uploader import MultiPlatformUploader
 from src.analytics.monetization import MonetizationTracker
 from src.pipeline.database import VideoDatabase
 import config
@@ -25,7 +26,16 @@ class ShortsBot:
     
     def __init__(self):
         self.video_generator = AIVideoGenerator()
-        self.uploader = YouTubeUploader()
+        # YouTube만 사용 (기본값)
+        # 멀티 플랫폼 업로드를 사용하려면 .env에서 ENABLE_TIKTOK_UPLOAD 또는 ENABLE_INSTAGRAM_UPLOAD를 true로 설정
+        use_multi_platform = (config.ENABLE_TIKTOK_UPLOAD or config.ENABLE_INSTAGRAM_UPLOAD)
+        if use_multi_platform:
+            self.uploader = MultiPlatformUploader()
+            self.use_multi_platform = True
+            print("📱 멀티 플랫폼 업로드 모드 활성화")
+        else:
+            self.uploader = YouTubeUploader()
+            self.use_multi_platform = False
         self.monetization = MonetizationTracker()
         self.database = VideoDatabase(db_path=config.DATABASE_PATH)
         self.timezone = pytz.timezone(config.UPLOAD_TIMEZONE)
@@ -186,16 +196,29 @@ class ShortsBot:
             description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             description += "#shorts #쇼츠 #ai #인공지능 #자동생성 #유용한정보 #팁 #라이프스타일 #일상 #정보 #꿀팁 #생활정보"
             
-            # 4. YouTube에 업로드 (썸네일 포함)
-            print("\n📤 2단계: YouTube 업로드 중...")
-            video_id = self.uploader.upload_video(
-                video_path=video_path,
-                title=title,
-                description=description,
-                tags=config.DEFAULT_TAGS,
-                privacy_status='public',
-                thumbnail_path=thumbnail_path
-            )
+            # 4. 멀티 플랫폼 업로드 또는 YouTube 업로드
+            print("\n📤 2단계: 플랫폼 업로드 중...")
+            if self.use_multi_platform:
+                # 멀티 플랫폼 업로드
+                upload_results = self.uploader.upload_to_all(
+                    video_path=video_path,
+                    title=title,
+                    description=description,
+                    tags=config.DEFAULT_TAGS
+                )
+                # YouTube ID는 필수 (데이터베이스 저장용)
+                video_id = upload_results.get('youtube')
+            else:
+                # YouTube만 업로드
+                video_id = self.uploader.upload_video(
+                    video_path=video_path,
+                    title=title,
+                    description=description,
+                    tags=config.DEFAULT_TAGS,
+                    privacy_status='public',
+                    thumbnail_path=thumbnail_path
+                )
+                upload_results = {'youtube': video_id}
             
             # 5. 데이터베이스에 저장
             print("\n💾 3단계: 데이터베이스에 저장 중...")
@@ -208,6 +231,15 @@ class ShortsBot:
                 prompt=performance_prompt if performance_prompt else None,
                 script=None  # 향후 추가 가능
             )
+            
+            # 멀티 플랫폼 업로드 결과 출력
+            if self.use_multi_platform:
+                print("\n📊 업로드 결과:")
+                for platform, platform_id in upload_results.items():
+                    if platform_id:
+                        print(f"   ✅ {platform.capitalize()}: {platform_id}")
+                    else:
+                        print(f"   ⚠️ {platform.capitalize()}: 업로드 실패 또는 건너뜀")
             
             # 6. 수익화 추적에 추가
             print("\n📊 4단계: 수익화 추적에 추가 중...")

@@ -59,3 +59,19 @@ SHORTS_ASPECT_RATIO = (9, 16)  # 세로형 (1080x1920)
 DATABASE_PATH = os.getenv('DATABASE_PATH', 'data/videos.db')
 MONETIZATION_DATA_PATH = os.getenv('MONETIZATION_DATA_PATH', 'data/monetization_data.json')
 
+# 멀티 플랫폼 업로드 설정 (기본값: false, YouTube만 사용)
+# TikTok 또는 Instagram 업로드를 사용하려면 true로 설정하고 해당 API 키를 설정하세요
+ENABLE_TIKTOK_UPLOAD = os.getenv('ENABLE_TIKTOK_UPLOAD', 'false').lower() == 'true'
+ENABLE_INSTAGRAM_UPLOAD = os.getenv('ENABLE_INSTAGRAM_UPLOAD', 'false').lower() == 'true'
+
+# TikTok API 설정 (선택사항)
+TIKTOK_CLIENT_KEY = os.getenv('TIKTOK_CLIENT_KEY')
+TIKTOK_CLIENT_SECRET = os.getenv('TIKTOK_CLIENT_SECRET')
+TIKTOK_ACCESS_TOKEN = os.getenv('TIKTOK_ACCESS_TOKEN')
+
+# Instagram Graph API 설정 (선택사항)
+INSTAGRAM_APP_ID = os.getenv('INSTAGRAM_APP_ID')
+INSTAGRAM_APP_SECRET = os.getenv('INSTAGRAM_APP_SECRET')
+INSTAGRAM_ACCESS_TOKEN = os.getenv('INSTAGRAM_ACCESS_TOKEN')
+INSTAGRAM_ACCOUNT_ID = os.getenv('INSTAGRAM_ACCOUNT_ID')
+
