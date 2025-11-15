@@ -198,6 +198,13 @@ class AIVideoGenerator:
                 "투자 지혜 한 줄",
                 "리더십 명언 한 줄",
                 "혁신가들의 한 줄",
+                "AI로 돈버는 방법",
+                "Crypto로 돈버는 방법",
+                "부수입 만드는 방법",
+                "온라인으로 돈버는 방법",
+                "주식 투자로 돈버는 방법",
+                "부동산 투자 인사이트",
+                "패시브 인컴 만드는 방법",
             ]
         elif content_type == ContentType.STORY:
             topics = [
