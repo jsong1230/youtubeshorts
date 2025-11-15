@@ -14,8 +14,8 @@ AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하
 - **OpenAI GPT 활용**: 최신 AI 기술을 활용한 고품질 스크립트 생성
 - **콘텐츠 타입 최적화**: Hook, 명언, 스토리, 팩트, 짧은 스토리 등 수익화 최적화된 콘텐츠 형태 지원
 - **짧고 강한 Hook**: 첫 3초 안에 시청자 관심을 끄는 강력한 Hook 자동 생성
-- **자동 길이 조정**: 콘텐츠 타입별 최적 길이 (15-30초 권장, 최대 60초)
-- **한글 음성**: Google TTS 또는 OpenAI TTS를 활용한 자연스러운 한글 음성 생성
+- **자동 길이 조정**: 콘텐츠 타입별 최적 길이 (목표 55초, 최대 60초)
+- **한글 음성**: Google TTS 또는 OpenAI TTS를 활용한 자연스러운 한글 음성 생성 (영어 회화 주제 제외)
 - **배경 영상/이미지**: Pexels Video API를 활용한 CC0 라이선스 배경 영상 또는 무료 이미지 자동 삽입
 - **저작권 안전**: 100% 저작권 안전한 콘텐츠 (CC0, Unsplash License, Pixabay License)
 - **동기화**: 음성과 영상이 정확히 일치하도록 자동 동기화
@@ -189,12 +189,6 @@ youtubeshorts/
 │   ├── PROJECT_STRUCTURE.md    # 프로젝트 구조 문서
 │   └── 3month_roadmap.md       # 3개월 수익화 로드맵
 │
-├── templates/                  # 템플릿
-│   └── copyright_free_templates.json  # 저작권 0% AI 쇼츠 템플릿 10종
-│
-├── prompts/                    # 프롬프트
-│   └── viral_formats.txt       # 조회수 잘 터지는 포맷 프롬프트 20개
-│
 ├── scripts/                    # 스크립트
 │   ├── start_daemon.sh         # 데몬 시작 스크립트
 │   └── com.youtubeshorts.bot.plist  # macOS LaunchAgent 설정
@@ -356,10 +350,11 @@ youtubeshorts/
 
 영상은 다음과 같은 특징을 가집니다:
 
-- **자막 없음**: YouTube 자동 자막 기능 활용
-- **관련 이미지**: 문장 내용과 연관된 이미지 자동 삽입 (2-3문장마다 변경)
-- **자연스러운 음성**: Google TTS를 활용한 한글 음성
+- **자막 포함**: 모든 문장에 자막 자동 생성 및 오버레이
+- **배경 영상/이미지**: 문장 내용과 연관된 배경 영상 또는 이미지 자동 삽입
+- **자연스러운 음성**: Google TTS 또는 OpenAI TTS를 활용한 한글 음성 (영어 회화 주제 제외)
 - **정확한 동기화**: 음성과 영상이 정확히 일치
+- **55초 목표**: 충분한 내용을 담은 55초 분량 영상 생성
 
 ## ⚠️ 주의사항
 
@@ -489,11 +484,11 @@ python main.py upload
 
 이 프로젝트는 **수익화 최적화된 콘텐츠 형태**를 지원합니다:
 
-- ✅ **Hook 영상**: 영어/한국어 한 문장 학습 (15-30초)
-- ✅ **명언/지식**: AI·비즈니스·명언·지식 한 줄 (15-30초)
-- ✅ **스토리텔링**: 심리/역사/부자습관 스토리 (25-45초)
-- ✅ **팩트 기반**: 숏폼 팩트 영상 (15-30초)
-- ✅ **짧은 스토리**: AI 이미지 기반 짧은 스토리 (20-35초)
+- ✅ **Hook 영상**: 한국어 속담/관용어 한 문장 학습 (55초)
+- ✅ **명언/지식**: AI·비즈니스·명언·지식 한 줄 (55초)
+- ✅ **스토리텔링**: 심리/역사/부자습관 스토리 (55초)
+- ✅ **팩트 기반**: 숏폼 팩트 영상 (55초)
+- ✅ **짧은 스토리**: AI 이미지 기반 짧은 스토리 (55초)
 
 **장점**:
 - 저작권 위험 없음
@@ -504,12 +499,9 @@ python main.py upload
 
 ## 📚 추가 리소스
 
-### 템플릿 및 프롬프트
-- **저작권 0% AI 쇼츠 템플릿 10종**: [templates/copyright_free_templates.json](./templates/copyright_free_templates.json)
-- **조회수 잘 터지는 포맷 프롬프트 20개**: [prompts/viral_formats.txt](./prompts/viral_formats.txt)
-
 ### 로드맵
 - **3개월 수익화 도달 로드맵**: [docs/3month_roadmap.md](./docs/3month_roadmap.md)
+- **TTS 개선 가이드**: [docs/TTS_IMPROVEMENT.md](./docs/TTS_IMPROVEMENT.md)
 
 ## 📝 라이선스
 

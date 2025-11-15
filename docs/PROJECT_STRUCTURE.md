@@ -39,12 +39,6 @@ youtubeshorts/
 │   ├── PROJECT_STRUCTURE.md    # 프로젝트 구조 문서 (이 파일)
 │   └── 3month_roadmap.md       # 3개월 수익화 로드맵
 │
-├── templates/                  # 템플릿
-│   └── copyright_free_templates.json  # 저작권 0% AI 쇼츠 템플릿 10종
-│
-├── prompts/                    # 프롬프트
-│   └── viral_formats.txt       # 조회수 잘 터지는 포맷 프롬프트 20개
-│
 ├── scripts/                    # 스크립트
 │   ├── start_daemon.sh         # 데몬 시작 스크립트
 │   └── com.youtubeshorts.bot.plist  # macOS LaunchAgent 설정
@@ -75,14 +69,6 @@ youtubeshorts/
 - 모든 가이드 문서와 로드맵
 - 설정 방법, 최적화 전략, 저작권 안전 가이드 등
 
-### `templates/` - 템플릿
-- 저작권 0% AI 쇼츠 템플릿 10종
-- JSON 형식으로 구조화된 템플릿 데이터
-
-### `prompts/` - 프롬프트
-- 조회수 잘 터지는 포맷 프롬프트 20개
-- AI 스크립트 생성에 사용되는 프롬프트 모음
-
 ### `scripts/` - 스크립트
 - 자동 실행을 위한 스크립트 파일들
 - macOS LaunchAgent 설정 파일
@@ -105,7 +91,7 @@ youtubeshorts/
 - ✅ 문서를 `docs/` 폴더로 통합
 - ✅ 스크립트를 `scripts/` 폴더로 이동
 - ✅ 데이터 파일을 `data/` 폴더로 이동
-- ✅ 템플릿과 프롬프트 폴더 추가
+- ✅ 템플릿 및 프롬프트 폴더 제거 (AI로 매번 새로운 콘텐츠 생성)
 - ✅ 더 명확한 폴더 구조로 유지보수성 향상
 
 ## 📝 파일 경로 참고
@@ -130,12 +116,8 @@ youtubeshorts/
 python main.py upload [주제]
 ```
 
-### 템플릿 사용
-템플릿은 `templates/copyright_free_templates.json`에서 확인할 수 있습니다.
-
-### 프롬프트 사용
-프롬프트는 `prompts/viral_formats.txt`에서 확인할 수 있으며,
-`video_generator.py`의 `performance_prompt` 파라미터로 전달할 수 있습니다.
+### 콘텐츠 생성
+모든 영상은 AI로 매번 새로운 아이디어로 생성됩니다. 템플릿을 사용하지 않습니다.
 
 ### 문서 참고
 모든 가이드 문서는 `docs/` 폴더에서 확인할 수 있습니다.
