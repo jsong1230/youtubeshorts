@@ -6,7 +6,7 @@ import os
 from datetime import datetime, timedelta
 from typing import Dict, List
 import config
-from youtube_uploader import YouTubeUploader
+from src.uploaders.youtube_uploader import YouTubeUploader
 
 
 class MonetizationTracker:

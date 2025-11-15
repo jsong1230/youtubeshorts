@@ -19,8 +19,10 @@
    ```
    http://localhost:8080/
    http://127.0.0.1:8080/
-   urn:ietf:wg:oauth:2.0:oob
+   http://localhost/
    ```
+   
+   **참고**: `urn:ietf:wg:oauth:2.0:oob`는 웹 애플리케이션 유형에서는 사용할 수 없습니다.
 
 4. **저장 후 재시도**
    - 변경사항 저장

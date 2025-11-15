@@ -12,9 +12,12 @@ AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하
 
 ### 1. AI 영상 자동 생성
 - **OpenAI GPT 활용**: 최신 AI 기술을 활용한 고품질 스크립트 생성
-- **자동 길이 조정**: 설명이 충분하도록 약 55초 분량으로 자동 생성 (YouTube Shorts 최대 60초)
-- **한글 음성**: Google TTS를 활용한 자연스러운 한글 음성 생성
-- **관련 이미지**: 키워드 기반 이미지 검색으로 영상 내용과 연관된 이미지 자동 삽입
+- **콘텐츠 타입 최적화**: Hook, 명언, 스토리, 팩트, 짧은 스토리 등 수익화 최적화된 콘텐츠 형태 지원
+- **짧고 강한 Hook**: 첫 3초 안에 시청자 관심을 끄는 강력한 Hook 자동 생성
+- **자동 길이 조정**: 콘텐츠 타입별 최적 길이 (15-30초 권장, 최대 60초)
+- **한글 음성**: Google TTS 또는 OpenAI TTS를 활용한 자연스러운 한글 음성 생성
+- **배경 영상/이미지**: Pexels Video API를 활용한 CC0 라이선스 배경 영상 또는 무료 이미지 자동 삽입
+- **저작권 안전**: 100% 저작권 안전한 콘텐츠 (CC0, Unsplash License, Pixabay License)
 - **동기화**: 음성과 영상이 정확히 일치하도록 자동 동기화
 
 ### 2. YouTube 자동 업로드
@@ -63,8 +66,10 @@ AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하
    - OAuth 2.0 클라이언트 ID 생성
 
 2. **OpenAI API**
-   - OpenAI Platform에서 API 키 발급
+   - OpenAI Platform에서 API 키 발급: https://platform.openai.com/
    - GPT-4o-mini, GPT-4o, GPT-3.5-turbo 모델 사용 가능
+   - **모델 접근 권한**: Settings > Model access에서 사용할 모델 활성화 필요
+   - 자세한 내용은 [API_SETUP.md](./API_SETUP.md) 참고
 
 3. **이미지 API (선택사항)**
    - Pexels API: https://www.pexels.com/api/ (무료)
@@ -116,6 +121,8 @@ DEFAULT_TAGS=shorts,쇼츠,ai,인공지능,자동생성,유용한정보,팁,라�
 
 ### 3. YouTube API 인증 설정
 
+자세한 설정 방법은 [SETUP_GUIDE.md](./SETUP_GUIDE.md)를 참고하세요.
+
 #### Google Cloud Console 설정
 
 1. [Google Cloud Console](https://console.cloud.google.com/) 접속
@@ -146,6 +153,45 @@ python main.py upload
 2. 계정 생성 또는 로그인
 3. **API Keys** 메뉴에서 새 API 키 생성
 4. `.env` 파일에 `OPENAI_API_KEY` 설정
+
+## 📁 프로젝트 구조
+
+```
+youtubeshorts/
+├── main.py                    # 메인 실행 파일
+├── config.py                  # 설정 파일
+├── requirements.txt            # Python 의존성
+├── .env                       # 환경 변수 (생성 필요)
+├── README.md                  # 프로젝트 문서
+├── SETUP_GUIDE.md             # YouTube API 설정 가이드
+├── API_SETUP.md               # OpenAI API 설정 가이드
+├── AUTO_START_GUIDE.md        # 자동 시작 가이드
+├── CONTENT_OPTIMIZATION.md    # 콘텐츠 최적화 전략
+├── COPYRIGHT_SAFETY.md         # 저작권 안전 가이드
+│
+├── src/                       # 소스코드
+│   ├── generators/           # 영상 생성 모듈
+│   │   └── video_generator.py
+│   ├── uploaders/             # 업로드 모듈
+│   │   └── youtube_uploader.py
+│   ├── analytics/            # 분석 모듈
+│   │   └── monetization.py
+│   ├── pipeline/              # 파이프라인 모듈
+│   │   ├── bot.py             # 메인 봇 클래스
+│   │   ├── database.py        # SQLite 데이터베이스
+│   │   └── tts_engine.py      # TTS 엔진 추상화
+│   └── utils/                 # 유틸리티
+│       └── create_client_secrets.py
+│
+├── output/                    # 출력 파일
+│   ├── videos/                # 생성된 영상
+│   ├── thumbnails/            # 썸네일
+│   └── temp/                  # 임시 파일
+│
+├── videos.db                  # SQLite 데이터베이스
+├── token.json                 # YouTube 인증 토큰
+└── client_secrets.json        # Google OAuth 설정
+```
 
 ## 📖 사용법
 
@@ -399,12 +445,41 @@ python main.py upload
 ## 🛠️ 기술 스택
 
 - **Python 3.8+**: 메인 프로그래밍 언어
-- **OpenAI API**: GPT 모델을 활용한 스크립트 생성
-- **Google TTS (gTTS)**: 한글 음성 생성
+- **OpenAI API**: GPT 모델을 활용한 스크립트 생성, TTS 음성 생성
+- **Google TTS (gTTS)**: 한글 음성 생성 (대체 옵션)
 - **MoviePy**: 영상 편집 및 합성
 - **PIL (Pillow)**: 이미지 처리
 - **YouTube Data API v3**: 영상 업로드 및 통계 조회
-- **Pexels/Unsplash API**: 관련 이미지 검색
+- **Pexels Video API**: CC0 라이선스 배경 영상 다운로드
+- **Pexels/Unsplash/Pixabay API**: 무료 라이선스 이미지 검색
+
+## 🔒 저작권 안전성
+
+이 프로젝트는 **100% 저작권 안전한 콘텐츠**를 생성합니다:
+
+- ✅ **스크립트**: AI 생성 (본인 소유)
+- ✅ **음성**: TTS 생성 (본인 소유)
+- ✅ **배경 영상**: Pexels Video (CC0 라이선스)
+- ✅ **배경 이미지**: Pexels/Unsplash/Pixabay (무료 라이선스)
+
+자세한 내용은 [COPYRIGHT_SAFETY.md](./COPYRIGHT_SAFETY.md)를 참고하세요.
+
+## 🎯 콘텐츠 최적화
+
+이 프로젝트는 **수익화 최적화된 콘텐츠 형태**를 지원합니다:
+
+- ✅ **Hook 영상**: 영어/한국어 한 문장 학습 (15-30초)
+- ✅ **명언/지식**: AI·비즈니스·명언·지식 한 줄 (15-30초)
+- ✅ **스토리텔링**: 심리/역사/부자습관 스토리 (25-45초)
+- ✅ **팩트 기반**: 숏폼 팩트 영상 (15-30초)
+- ✅ **짧은 스토리**: AI 이미지 기반 짧은 스토리 (20-35초)
+
+**장점**:
+- 저작권 위험 없음
+- 짧아서 Click-Through Rate 좋음
+- 조회수 폭발 확률 높음
+
+자세한 내용은 [CONTENT_OPTIMIZATION.md](./CONTENT_OPTIMIZATION.md)를 참고하세요.
 
 ## 📝 라이선스
 

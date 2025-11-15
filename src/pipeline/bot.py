@@ -1,0 +1,280 @@
+"""
+YouTube Shorts 자동 업로드 봇 클래스
+"""
+import os
+import schedule
+import time
+from datetime import datetime
+import pytz
+import sys
+from pathlib import Path
+
+# 프로젝트 루트를 경로에 추가
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from src.generators.video_generator import AIVideoGenerator
+from src.uploaders.youtube_uploader import YouTubeUploader
+from src.analytics.monetization import MonetizationTracker
+from src.pipeline.database import VideoDatabase
+import config
+
+
+class ShortsBot:
+    """YouTube Shorts 자동 업로드 봇"""
+    
+    def __init__(self):
+        self.video_generator = AIVideoGenerator()
+        self.uploader = YouTubeUploader()
+        self.monetization = MonetizationTracker()
+        self.database = VideoDatabase(db_path=config.DATABASE_PATH)
+        self.timezone = pytz.timezone(config.UPLOAD_TIMEZONE)
+    
+    def _get_performance_based_prompt(self) -> str:
+        """
+        성과가 좋은 주제/스타일을 기반으로 시스템 프롬프트 생성
+        
+        Returns:
+            성과 기반 프롬프트 추가 문구
+        """
+        try:
+            # 최근 30일간 성과 좋은 영상 조회
+            top_videos = self.database.get_top_performing_videos(limit=3, days=30, min_views=50)
+            top_topics = self.database.get_top_topics(limit=3, days=30)
+            
+            prompt_additions = []
+            
+            # 성과 좋은 주제 추가
+            if top_topics:
+                topics_text = ", ".join([t['topic'] for t in top_topics if t.get('topic')])
+                if topics_text:
+                    prompt_additions.append(
+                        f"최근 성과가 좋았던 주제들: {topics_text}. "
+                        f"이러한 주제의 스타일과 톤을 참고하되, 완전히 동일하지는 않게 새로운 관점을 제공하세요."
+                    )
+            
+            # 성과 좋은 영상의 특징 추가
+            if top_videos:
+                avg_engagement = sum(v.get('engagement_rate', 0) for v in top_videos) / len(top_videos)
+                if avg_engagement > 2.0:  # 참여율 2% 이상
+                    prompt_additions.append(
+                        f"최근 참여율이 높았던 영상들의 특징: "
+                        f"명확하고 실용적인 정보 제공, 시청자의 호기심을 자극하는 구성, "
+                        f"쉽게 따라할 수 있는 팁과 조언 포함."
+                    )
+            
+            if prompt_additions:
+                return "\n\n" + "\n".join(prompt_additions)
+            else:
+                return ""
+        except Exception as e:
+            print(f"⚠️ 성과 기반 프롬프트 생성 실패: {e}")
+            return ""
+    
+    def create_video_only(self, topic: str = None):
+        """영상 생성만 (업로드 없음)"""
+        try:
+            print(f"\n{'='*50}")
+            print(f"📹 영상 생성 테스트 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"{'='*50}\n")
+            
+            # AI로 영상 생성 (길이 자동 조정)
+            print("📹 영상 생성 중...")
+            video_path, script, generated_topic = self.video_generator.generate_video(topic=topic, duration=None)
+            
+            # 실제 사용된 주제
+            actual_topic = generated_topic if generated_topic else topic
+            
+            # 제목 생성
+            if actual_topic:
+                title = actual_topic
+            else:
+                title = datetime.now().strftime('%Y년 %m월 %d일')
+            
+            # 썸네일 생성
+            print("\n🖼️ 썸네일 생성 중...")
+            thumbnail_path = self.video_generator.generate_thumbnail(
+                video_path, 
+                title,
+                topic=actual_topic,
+                script=script
+            )
+            
+            print(f"\n✅ 영상 생성 완료!")
+            print(f"📁 파일 위치: {video_path}")
+            print(f"🖼️ 썸네일 위치: {thumbnail_path}")
+            print(f"🔍 확인 방법: open {video_path}")
+            print(f"🔍 썸네일 확인: open {thumbnail_path}")
+            
+            return video_path
+            
+        except Exception as e:
+            print(f"\n❌ 오류 발생: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
+    def create_and_upload(self, topic: str = None):
+        """영상 생성 및 업로드"""
+        try:
+            print(f"\n{'='*50}")
+            print(f"🚀 영상 생성 및 업로드 시작 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"{'='*50}\n")
+            
+            # 성과 기반 프롬프트 가져오기 (하루 1개 생성 전)
+            performance_prompt = self._get_performance_based_prompt()
+            if performance_prompt:
+                print("📊 성과 기반 프롬프트 적용 중...")
+                print(f"   {performance_prompt[:100]}...")
+            
+            # 1. AI로 영상 생성 (길이 자동 조정, 성과 기반 프롬프트 포함)
+            print("📹 1단계: AI 영상 생성 중...")
+            video_path, script, generated_topic = self.video_generator.generate_video(
+                topic=topic, 
+                duration=None,
+                performance_prompt=performance_prompt
+            )
+            
+            # 실제 사용된 주제 (생성된 경우 generated_topic 사용)
+            actual_topic = generated_topic if generated_topic else topic
+            
+            # 2. 제목 및 설명 생성
+            if actual_topic:
+                title = actual_topic
+            else:
+                title = datetime.now().strftime('%Y년 %m월 %d일')
+            
+            # 3. 매력적인 썸네일 생성
+            print("\n🖼️ 썸네일 생성 중...")
+            thumbnail_path = self.video_generator.generate_thumbnail(
+                video_path, 
+                title, 
+                topic=actual_topic,
+                script=script
+            )
+            
+            description = f"{config.DEFAULT_DESCRIPTION}\n\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "📺 영상 정보\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += f"📅 업로드 날짜: {datetime.now().strftime('%Y년 %m월 %d일')}\n"
+            if topic:
+                description += f"📌 영상 주제: {topic}\n"
+            description += f"⏱️ 영상 길이: 약 55초 (YouTube Shorts 최적화)\n\n"
+            
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "💡 이 영상에 대해\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "이 영상은 최신 AI 기술을 활용하여 자동으로 생성되었습니다.\n"
+            description += "매일 새로운 주제로 유용한 정보와 실용적인 팁을 제공합니다.\n"
+            description += "생활에 도움이 되는 다양한 콘텐츠를 지속적으로 업로드할 예정입니다.\n\n"
+            
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "🙏 여러분의 참여를 기다립니다\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "👍 좋아요: 영상이 도움이 되셨다면 좋아요를 눌러주세요!\n"
+            description += "🔔 구독: 매일 새로운 영상을 받아보시려면 구독해주세요!\n"
+            description += "💬 댓글: 궁금한 점이나 원하시는 주제가 있으시면 댓글로 알려주세요!\n"
+            description += "📤 공유: 친구들과 함께 보시면 더욱 좋습니다!\n\n"
+            
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "🏷️ 태그\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "#shorts #쇼츠 #ai #인공지능 #자동생성 #유용한정보 #팁 #라이프스타일 #일상 #정보 #꿀팁 #생활정보"
+            
+            # 4. YouTube에 업로드 (썸네일 포함)
+            print("\n📤 2단계: YouTube 업로드 중...")
+            video_id = self.uploader.upload_video(
+                video_path=video_path,
+                title=title,
+                description=description,
+                tags=config.DEFAULT_TAGS,
+                privacy_status='public',
+                thumbnail_path=thumbnail_path
+            )
+            
+            # 5. 데이터베이스에 저장
+            print("\n💾 3단계: 데이터베이스에 저장 중...")
+            # 스크립트는 video_generator에서 가져올 수 없으므로 None으로 설정
+            # 향후 video_generator에서 스크립트를 반환하도록 수정 가능
+            self.database.add_video(
+                video_id=video_id,
+                title=title,
+                topic=topic,
+                prompt=performance_prompt if performance_prompt else None,
+                script=None  # 향후 추가 가능
+            )
+            
+            # 6. 수익화 추적에 추가
+            print("\n📊 4단계: 수익화 추적에 추가 중...")
+            self.monetization.add_video(
+                video_id=video_id,
+                title=title,
+                upload_date=datetime.now().isoformat()
+            )
+            
+            # 7. 통계 업데이트
+            stats = self.uploader.get_video_stats(video_id)
+            if stats:
+                self.database.update_video_stats(
+                    video_id=video_id,
+                    views=stats.get('views', 0),
+                    likes=stats.get('likes', 0),
+                    comments=stats.get('comments', 0)
+                )
+                self.monetization.update_video_stats(video_id)
+            
+            print(f"\n✅ 완료! 영상 ID: {video_id}")
+            print(f"🔗 https://www.youtube.com/watch?v={video_id}\n")
+            
+            # 리포트 출력
+            self.monetization.print_report()
+            
+            return video_id
+            
+        except Exception as e:
+            print(f"\n❌ 오류 발생: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
+    def schedule_daily_upload(self):
+        """하루 1개 자동 업로드 스케줄 설정"""
+        upload_time = config.UPLOAD_SCHEDULE_TIME
+        
+        print(f"⏰ 자동 업로드 스케줄 설정 완료")
+        print(f"   업로드 시간: 매일 {upload_time} ({config.UPLOAD_TIMEZONE})")
+        print(f"   목표: 하루 1개 → 3개월 후 수익화 → 월 $100~500\n")
+        
+        schedule.every().day.at(upload_time).do(self.create_and_upload)
+    
+    def run_scheduler(self):
+        """스케줄러 실행"""
+        print("🤖 YouTube Shorts 자동 업로드 봇 시작")
+        print("   종료하려면 Ctrl+C를 누르세요\n")
+        
+        # 첫 업로드 즉시 실행 (테스트용)
+        # self.create_and_upload()
+        
+        while True:
+            schedule.run_pending()
+            time.sleep(60)  # 1분마다 체크
+    
+    def update_all_stats(self):
+        """모든 영상 통계 업데이트"""
+        print("📊 모든 영상 통계 업데이트 중...")
+        self.monetization.update_all_videos()
+        
+        # 데이터베이스 통계도 업데이트
+        for video in self.monetization.data.get('videos', []):
+            stats = self.uploader.get_video_stats(video['video_id'])
+            if stats:
+                self.database.update_video_stats(
+                    video_id=video['video_id'],
+                    views=stats.get('views', 0),
+                    likes=stats.get('likes', 0),
+                    comments=stats.get('comments', 0)
+                )
+        
+        self.monetization.print_report()
+

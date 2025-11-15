@@ -20,9 +20,16 @@ YOUTUBE_REFRESH_TOKEN = os.getenv('YOUTUBE_REFRESH_TOKEN')
 # OpenAI API 설정
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
-# 이미지 API 설정 (선택사항)
-PEXELS_API_KEY = os.getenv('PEXELS_API_KEY')  # https://www.pexels.com/api/ 에서 무료로 발급 가능
-UNSPLASH_ACCESS_KEY = os.getenv('UNSPLASH_ACCESS_KEY')  # https://unsplash.com/developers 에서 무료로 발급 가능
+# 이미지/영상 API 설정 (선택사항)
+PEXELS_API_KEY = os.getenv('PEXELS_API_KEY')  # https://www.pexels.com/api/ 에서 무료로 발급 가능 (CC0 라이선스)
+UNSPLASH_ACCESS_KEY = os.getenv('UNSPLASH_ACCESS_KEY')  # https://unsplash.com/developers 에서 무료로 발급 가능 (Unsplash License)
+
+# 영상 생성 설정
+USE_BACKGROUND_VIDEO = os.getenv('USE_BACKGROUND_VIDEO', 'true').lower() == 'true'  # 배경 영상 사용 여부 (기본: true)
+
+# 콘텐츠 타입 설정
+CONTENT_TYPE = os.getenv('CONTENT_TYPE', 'auto')  # 'hook', 'quote', 'story', 'fact', 'short_story', 'auto'
+PREFER_SHORT_VIDEOS = os.getenv('PREFER_SHORT_VIDEOS', 'true').lower() == 'true'  # 짧은 영상 선호 (15-30초, 기본: true)
 
 # 업로드 스케줄 설정
 UPLOAD_SCHEDULE_TIME = os.getenv('UPLOAD_SCHEDULE_TIME', '09:00')
@@ -38,10 +45,16 @@ VIDEO_OUTPUT_DIR = 'output/videos'
 THUMBNAIL_OUTPUT_DIR = 'output/thumbnails'
 TEMP_DIR = 'output/temp'
 
+# TTS 설정
+TTS_PROVIDER = os.getenv('TTS_PROVIDER', None)  # 'gtts' 또는 'openai', None이면 자동 선택
+
 # YouTube Shorts 요구사항
 SHORTS_MIN_DURATION = 15  # 초
 SHORTS_MAX_DURATION = 60  # 초 (YouTube Shorts 최대 길이)
 SHORTS_TARGET_DURATION = 55  # 초 (목표: 55초, 60초 초과 방지를 위한 안전 마진)
 SHORTS_ASPECT_RATIO = (9, 16)  # 세로형 (1080x1920)
 # 영상 길이는 스크립트 내용에 따라 자동으로 조정되며, 목표는 55초 (60초 초과 방지)
+
+# 데이터베이스 설정
+DATABASE_PATH = os.getenv('DATABASE_PATH', 'videos.db')
 
