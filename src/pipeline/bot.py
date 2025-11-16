@@ -167,6 +167,16 @@ class ShortsBot:
                 script=script
             )
             
+            # 썸네일 생성 확인
+            if thumbnail_path:
+                print(f"✅ 썸네일 생성 완료: {thumbnail_path}")
+                if os.path.exists(thumbnail_path):
+                    print(f"   파일 크기: {os.path.getsize(thumbnail_path)} bytes")
+                else:
+                    print(f"   ⚠️ 경고: 썸네일 파일이 생성되었지만 찾을 수 없습니다!")
+            else:
+                print("   ⚠️ 경고: 썸네일 생성 실패 (None 반환)")
+            
             description = f"{config.DEFAULT_DESCRIPTION}\n\n"
             description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             description += "📺 영상 정보\n"
@@ -204,7 +214,8 @@ class ShortsBot:
                     video_path=video_path,
                     title=title,
                     description=description,
-                    tags=config.DEFAULT_TAGS
+                    tags=config.DEFAULT_TAGS,
+                    thumbnail_path=thumbnail_path
                 )
                 # YouTube ID는 필수 (데이터베이스 저장용)
                 video_id = upload_results.get('youtube')

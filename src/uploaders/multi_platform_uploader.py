@@ -52,7 +52,8 @@ class MultiPlatformUploader:
         title: str,
         description: str = None,
         tags: List[str] = None,
-        platforms: List[str] = None
+        platforms: List[str] = None,
+        thumbnail_path: str = None
     ) -> Dict[str, Optional[str]]:
         """
         여러 플랫폼에 동시에 영상 업로드
@@ -82,12 +83,17 @@ class MultiPlatformUploader:
         if 'youtube' in platforms and 'youtube' in self.uploaders:
             try:
                 print("\n📺 YouTube 업로드 중...")
+                if thumbnail_path:
+                    print(f"   🖼️ 썸네일 경로 전달됨: {thumbnail_path}")
+                else:
+                    print("   ⚠️ 썸네일 경로가 전달되지 않았습니다.")
                 youtube_id = self.uploaders['youtube'].upload_video(
                     video_path=video_path,
                     title=title,
                     description=description or config.DEFAULT_DESCRIPTION,
                     tags=tags or config.DEFAULT_TAGS,
-                    privacy_status='public'
+                    privacy_status='public',
+                    thumbnail_path=thumbnail_path
                 )
                 results['youtube'] = youtube_id
                 if youtube_id:
