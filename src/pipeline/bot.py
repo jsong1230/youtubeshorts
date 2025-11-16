@@ -286,14 +286,25 @@ class ShortsBot:
             return None
     
     def schedule_daily_upload(self):
-        """하루 1개 자동 업로드 스케줄 설정"""
-        upload_time = config.UPLOAD_SCHEDULE_TIME
+        """하루 6개 자동 업로드 스케줄 설정 (YouTube Shorts 하루 최대 6개 제한)"""
+        # 하루에 6개를 골고루 배치 (4시간 간격)
+        # 기본 시작 시간에서 4시간씩 간격을 두어 6번 업로드
+        base_time = config.UPLOAD_SCHEDULE_TIME  # 예: "09:00"
+        upload_times = []
+        
+        # 기본 시간 파싱
+        base_hour, base_minute = map(int, base_time.split(':'))
+        
+        # 6개 시간 생성 (4시간 간격)
+        for i in range(6):
+            hour = (base_hour + i * 4) % 24
+            time_str = f"{hour:02d}:{base_minute:02d}"
+            upload_times.append(time_str)
+            schedule.every().day.at(time_str).do(self.create_and_upload)
         
         print(f"⏰ 자동 업로드 스케줄 설정 완료")
-        print(f"   업로드 시간: 매일 {upload_time} ({config.UPLOAD_TIMEZONE})")
-        print(f"   목표: 하루 1개 → 3개월 후 수익화 → 월 $100~500\n")
-        
-        schedule.every().day.at(upload_time).do(self.create_and_upload)
+        print(f"   업로드 시간: 매일 {', '.join(upload_times)} ({config.UPLOAD_TIMEZONE})")
+        print(f"   목표: 하루 6개 (YouTube Shorts 최대 제한) → 3개월 후 수익화 → 월 $100~500\n")
     
     def run_scheduler(self):
         """스케줄러 실행"""
