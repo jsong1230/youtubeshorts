@@ -13,7 +13,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.generators.video_generator import AIVideoGenerator
+from src.generators.video_generator import AIVideoGenerator, ContentType
 from src.uploaders.youtube_uploader import YouTubeUploader
 from src.uploaders.multi_platform_uploader import MultiPlatformUploader
 from src.analytics.monetization import MonetizationTracker
@@ -128,11 +128,13 @@ class ShortsBot:
             traceback.print_exc()
             return None
     
-    def create_and_upload(self, topic: str = None):
+    def create_and_upload(self, topic: str = None, content_type: ContentType = None):
         """영상 생성 및 업로드"""
         try:
+            content_type_name = content_type.value if content_type else "자동"
             print(f"\n{'='*50}")
             print(f"🚀 영상 생성 및 업로드 시작 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"📌 콘텐츠 타입: {content_type_name}")
             print(f"{'='*50}\n")
             
             # 성과 기반 프롬프트 가져오기 (하루 1개 생성 전)
@@ -146,7 +148,8 @@ class ShortsBot:
             video_path, script, generated_topic = self.video_generator.generate_video(
                 topic=topic, 
                 duration=None,
-                performance_prompt=performance_prompt
+                performance_prompt=performance_prompt,
+                content_type=content_type
             )
             
             # 실제 사용된 주제 (생성된 경우 generated_topic 사용)
@@ -274,15 +277,81 @@ class ShortsBot:
             traceback.print_exc()
             return None
     
+    def create_and_upload_all_types(self):
+        """모든 콘텐츠 타입에 대해 영상 생성 및 업로드 (6개)"""
+        content_types = [
+            ContentType.HOOK,
+            ContentType.QUOTE,
+            ContentType.STORY,
+            ContentType.FACT,
+            ContentType.SHORT_STORY,
+            ContentType.AUTO
+        ]
+        
+        print(f"\n{'='*60}")
+        print(f"🎬 모든 콘텐츠 타입 영상 생성 시작 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"📊 총 {len(content_types)}개 타입 생성 예정")
+        print(f"{'='*60}\n")
+        
+        results = []
+        for i, content_type in enumerate(content_types, 1):
+            try:
+                print(f"\n{'─'*60}")
+                print(f"📹 [{i}/{len(content_types)}] {content_type.value.upper()} 타입 영상 생성 중...")
+                print(f"{'─'*60}\n")
+                
+                video_id = self.create_and_upload(topic=None, content_type=content_type)
+                if video_id:
+                    results.append({
+                        'content_type': content_type.value,
+                        'video_id': video_id,
+                        'status': 'success'
+                    })
+                    print(f"✅ [{i}/{len(content_types)}] {content_type.value} 타입 완료: {video_id}")
+                else:
+                    results.append({
+                        'content_type': content_type.value,
+                        'video_id': None,
+                        'status': 'failed'
+                    })
+                    print(f"❌ [{i}/{len(content_types)}] {content_type.value} 타입 실패")
+                    
+            except Exception as e:
+                print(f"❌ [{i}/{len(content_types)}] {content_type.value} 타입 오류: {str(e)}")
+                results.append({
+                    'content_type': content_type.value,
+                    'video_id': None,
+                    'status': 'error',
+                    'error': str(e)
+                })
+                import traceback
+                traceback.print_exc()
+        
+        # 최종 결과 요약
+        print(f"\n{'='*60}")
+        print(f"📊 모든 타입 생성 완료 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"{'='*60}")
+        success_count = sum(1 for r in results if r['status'] == 'success')
+        failed_count = len(results) - success_count
+        print(f"✅ 성공: {success_count}개")
+        print(f"❌ 실패: {failed_count}개")
+        print(f"\n상세 결과:")
+        for r in results:
+            status_icon = "✅" if r['status'] == 'success' else "❌"
+            print(f"  {status_icon} {r['content_type']}: {r.get('video_id', 'N/A')}")
+        print(f"{'='*60}\n")
+        
+        return results
+    
     def schedule_daily_upload(self):
-        """하루 1개 자동 업로드 스케줄 설정"""
+        """하루 6개 자동 업로드 스케줄 설정 (모든 콘텐츠 타입)"""
         upload_time = config.UPLOAD_SCHEDULE_TIME
         
         print(f"⏰ 자동 업로드 스케줄 설정 완료")
         print(f"   업로드 시간: 매일 {upload_time} ({config.UPLOAD_TIMEZONE})")
-        print(f"   목표: 하루 1개 → 3개월 후 수익화 → 월 $100~500\n")
+        print(f"   목표: 하루 6개 (모든 콘텐츠 타입) → 3개월 후 수익화 → 월 $100~500\n")
         
-        schedule.every().day.at(upload_time).do(self.create_and_upload)
+        schedule.every().day.at(upload_time).do(self.create_and_upload_all_types)
     
     def run_scheduler(self):
         """스케줄러 실행"""
