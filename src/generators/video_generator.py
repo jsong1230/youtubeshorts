@@ -18,6 +18,12 @@ except ImportError:
     OPENAI_AVAILABLE = False
 
 try:
+    from anthropic import Anthropic
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_AVAILABLE = False
+
+try:
     from gtts import gTTS
     import io
     TTS_AVAILABLE = True
@@ -56,6 +62,7 @@ class AIVideoGenerator:
     """AI를 활용한 15초 YouTube Shorts 영상 생성 클래스"""
     
     def __init__(self, tts_provider=None):
+        # OpenAI 클라이언트 초기화
         if config.OPENAI_API_KEY and OPENAI_AVAILABLE:
             try:
                 # 간단한 초기화 (httpx 버전 호환성 문제 회피)
@@ -65,6 +72,29 @@ class AIVideoGenerator:
                 self.openai_client = None
         else:
             self.openai_client = None
+        
+        # Claude (Anthropic) 클라이언트 초기화
+        if config.CLAUDE_API_KEY and ANTHROPIC_AVAILABLE:
+            try:
+                self.claude_client = Anthropic(api_key=config.CLAUDE_API_KEY)
+                print(f"✅ Claude API 클라이언트 초기화 완료")
+            except Exception as e:
+                print(f"⚠️ Claude 클라이언트 초기화 실패: {e}")
+                self.claude_client = None
+        else:
+            self.claude_client = None
+        
+        # AI API 제공자 확인
+        self.ai_provider = getattr(config, 'AI_API_PROVIDER', 'openai').lower()
+        if self.ai_provider == 'claude' and not self.claude_client:
+            print(f"⚠️ Claude API가 설정되지 않았습니다. OpenAI를 사용합니다.")
+            self.ai_provider = 'openai'
+        elif self.ai_provider == 'openai' and not self.openai_client:
+            if self.claude_client:
+                print(f"⚠️ OpenAI API가 설정되지 않았습니다. Claude를 사용합니다.")
+                self.ai_provider = 'claude'
+            else:
+                print(f"⚠️ AI API가 설정되지 않았습니다.")
         
         # TTS 엔진 초기화
         self.tts_engine = None
@@ -354,188 +384,16 @@ class AIVideoGenerator:
     
     def _generate_script(self, topic: str, performance_prompt: str = None, content_type: ContentType = None) -> list:
         """AI로 영상 스크립트 생성 (콘텐츠 타입별 최적화)"""
-        if self.openai_client:
-            try:
-                # gpt-4o-mini 또는 gpt-4o 사용 시도 (더 접근 가능)
-                models_to_try = ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"]
-                response = None
-                last_error = None
-                
-                # 콘텐츠 타입별 설정 (55초 목표로 충분한 내용 생성)
-                prefer_short = False  # 55초 목표이므로 짧은 영상 비활성화
-                
-                if content_type is None:
-                    content_type_str = getattr(config, 'CONTENT_TYPE', 'auto')
-                    try:
-                        content_type = ContentType(content_type_str.lower())
-                    except ValueError:
-                        content_type = ContentType.AUTO
-                
-                # 타입별 시스템 프롬프트 구성 (모두 55초 목표)
-                target_duration = config.SHORTS_TARGET_DURATION  # 55초
-                
-                if content_type == ContentType.HOOK:
-                    system_prompt = """당신은 YouTube Shorts용 Hook 영상 스크립트 작성 전문가입니다.
-- 첫 3초 안에 강력한 Hook 문장으로 시청자의 관심을 끌어야 합니다
-- 한국어 속담, 관용어, 명언 등에 집중하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 충분한 설명과 예시를 포함하세요
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
-- Hook 문장을 반복하거나 강조하고, 자세한 설명을 추가하세요"""
-                    max_sentences = 16
-                elif content_type == ContentType.QUOTE:
-                    system_prompt = """당신은 YouTube Shorts용 명언/지식 한 줄 영상 스크립트 작성 전문가입니다.
-- 첫 문장에 강력한 명언이나 인사이트를 배치하세요
-- AI, 비즈니스, 자기계발, 투자 등 지식 한 줄에 집중하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 충분한 설명과 실생활 적용법을 포함하세요
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
-- 명언을 자세히 설명하고 실생활 적용법과 예시를 제시하세요"""
-                    max_sentences = 16
-                elif content_type == ContentType.STORY:
-                    system_prompt = """당신은 YouTube Shorts용 스토리텔링 영상 스크립트 작성 전문가입니다.
-- 첫 문장에 강력한 Hook으로 시작하세요
-- 심리, 역사, 부자습관 등 스토리를 통해 교훈을 전달하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 스토리를 자세히 전개하세요
-- 스토리 구조: Hook → 전개 → 세부 설명 → 교훈 → 마무리
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요"""
-                    max_sentences = 16
-                elif content_type == ContentType.FACT:
-                    system_prompt = """당신은 YouTube Shorts용 팩트 기반 영상 스크립트 작성 전문가입니다.
-- 첫 문장에 놀라운 팩트를 배치하여 Hook을 만드세요
-- 과학, 역사, 인체, 우주 등 놀라운 사실을 전달하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 팩트를 자세히 설명하세요
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
-- 팩트를 설명하고 왜 놀라운지, 어떻게 발견되었는지 등 자세한 배경을 포함하세요"""
-                    max_sentences = 16
-                elif content_type == ContentType.SHORT_STORY:
-                    system_prompt = """당신은 YouTube Shorts용 짧은 스토리 영상 스크립트 작성 전문가입니다.
-- 첫 문장에 강력한 Hook으로 시작하세요
-- 인생 교훈, 영감, 성공 스토리 등을 자세히 전달하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 스토리를 충분히 전개하세요
-- 스토리 구조: Hook → 사건 전개 → 세부 설명 → 교훈 → 마무리
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요"""
-                    max_sentences = 16
-                else:
-                    # 기본 설정
-                    system_prompt = """당신은 YouTube Shorts용 영상 스크립트 작성 전문가입니다.
-- 설명이 충분하도록 자세하게 작성하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 각 문장은 3-4초 분량입니다
-- YouTube Shorts는 최대 60초이므로 55초 이내로 작성해야 합니다
-- 총 12-16개 문장으로 작성하여 충분한 내용을 담으세요"""
-                    max_sentences = 16
-                
-                # 성과 기반 프롬프트 추가
-                if performance_prompt:
-                    system_prompt += "\n\n" + performance_prompt
-                
-                # 사용자 프롬프트 구성
-                user_prompt = f"'{topic}'에 대한 YouTube Shorts 영상 스크립트를 작성해주세요. 각 문장은 3-4초 분량이며, 총 {max_sentences}개 문장으로 작성하여 약 {target_duration}초 분량이 되도록 충분히 자세하게 작성해주세요 (최대 60초 제한). **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요.** 중요한 점: 순수한 대사나 설명만 작성하고, '배경음악', '자막', '시작' 같은 제작 지시사항은 절대 포함하지 마세요. 첫 문장은 반드시 강력한 Hook이어야 하며, 내용을 충분히 전개하여 시청자가 이해할 수 있도록 자세히 설명하세요."
-                
-                for model in models_to_try:
-                    try:
-                        response = self.openai_client.chat.completions.create(
-                            model=model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": system_prompt
-                        },
-                        {
-                            "role": "user",
-                            "content": user_prompt
-                        }
-                    ],
-                            max_tokens=800,  # 55초 분량을 위해 토큰 증가
-                            temperature=0.7
-                        )
-                        script_text = response.choices[0].message.content
-                        # 문장별로 분리 (줄바꿈과 마침표 모두 고려)
-                        sentences = []
-                        # 줄바꿈으로 분리
-                        for line in script_text.split('\n'):
-                            line = line.strip()
-                            if not line:
-                                continue
-                            # 마침표로도 분리 (긴 문장을 여러 문장으로 나눔)
-                            for sent in re.split(r'[.!?。！？]\s+', line):
-                                sent = sent.strip()
-                                if sent:
-                                    sentences.append(sent)
-                        
-                        # 불필요한 텍스트 필터링
-                        filter_keywords = [
-                            '배경음악', '음악', 'BGM', 'bgm', '배경', '시작', '종료',
-                            '자막', '타이틀', '제목', '인트로', '아웃트로',
-                            '참고', '주의', '설명', '참고사항'
-                        ]
-                        
-                        filtered_sentences = []
-                        for s in sentences:
-                            # 숫자나 불필요한 기호로 시작하는 것 제거
-                            if s.startswith(('1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.', '10.', '11.', '12.', '13.', '14.', '15.', '16.', '-', '*', '•')):
-                                # 숫자 제거 후 문장만 추출
-                                s = re.sub(r'^\d+\.\s*', '', s).strip()
-                            # 너무 짧은 문장 제거 (최소 10자 이상)
-                            if len(s) < 10:
-                                continue
-                            # 필터 키워드가 포함된 문장 제거
-                            if any(keyword in s for keyword in filter_keywords):
-                                continue
-                            # 괄호 안의 설명 제거 (예: "텍스트 (참고사항)" -> "텍스트")
-                            s = re.sub(r'\([^)]*\)', '', s).strip()
-                            s = re.sub(r'\[[^\]]*\]', '', s).strip()
-                            if s and len(s) >= 10:
-                                filtered_sentences.append(s)
-                        
-                        # 최소 문장 수 확인 (55초 목표를 위해 최소 12개 이상 필요)
-                        if len(filtered_sentences) < 12:
-                            print(f"⚠️ 생성된 문장이 부족합니다 ({len(filtered_sentences)}개). 원본 스크립트를 다시 확인합니다.")
-                            # 원본 텍스트에서 더 많은 문장 추출 시도
-                            all_sentences = re.split(r'[.!?。！？]\s+', script_text)
-                            for sent in all_sentences:
-                                sent = sent.strip()
-                                if len(sent) >= 10 and sent not in filtered_sentences:
-                                    # 필터링 다시 적용
-                                    if not any(keyword in sent for keyword in filter_keywords):
-                                        filtered_sentences.append(sent)
-                                        if len(filtered_sentences) >= max_sentences:
-                                            break
-                        
-                        print(f"📝 생성된 문장 수: {len(filtered_sentences)}개 (목표: {max_sentences}개)")
-                        return filtered_sentences[:max_sentences]  # 최대 문장 수 (약 55초)
-                    except Exception as e:
-                        last_error = e
-                        continue  # 다음 모델 시도
-                
-                # 모든 모델 실패 시
-                if not response:
-                    raise last_error if last_error else Exception("모든 모델 접근 실패")
-                    
-            except Exception as e:
-                error_msg = str(e)
-                if "does not have access" in error_msg or "model_not_found" in error_msg:
-                    print(f"⚠️ OpenAI API 키가 모델에 접근할 수 없습니다.")
-                    print(f"   OpenAI Platform에서 모델 접근 권한을 확인하세요.")
-                else:
-                    print(f"⚠️ AI 스크립트 생성 실패: {e}")
-                
-                # AI 생성 실패 시 기본 스크립트 반환 (템플릿 없이)
-                print(f"⚠️ AI 스크립트 생성 실패로 기본 스크립트를 사용합니다.")
-                return [
-                    f"{topic}에 대해 알아보겠습니다.",
-                    "중요한 포인트를 알려드립니다.",
-                    "실천하면 효과를 볼 수 있습니다.",
-                    "지금 바로 시작하세요!"
-                ]
+        # Claude API 사용
+        if self.ai_provider == 'claude' and self.claude_client:
+            return self._generate_script_with_claude(topic, performance_prompt, content_type)
+        # OpenAI API 사용
+        elif self.openai_client:
+            return self._generate_script_with_openai(topic, performance_prompt, content_type)
         
-        # AI 생성이 성공하지 못한 경우 (self.openai_client가 None인 경우)
-        if not self.openai_client:
-            print(f"⚠️ OpenAI 클라이언트가 없어 기본 스크립트를 사용합니다.")
+        # AI 생성이 성공하지 못한 경우
+        if not self.openai_client and not self.claude_client:
+            print(f"⚠️ AI 클라이언트가 없어 기본 스크립트를 사용합니다.")
             return [
                 f"{topic}에 대해 알아보겠습니다.",
                 "중요한 포인트를 알려드립니다.",
@@ -550,6 +408,380 @@ class AIVideoGenerator:
             "실천하면 효과를 볼 수 있습니다.",
             "지금 바로 시작하세요!"
         ]
+    
+    def _generate_script_with_claude(self, topic: str, performance_prompt: str = None, content_type: ContentType = None) -> list:
+        """Claude API로 영상 스크립트 생성 (콘텐츠 타입별 최적화)"""
+        if not self.claude_client:
+            print(f"⚠️ Claude 클라이언트가 없습니다.")
+            return [
+                f"{topic}에 대해 알아보겠습니다.",
+                "중요한 포인트를 알려드립니다.",
+                "실천하면 효과를 볼 수 있습니다.",
+                "지금 바로 시작하세요!"
+            ]
+        
+        try:
+            # 콘텐츠 타입별 설정 (55초 목표로 충분한 내용 생성)
+            if content_type is None:
+                content_type_str = getattr(config, 'CONTENT_TYPE', 'auto')
+                try:
+                    content_type = ContentType(content_type_str.lower())
+                except ValueError:
+                    content_type = ContentType.AUTO
+            
+            # 타입별 시스템 프롬프트 구성 (모두 55초 목표)
+            target_duration = config.SHORTS_TARGET_DURATION  # 55초
+            
+            if content_type == ContentType.HOOK:
+                system_prompt = """당신은 YouTube Shorts용 Hook 영상 스크립트 작성 전문가입니다.
+- 첫 3초 안에 강력한 Hook 문장으로 시청자의 관심을 끌어야 합니다
+- 한국어 속담, 관용어, 명언 등에 집중하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 충분한 설명과 예시를 포함하세요
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
+- Hook 문장을 반복하거나 강조하고, 자세한 설명을 추가하세요"""
+                max_sentences = 16
+            elif content_type == ContentType.QUOTE:
+                system_prompt = """당신은 YouTube Shorts용 명언/지식 한 줄 영상 스크립트 작성 전문가입니다.
+- 첫 문장에 강력한 명언이나 인사이트를 배치하세요
+- AI, 비즈니스, 자기계발, 투자 등 지식 한 줄에 집중하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 충분한 설명과 실생활 적용법을 포함하세요
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
+- 명언을 자세히 설명하고 실생활 적용법과 예시를 제시하세요"""
+                max_sentences = 16
+            elif content_type == ContentType.STORY:
+                system_prompt = """당신은 YouTube Shorts용 스토리텔링 영상 스크립트 작성 전문가입니다.
+- 첫 문장에 강력한 Hook으로 시작하세요
+- 심리, 역사, 부자습관 등 스토리를 통해 교훈을 전달하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 스토리를 자세히 전개하세요
+- 스토리 구조: Hook → 전개 → 세부 설명 → 교훈 → 마무리
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요"""
+                max_sentences = 16
+            elif content_type == ContentType.FACT:
+                system_prompt = """당신은 YouTube Shorts용 팩트 기반 영상 스크립트 작성 전문가입니다.
+- 첫 문장에 놀라운 팩트를 배치하여 Hook을 만드세요
+- 과학, 역사, 인체, 우주 등 놀라운 사실을 전달하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 팩트를 자세히 설명하세요
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
+- 팩트를 설명하고 왜 놀라운지, 어떻게 발견되었는지 등 자세한 배경을 포함하세요"""
+                max_sentences = 16
+            elif content_type == ContentType.SHORT_STORY:
+                system_prompt = """당신은 YouTube Shorts용 짧은 스토리 영상 스크립트 작성 전문가입니다.
+- 첫 문장에 강력한 Hook으로 시작하세요
+- 인생 교훈, 영감, 성공 스토리 등을 자세히 전달하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 스토리를 충분히 전개하세요
+- 스토리 구조: Hook → 사건 전개 → 세부 설명 → 교훈 → 마무리
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요"""
+                max_sentences = 16
+            else:
+                # 기본 설정
+                system_prompt = """당신은 YouTube Shorts용 영상 스크립트 작성 전문가입니다.
+- 설명이 충분하도록 자세하게 작성하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 각 문장은 3-4초 분량입니다
+- YouTube Shorts는 최대 60초이므로 55초 이내로 작성해야 합니다
+- 총 12-16개 문장으로 작성하여 충분한 내용을 담으세요"""
+                max_sentences = 16
+            
+            # 성과 기반 프롬프트 추가
+            if performance_prompt:
+                system_prompt += "\n\n" + performance_prompt
+            
+            # 사용자 프롬프트 구성
+            user_prompt = f"'{topic}'에 대한 YouTube Shorts 영상 스크립트를 작성해주세요. 각 문장은 3-4초 분량이며, 총 {max_sentences}개 문장으로 작성하여 약 {target_duration}초 분량이 되도록 충분히 자세하게 작성해주세요 (최대 60초 제한). **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요.** 중요한 점: 순수한 대사나 설명만 작성하고, '배경음악', '자막', '시작' 같은 제작 지시사항은 절대 포함하지 마세요. 첫 문장은 반드시 강력한 Hook이어야 하며, 내용을 충분히 전개하여 시청자가 이해할 수 있도록 자세히 설명하세요."
+            
+            # Claude API 호출
+            models_to_try = ["claude-3-5-sonnet-20241022", "claude-3-opus-20240229", "claude-3-sonnet-20240229"]
+            response = None
+            last_error = None
+            
+            for model in models_to_try:
+                try:
+                    response = self.claude_client.messages.create(
+                        model=model,
+                        max_tokens=800,  # 55초 분량을 위해 토큰 증가
+                        system=system_prompt,
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": user_prompt
+                            }
+                        ]
+                    )
+                    script_text = response.content[0].text
+                    
+                    # 문장별로 분리 (줄바꿈과 마침표 모두 고려)
+                    sentences = []
+                    # 줄바꿈으로 분리
+                    for line in script_text.split('\n'):
+                        line = line.strip()
+                        if not line:
+                            continue
+                        # 마침표로도 분리 (긴 문장을 여러 문장으로 나눔)
+                        for sent in re.split(r'[.!?。！？]\s+', line):
+                            sent = sent.strip()
+                            if sent:
+                                sentences.append(sent)
+                    
+                    # 불필요한 텍스트 필터링
+                    filter_keywords = [
+                        '배경음악', '음악', 'BGM', 'bgm', '배경', '시작', '종료',
+                        '자막', '타이틀', '제목', '인트로', '아웃트로',
+                        '참고', '주의', '설명', '참고사항'
+                    ]
+                    
+                    filtered_sentences = []
+                    for s in sentences:
+                        # 숫자나 불필요한 기호로 시작하는 것 제거
+                        if s.startswith(('1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.', '10.', '11.', '12.', '13.', '14.', '15.', '16.', '-', '*', '•')):
+                            # 숫자 제거 후 문장만 추출
+                            s = re.sub(r'^\d+\.\s*', '', s).strip()
+                        # 너무 짧은 문장 제거 (최소 10자 이상)
+                        if len(s) < 10:
+                            continue
+                        # 필터 키워드가 포함된 문장 제거
+                        if any(keyword in s for keyword in filter_keywords):
+                            continue
+                        # 괄호 안의 설명 제거 (예: "텍스트 (참고사항)" -> "텍스트")
+                        s = re.sub(r'\([^)]*\)', '', s).strip()
+                        s = re.sub(r'\[[^\]]*\]', '', s).strip()
+                        if s and len(s) >= 10:
+                            filtered_sentences.append(s)
+                    
+                    # 최소 문장 수 확인 (55초 목표를 위해 최소 12개 이상 필요)
+                    if len(filtered_sentences) < 12:
+                        print(f"⚠️ 생성된 문장이 부족합니다 ({len(filtered_sentences)}개). 원본 스크립트를 다시 확인합니다.")
+                        # 원본 텍스트에서 더 많은 문장 추출 시도
+                        all_sentences = re.split(r'[.!?。！？]\s+', script_text)
+                        for sent in all_sentences:
+                            sent = sent.strip()
+                            if len(sent) >= 10 and sent not in filtered_sentences:
+                                # 필터링 다시 적용
+                                if not any(keyword in sent for keyword in filter_keywords):
+                                    filtered_sentences.append(sent)
+                                    if len(filtered_sentences) >= max_sentences:
+                                        break
+                    
+                    print(f"📝 Claude API로 생성된 문장 수: {len(filtered_sentences)}개 (목표: {max_sentences}개)")
+                    return filtered_sentences[:max_sentences]  # 최대 문장 수 (약 55초)
+                except Exception as e:
+                    last_error = e
+                    print(f"⚠️ Claude 모델 {model} 실패: {e}")
+                    continue  # 다음 모델 시도
+            
+            # 모든 모델 실패 시
+            if not response:
+                raise last_error if last_error else Exception("모든 Claude 모델 접근 실패")
+                
+        except Exception as e:
+            error_msg = str(e)
+            print(f"⚠️ Claude API 스크립트 생성 실패: {e}")
+            
+            # Claude API 실패 시 OpenAI로 폴백 (가능한 경우)
+            if self.openai_client:
+                print(f"⚠️ Claude API 실패, OpenAI로 폴백합니다.")
+                return self._generate_script_with_openai(topic, performance_prompt, content_type)
+            
+            # AI 생성 실패 시 기본 스크립트 반환
+            print(f"⚠️ AI 스크립트 생성 실패로 기본 스크립트를 사용합니다.")
+            return [
+                f"{topic}에 대해 알아보겠습니다.",
+                "중요한 포인트를 알려드립니다.",
+                "실천하면 효과를 볼 수 있습니다.",
+                "지금 바로 시작하세요!"
+            ]
+    
+    def _generate_script_with_openai(self, topic: str, performance_prompt: str = None, content_type: ContentType = None) -> list:
+        """OpenAI API로 영상 스크립트 생성 (기존 로직을 별도 메서드로 분리)"""
+        if not self.openai_client:
+            return [
+                f"{topic}에 대해 알아보겠습니다.",
+                "중요한 포인트를 알려드립니다.",
+                "실천하면 효과를 볼 수 있습니다.",
+                "지금 바로 시작하세요!"
+            ]
+        
+        try:
+            # gpt-4o-mini 또는 gpt-4o 사용 시도 (더 접근 가능)
+            models_to_try = ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"]
+            response = None
+            last_error = None
+            
+            # 콘텐츠 타입별 설정 (55초 목표로 충분한 내용 생성)
+            prefer_short = False  # 55초 목표이므로 짧은 영상 비활성화
+            
+            if content_type is None:
+                content_type_str = getattr(config, 'CONTENT_TYPE', 'auto')
+                try:
+                    content_type = ContentType(content_type_str.lower())
+                except ValueError:
+                    content_type = ContentType.AUTO
+            
+            # 타입별 시스템 프롬프트 구성 (모두 55초 목표)
+            target_duration = config.SHORTS_TARGET_DURATION  # 55초
+            
+            if content_type == ContentType.HOOK:
+                system_prompt = """당신은 YouTube Shorts용 Hook 영상 스크립트 작성 전문가입니다.
+- 첫 3초 안에 강력한 Hook 문장으로 시청자의 관심을 끌어야 합니다
+- 한국어 속담, 관용어, 명언 등에 집중하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 충분한 설명과 예시를 포함하세요
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
+- Hook 문장을 반복하거나 강조하고, 자세한 설명을 추가하세요"""
+                max_sentences = 16
+            elif content_type == ContentType.QUOTE:
+                system_prompt = """당신은 YouTube Shorts용 명언/지식 한 줄 영상 스크립트 작성 전문가입니다.
+- 첫 문장에 강력한 명언이나 인사이트를 배치하세요
+- AI, 비즈니스, 자기계발, 투자 등 지식 한 줄에 집중하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 충분한 설명과 실생활 적용법을 포함하세요
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
+- 명언을 자세히 설명하고 실생활 적용법과 예시를 제시하세요"""
+                max_sentences = 16
+            elif content_type == ContentType.STORY:
+                system_prompt = """당신은 YouTube Shorts용 스토리텔링 영상 스크립트 작성 전문가입니다.
+- 첫 문장에 강력한 Hook으로 시작하세요
+- 심리, 역사, 부자습관 등 스토리를 통해 교훈을 전달하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 스토리를 자세히 전개하세요
+- 스토리 구조: Hook → 전개 → 세부 설명 → 교훈 → 마무리
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요"""
+                max_sentences = 16
+            elif content_type == ContentType.FACT:
+                system_prompt = """당신은 YouTube Shorts용 팩트 기반 영상 스크립트 작성 전문가입니다.
+- 첫 문장에 놀라운 팩트를 배치하여 Hook을 만드세요
+- 과학, 역사, 인체, 우주 등 놀라운 사실을 전달하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 팩트를 자세히 설명하세요
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
+- 팩트를 설명하고 왜 놀라운지, 어떻게 발견되었는지 등 자세한 배경을 포함하세요"""
+                max_sentences = 16
+            elif content_type == ContentType.SHORT_STORY:
+                system_prompt = """당신은 YouTube Shorts용 짧은 스토리 영상 스크립트 작성 전문가입니다.
+- 첫 문장에 강력한 Hook으로 시작하세요
+- 인생 교훈, 영감, 성공 스토리 등을 자세히 전달하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 스토리를 충분히 전개하세요
+- 스토리 구조: Hook → 사건 전개 → 세부 설명 → 교훈 → 마무리
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요"""
+                max_sentences = 16
+            else:
+                # 기본 설정
+                system_prompt = """당신은 YouTube Shorts용 영상 스크립트 작성 전문가입니다.
+- 설명이 충분하도록 자세하게 작성하세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 각 문장은 3-4초 분량입니다
+- YouTube Shorts는 최대 60초이므로 55초 이내로 작성해야 합니다
+- 총 12-16개 문장으로 작성하여 충분한 내용을 담으세요"""
+                max_sentences = 16
+            
+            # 성과 기반 프롬프트 추가
+            if performance_prompt:
+                system_prompt += "\n\n" + performance_prompt
+            
+            # 사용자 프롬프트 구성
+            user_prompt = f"'{topic}'에 대한 YouTube Shorts 영상 스크립트를 작성해주세요. 각 문장은 3-4초 분량이며, 총 {max_sentences}개 문장으로 작성하여 약 {target_duration}초 분량이 되도록 충분히 자세하게 작성해주세요 (최대 60초 제한). **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요.** 중요한 점: 순수한 대사나 설명만 작성하고, '배경음악', '자막', '시작' 같은 제작 지시사항은 절대 포함하지 마세요. 첫 문장은 반드시 강력한 Hook이어야 하며, 내용을 충분히 전개하여 시청자가 이해할 수 있도록 자세히 설명하세요."
+            
+            for model in models_to_try:
+                try:
+                    response = self.openai_client.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": system_prompt
+                            },
+                            {
+                                "role": "user",
+                                "content": user_prompt
+                            }
+                        ],
+                        max_tokens=800,  # 55초 분량을 위해 토큰 증가
+                        temperature=0.7
+                    )
+                    script_text = response.choices[0].message.content
+                    # 문장별로 분리 (줄바꿈과 마침표 모두 고려)
+                    sentences = []
+                    # 줄바꿈으로 분리
+                    for line in script_text.split('\n'):
+                        line = line.strip()
+                        if not line:
+                            continue
+                        # 마침표로도 분리 (긴 문장을 여러 문장으로 나눔)
+                        for sent in re.split(r'[.!?。！？]\s+', line):
+                            sent = sent.strip()
+                            if sent:
+                                sentences.append(sent)
+                    
+                    # 불필요한 텍스트 필터링
+                    filter_keywords = [
+                        '배경음악', '음악', 'BGM', 'bgm', '배경', '시작', '종료',
+                        '자막', '타이틀', '제목', '인트로', '아웃트로',
+                        '참고', '주의', '설명', '참고사항'
+                    ]
+                    
+                    filtered_sentences = []
+                    for s in sentences:
+                        # 숫자나 불필요한 기호로 시작하는 것 제거
+                        if s.startswith(('1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.', '10.', '11.', '12.', '13.', '14.', '15.', '16.', '-', '*', '•')):
+                            # 숫자 제거 후 문장만 추출
+                            s = re.sub(r'^\d+\.\s*', '', s).strip()
+                        # 너무 짧은 문장 제거 (최소 10자 이상)
+                        if len(s) < 10:
+                            continue
+                        # 필터 키워드가 포함된 문장 제거
+                        if any(keyword in s for keyword in filter_keywords):
+                            continue
+                        # 괄호 안의 설명 제거 (예: "텍스트 (참고사항)" -> "텍스트")
+                        s = re.sub(r'\([^)]*\)', '', s).strip()
+                        s = re.sub(r'\[[^\]]*\]', '', s).strip()
+                        if s and len(s) >= 10:
+                            filtered_sentences.append(s)
+                    
+                    # 최소 문장 수 확인 (55초 목표를 위해 최소 12개 이상 필요)
+                    if len(filtered_sentences) < 12:
+                        print(f"⚠️ 생성된 문장이 부족합니다 ({len(filtered_sentences)}개). 원본 스크립트를 다시 확인합니다.")
+                        # 원본 텍스트에서 더 많은 문장 추출 시도
+                        all_sentences = re.split(r'[.!?。！？]\s+', script_text)
+                        for sent in all_sentences:
+                            sent = sent.strip()
+                            if len(sent) >= 10 and sent not in filtered_sentences:
+                                # 필터링 다시 적용
+                                if not any(keyword in sent for keyword in filter_keywords):
+                                    filtered_sentences.append(sent)
+                                    if len(filtered_sentences) >= max_sentences:
+                                        break
+                    
+                    print(f"📝 OpenAI API로 생성된 문장 수: {len(filtered_sentences)}개 (목표: {max_sentences}개)")
+                    return filtered_sentences[:max_sentences]  # 최대 문장 수 (약 55초)
+                except Exception as e:
+                    last_error = e
+                    continue  # 다음 모델 시도
+            
+            # 모든 모델 실패 시
+            if not response:
+                raise last_error if last_error else Exception("모든 모델 접근 실패")
+                
+        except Exception as e:
+            error_msg = str(e)
+            if "does not have access" in error_msg or "model_not_found" in error_msg:
+                print(f"⚠️ OpenAI API 키가 모델에 접근할 수 없습니다.")
+                print(f"   OpenAI Platform에서 모델 접근 권한을 확인하세요.")
+            else:
+                print(f"⚠️ OpenAI API 스크립트 생성 실패: {e}")
+            
+            # AI 생성 실패 시 기본 스크립트 반환
+            print(f"⚠️ AI 스크립트 생성 실패로 기본 스크립트를 사용합니다.")
+            return [
+                f"{topic}에 대해 알아보겠습니다.",
+                "중요한 포인트를 알려드립니다.",
+                "실천하면 효과를 볼 수 있습니다.",
+                "지금 바로 시작하세요!"
+            ]
     
     def _create_video_from_script(
         self,
@@ -751,15 +983,23 @@ class AIVideoGenerator:
                         video_clip = video_clip.set_duration(sentence_duration)
                         print(f"   문장 {i+1} 최종 클립 duration: {video_clip.duration:.2f}초 (목표: {sentence_duration:.2f}초)")
                         
-                        # 자막 추가
+                        # 자막 추가 (페이드 효과 전에 추가하여 자막이 페이드의 영향을 받지 않도록)
                         try:
                             print(f"   문장 {i+1} 배경 영상 자막 추가 시도: {sentence[:30]}...")
                             subtitle_clip = self._create_subtitle_clip(sentence, sentence_duration)
                             if subtitle_clip:
+                                # 자막 클립의 시작 시간을 명시적으로 0초로 설정 (음성과 정확히 동기화)
+                                subtitle_clip = subtitle_clip.set_start(0)
+                                # 자막 클립의 duration을 정확히 설정 (음성 길이와 정확히 일치)
+                                subtitle_clip = subtitle_clip.set_duration(sentence_duration)
+                                # 자막 클립이 정확한 duration을 가지는지 확인
+                                if abs(subtitle_clip.duration - sentence_duration) > 0.01:
+                                    print(f"   ⚠️ 자막 클립 duration 조정: {subtitle_clip.duration:.2f}초 -> {sentence_duration:.2f}초")
+                                    subtitle_clip = subtitle_clip.set_duration(sentence_duration)
                                 video_clip = CompositeVideoClip([video_clip, subtitle_clip])
                                 # CompositeVideoClip 후 duration 강제 설정 (반복 방지)
                                 video_clip = video_clip.set_duration(sentence_duration)
-                                print(f"   ✅ 배경 영상 자막 추가 성공 (duration: {video_clip.duration:.2f}초)")
+                                print(f"   ✅ 배경 영상 자막 추가 성공 (duration: {video_clip.duration:.2f}초, 자막 시작: 0초, 자막 duration: {subtitle_clip.duration:.2f}초)")
                             else:
                                 print(f"   ⚠️ 자막 클립이 None입니다")
                         except Exception as e:
@@ -767,7 +1007,7 @@ class AIVideoGenerator:
                             import traceback
                             traceback.print_exc()
                         
-                        # 페이드 효과 (duration 유지)
+                        # 페이드 효과 (duration 유지, 자막은 페이드 효과의 영향을 받지 않음)
                         if i == 0:
                             video_clip = video_clip.fx(fadein, 0.5)
                             video_clip = video_clip.set_duration(sentence_duration)  # 페이드 후 duration 재설정
@@ -2201,7 +2441,10 @@ class AIVideoGenerator:
                             size=(1000, None),
                             align='center'
                         )
+                        # duration을 정확히 설정 (음성 길이와 일치)
                         txt_clip = txt_clip.set_duration(duration)
+                        # 시작 시간을 명시적으로 0초로 설정
+                        txt_clip = txt_clip.set_start(0)
                         # 위치 설정
                         try:
                             frame = txt_clip.get_frame(0)
@@ -2210,6 +2453,10 @@ class AIVideoGenerator:
                             txt_clip = txt_clip.set_position(('center', y_pos))
                         except:
                             txt_clip = txt_clip.set_position(('center', 'bottom'))
+                        # duration 재확인 및 설정 (정확성 보장)
+                        if abs(txt_clip.duration - duration) > 0.01:
+                            txt_clip = txt_clip.set_duration(duration)
+                        print(f"   ✅ ImageMagick 자막 생성 성공: duration={txt_clip.duration:.2f}초 (목표: {duration:.2f}초)")
                         return txt_clip
                     except Exception as e1:
                         print(f"   ImageMagick TextClip 실패, PIL로 대체: {e1}")
@@ -2311,13 +2558,20 @@ class AIVideoGenerator:
                     subtitle_img = rgb_img
                 
                 subtitle_array = np.array(subtitle_img)
-                txt_clip = ImageClip(subtitle_array).set_duration(duration)
+                txt_clip = ImageClip(subtitle_array)
+                # duration을 정확히 설정 (음성 길이와 일치)
+                txt_clip = txt_clip.set_duration(duration)
                 # 하단 중앙 위치 (실제 높이 고려, 더 명확하게)
                 actual_height = subtitle_array.shape[0]
                 y_pos = max(100, 1920 - actual_height - 150)  # 최소 100px, 하단에서 150px 위
                 txt_clip = txt_clip.set_position(('center', y_pos))
+                # 시작 시간을 명시적으로 0초로 설정
+                txt_clip = txt_clip.set_start(0)
+                # duration 재확인 및 설정 (정확성 보장)
+                if abs(txt_clip.duration - duration) > 0.01:
+                    txt_clip = txt_clip.set_duration(duration)
                 
-                print(f"   ✅ PIL 자막 생성 성공: 높이={actual_height}px, 위치 y={y_pos}")
+                print(f"   ✅ PIL 자막 생성 성공: 높이={actual_height}px, 위치 y={y_pos}, duration={txt_clip.duration:.2f}초 (목표: {duration:.2f}초)")
                 return txt_clip
             except Exception as e:
                 print(f"   자막 클립 생성 실패: {e}")

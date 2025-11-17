@@ -17,8 +17,11 @@ YOUTUBE_CLIENT_ID = os.getenv('YOUTUBE_CLIENT_ID')
 YOUTUBE_CLIENT_SECRET = os.getenv('YOUTUBE_CLIENT_SECRET')
 YOUTUBE_REFRESH_TOKEN = os.getenv('YOUTUBE_REFRESH_TOKEN')
 
-# OpenAI API 설정
+# AI API 설정
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY')
+# AI API 우선순위 설정 (claude 또는 openai, 기본값: openai)
+AI_API_PROVIDER = os.getenv('AI_API_PROVIDER', 'openai').lower()  # 'openai' 또는 'claude'
 
 # 이미지/영상 API 설정 (선택사항)
 PEXELS_API_KEY = os.getenv('PEXELS_API_KEY')  # https://www.pexels.com/api/ 에서 무료로 발급 가능 (CC0 라이선스)

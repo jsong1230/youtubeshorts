@@ -11,7 +11,9 @@ AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하
 ## ✨ 주요 기능
 
 ### 1. AI 영상 자동 생성
-- **OpenAI GPT 활용**: 최신 AI 기술을 활용한 고품질 스크립트 생성
+- **AI API 지원**: OpenAI GPT 또는 Claude API를 활용한 고품질 스크립트 생성
+- **API 자동 선택**: 설정에 따라 OpenAI 또는 Claude API 자동 사용
+- **API 폴백**: Claude API 실패 시 자동으로 OpenAI로 전환
 - **콘텐츠 타입 최적화**: Hook, 명언, 스토리, 팩트, 짧은 스토리 등 수익화 최적화된 콘텐츠 형태 지원
 - **짧고 강한 Hook**: 첫 3초 안에 시청자 관심을 끄는 강력한 Hook 자동 생성
 - **자동 길이 조정**: 콘텐츠 타입별 최적 길이 (목표 55초, 최대 60초)
@@ -69,11 +71,14 @@ AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하
    - YouTube Data API v3 활성화
    - OAuth 2.0 클라이언트 ID 생성
 
-2. **OpenAI API**
-   - OpenAI Platform에서 API 키 발급: https://platform.openai.com/
-   - GPT-4o-mini, GPT-4o, GPT-3.5-turbo 모델 사용 가능
-   - **모델 접근 권한**: Settings > Model access에서 사용할 모델 활성화 필요
-   - 자세한 내용은 [API_SETUP.md](./API_SETUP.md) 참고
+2. **AI API (선택사항)**
+   - **OpenAI API**: OpenAI Platform에서 API 키 발급: https://platform.openai.com/
+     - GPT-4o-mini, GPT-4o, GPT-3.5-turbo 모델 사용 가능
+     - **모델 접근 권한**: Settings > Model access에서 사용할 모델 활성화 필요
+   - **Claude API**: Anthropic Platform에서 API 키 발급: https://console.anthropic.com/
+     - Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet 모델 사용 가능
+   - **API 제공자 선택**: `.env` 파일에서 `AI_API_PROVIDER=openai` 또는 `AI_API_PROVIDER=claude` 설정
+   - 자세한 내용은 [API_SETUP.md](./docs/API_SETUP.md) 참고
 
 3. **이미지 API (선택사항)**
    - Pexels API: https://www.pexels.com/api/ (무료)
@@ -109,8 +114,12 @@ YOUTUBE_CLIENT_ID=your_client_id_here
 YOUTUBE_CLIENT_SECRET=your_client_secret_here
 YOUTUBE_REFRESH_TOKEN=your_refresh_token_here
 
-# OpenAI API (AI 영상 생성용)
+# AI API 설정 (AI 영상 생성용)
+# OpenAI 또는 Claude 중 하나 이상 설정 필요
 OPENAI_API_KEY=your_openai_api_key_here
+CLAUDE_API_KEY=your_claude_api_key_here
+# AI API 제공자 선택 (openai 또는 claude, 기본값: openai)
+AI_API_PROVIDER=claude
 
 # 이미지 API (선택사항)
 PEXELS_API_KEY=your_pexels_api_key_here
@@ -153,12 +162,22 @@ python main.py upload
 # 권한 승인 후 token.json 파일이 자동 생성됨
 ```
 
-### 4. OpenAI API 키 발급
+### 4. AI API 키 발급
 
+#### OpenAI API (선택사항)
 1. [OpenAI Platform](https://platform.openai.com/) 접속
 2. 계정 생성 또는 로그인
 3. **API Keys** 메뉴에서 새 API 키 생성
 4. `.env` 파일에 `OPENAI_API_KEY` 설정
+
+#### Claude API (선택사항)
+1. [Anthropic Platform](https://console.anthropic.com/) 접속
+2. 계정 생성 또는 로그인
+3. **API Keys** 메뉴에서 새 API 키 생성
+4. `.env` 파일에 `CLAUDE_API_KEY` 설정
+5. `.env` 파일에 `AI_API_PROVIDER=claude` 설정 (Claude를 우선 사용하려면)
+
+**참고**: OpenAI와 Claude 중 하나 이상 설정하면 됩니다. 둘 다 설정하면 `AI_API_PROVIDER` 설정에 따라 우선 사용할 API가 결정됩니다.
 
 ## 📁 프로젝트 구조
 
@@ -415,9 +434,10 @@ python main.py upload
 
 ### 영상 생성 실패
 
-1. **OpenAI API 키 확인**
+1. **AI API 키 확인**
    ```bash
-   # .env 파일에서 OPENAI_API_KEY 확인
+   # .env 파일에서 OPENAI_API_KEY 또는 CLAUDE_API_KEY 확인
+   # AI_API_PROVIDER 설정 확인 (openai 또는 claude)
    ```
 
 2. **디스크 공간 확인**
@@ -468,7 +488,8 @@ python main.py upload
 ## 🛠️ 기술 스택
 
 - **Python 3.8+**: 메인 프로그래밍 언어
-- **OpenAI API**: GPT 모델을 활용한 스크립트 생성, TTS 음성 생성
+- **AI API**: OpenAI GPT 또는 Claude API를 활용한 스크립트 생성
+- **OpenAI TTS**: 음성 생성 (선택사항)
 - **Google TTS (gTTS)**: 한글 음성 생성 (대체 옵션)
 - **MoviePy**: 영상 편집 및 합성
 - **PIL (Pillow)**: 이미지 처리
