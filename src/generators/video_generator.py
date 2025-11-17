@@ -629,12 +629,12 @@ class AIVideoGenerator:
             sentence_audio_durations = [d * scale_factor for d in sentence_audio_durations]
             print(f"   duration 조정: {scale_factor:.2f}배 (목표: {duration}초)")
         
-        # 배경 미디어 그룹핑: 2-3개 문장마다 배경 변경 (너무 자주 바꾸지 않음)
+        # 배경 미디어 그룹핑: 2-3개 문장마다 배경 변경 (관련 문장들은 같은 배경 사용)
         background_groups = []
         group_size = 2  # 2개 문장마다 배경 변경
         use_background_video = getattr(config, 'USE_BACKGROUND_VIDEO', True)
         
-        # 각 그룹에서 사용할 배경 영상의 시작 시간을 추적
+        # 각 그룹에서 사용할 배경 영상의 시작 시간을 추적 (순차 재생용)
         video_start_times = {}  # {bg_video_path: current_start_time}
         
         for i in range(0, len(script), group_size):
@@ -685,178 +685,129 @@ class AIVideoGenerator:
                     source_duration = source_video.duration
                     print(f"   원본 영상 길이: {source_duration:.2f}초, 필요한 길이: {sentence_duration:.2f}초")
                     
-                    # 필요한 길이에 맞춰 자르기
-                    if source_duration >= sentence_duration:
-                        # 같은 배경 영상 파일을 여러 문장에서 사용할 때, 순차적으로 재생
-                        # 각 문장마다 이전 문장의 끝 지점부터 시작 (전체 영상을 순차적으로 재생)
-                        if bg_video_path in video_start_times:
-                            start_time = video_start_times[bg_video_path]
-                        else:
-                            # 처음 사용하는 경우 0부터 시작
-                            start_time = 0.0
-                            video_start_times[bg_video_path] = 0.0
-                        
-                        # 시작점이 영상 끝을 넘어가면 처음으로 돌아가지 않고, 영상 끝에서 멈춤
-                        if start_time >= source_duration - sentence_duration:
-                            # 영상 끝에 도달했으면, 마지막 부분을 반복하지 않고 처음부터 다시 시작
-                            # 하지만 사용자가 원하는 것은 전체 영상을 순차적으로 재생하는 것이므로
-                            # 영상 끝에 도달하면 처음부터 다시 시작 (하지만 이전 문장과 겹치지 않도록)
-                            start_time = 0.0
-                        
-                        end_time = start_time + sentence_duration
-                        # end_time이 영상 길이를 넘어가면 조정
-                        if end_time > source_duration:
-                            # 영상 끝에 도달했으면, 남은 부분만 사용하고 다음 문장은 처음부터
-                            end_time = source_duration
-                            # 다음 문장을 위해 시작점을 0으로 리셋
-                            video_start_times[bg_video_path] = 0.0
-                        else:
-                            # 다음 문장을 위해 시작점 업데이트
-                            video_start_times[bg_video_path] = end_time
-                        
-                        # subclip으로 정확히 자르기 (반복 방지)
-                        # 정확한 시간 범위로 자르기 (소수점 오차 방지)
-                        # end_time을 약간 줄여서 경계 중복 방지
-                        safe_end_time = min(end_time, source_duration - 0.01)  # 0.01초 여유
-                        video_clip = source_video.subclip(start_time, safe_end_time)
-                        
-                        print(f"   📍 배경 영상 재생 위치: {start_time:.2f}초~{safe_end_time:.2f}초 (원본: {source_duration:.2f}초)")
-                        
-                        # subclip이 정확한 길이로 잘렸는지 확인하고, 필요시 다시 정확히 자르기
-                        actual_clip_duration = video_clip.duration
-                        if abs(actual_clip_duration - sentence_duration) > 0.01:
-                            # 정확한 길이로 다시 자르기 (경계 중복 방지)
-                            if actual_clip_duration > sentence_duration:
-                                video_clip = video_clip.subclip(0, sentence_duration)
-                                actual_clip_duration = video_clip.duration
-                        
-                        # set_duration은 메타데이터만 변경하므로, 실제 프레임이 정확한지 확인
-                        # 정확한 duration으로 강제 설정 (경계 중복 방지)
-                        video_clip = video_clip.set_duration(sentence_duration)
-                        print(f"   문장 {i+1} 배경 영상 클립: {start_time:.2f}초~{safe_end_time:.2f}초 (원본: {source_duration:.2f}초, 실제: {actual_clip_duration:.2f}초, 설정: {video_clip.duration:.2f}초)")
+                    # 같은 배경 영상 파일을 여러 문장에서 사용할 때, 순차적으로 재생 (반복 없이)
+                    # 각 문장마다 이전 문장의 끝 지점부터 시작 (전체 영상을 순차적으로 재생)
+                    if bg_video_path in video_start_times and video_start_times[bg_video_path] is not None:
+                        start_time = video_start_times[bg_video_path]
                     else:
-                        # 영상이 짧으면 단순 반복 (정확한 길이로)
-                        if source_duration > 0:
-                            # 필요한 만큼만 반복하고 정확히 자르기
-                            if sentence_duration <= source_duration:
-                                # 문장이 영상보다 짧으면 처음부터 자르기
-                                # 정확한 시간 범위로 자르기 (반복 방지, 경계 중복 방지)
-                                safe_end = min(sentence_duration, source_duration - 0.01)  # 0.01초 여유
-                                video_clip = source_video.subclip(0, safe_end)
-                                actual_clip_duration = video_clip.duration
-                                # subclip이 정확한 길이로 잘렸는지 확인
-                                if abs(actual_clip_duration - sentence_duration) > 0.01:
-                                    # 정확한 길이로 다시 자르기 (경계 중복 방지)
-                                    if actual_clip_duration > sentence_duration:
-                                        video_clip = video_clip.subclip(0, sentence_duration)
-                                        actual_clip_duration = video_clip.duration
-                                video_clip = video_clip.set_duration(sentence_duration)  # 강제 duration 설정
-                                print(f"   문장 {i+1} 짧은 영상 클립: 0초~{safe_end:.2f}초 (원본: {source_duration:.2f}초, 실제: {actual_clip_duration:.2f}초)")
+                        # 처음 사용하는 경우 0부터 시작
+                        start_time = 0.0
+                        video_start_times[bg_video_path] = 0.0
+                    
+                    # 영상이 필요한 길이보다 길거나 같으면 사용
+                    if source_duration >= sentence_duration:
+                        # 시작점이 영상 끝을 넘어가면 이미지로 대체 (반복하지 않음)
+                        if start_time >= source_duration:
+                            print(f"   ⚠️ 문장 {i+1}: 배경 영상이 끝에 도달 ({start_time:.2f}초 >= {source_duration:.2f}초), 이미지로 대체")
+                            source_video.close()
+                            bg_video_path = None  # 이미지로 대체하기 위해 None으로 설정
+                            # 아래 이미지 처리 로직으로 넘어감
+                        else:
+                            end_time = start_time + sentence_duration
+                            # end_time이 영상 길이를 넘어가면 남은 부분만 사용하고 다음 문장은 이미지로
+                            if end_time > source_duration:
+                                # 영상 끝까지만 사용
+                                end_time = source_duration
+                                # 다음 문장을 위해 시작점을 None으로 설정 (이미지 사용)
+                                video_start_times[bg_video_path] = None
                             else:
-                                # 문장이 영상보다 길면 반복 (각 클립을 독립적으로 생성)
-                                looped_parts = []
-                                remaining_duration = sentence_duration
-                                
-                                while remaining_duration > 0.01:  # 0.01초 이상 남아있으면 계속
-                                    # 필요한 만큼만 자르기
-                                    clip_duration = min(source_duration, remaining_duration)
-                                    # 각 루프마다 새로운 subclip 생성 (독립적)
-                                    loop_clip = source_video.subclip(0, clip_duration)
-                                    loop_clip = loop_clip.set_duration(clip_duration)  # 정확한 duration 설정
-                                    looped_parts.append(loop_clip)
-                                    remaining_duration -= clip_duration
-                                    print(f"      루프 클립 추가: {clip_duration:.2f}초 (남은 시간: {remaining_duration:.2f}초)")
-                                
-                                if len(looped_parts) > 1:
-                                    print(f"      {len(looped_parts)}개 루프 클립 연결 중...")
-                                    # 각 루프 클립의 duration을 다시 한 번 확인하고 강제 설정
-                                    for lp_idx, lp_clip in enumerate(looped_parts):
-                                        expected_lp_dur = min(source_duration, sentence_duration - sum(p.duration for p in looped_parts[:lp_idx]))
-                                        if abs(lp_clip.duration - expected_lp_dur) > 0.01:
-                                            print(f"         루프 클립 {lp_idx+1} duration 조정: {lp_clip.duration:.2f}초 -> {expected_lp_dur:.2f}초")
-                                            looped_parts[lp_idx] = lp_clip.set_duration(expected_lp_dur)
-                                    
-                                    video_clip = concatenate_videoclips(looped_parts, method="chain", transition=None)
-                                    # 정확한 길이로 강제 자르기 (반복 방지)
-                                    # concatenate 후 실제 duration 확인 및 조정
-                                    actual_looped_duration = sum(p.duration for p in looped_parts)
-                                    if abs(video_clip.duration - sentence_duration) > 0.01 or abs(actual_looped_duration - sentence_duration) > 0.01:
-                                        print(f"      루프 클립 길이 조정: {video_clip.duration:.2f}초 (합계: {actual_looped_duration:.2f}초) -> {sentence_duration:.2f}초")
-                                        # 정확한 길이로 자르기
-                                        video_clip = video_clip.subclip(0, sentence_duration)
-                                    video_clip = video_clip.set_duration(sentence_duration)  # 강제 설정
-                                    print(f"      루프 클립 최종 duration: {video_clip.duration:.2f}초")
-                                else:
-                                    video_clip = looped_parts[0]
-                                    if abs(video_clip.duration - sentence_duration) > 0.01:
-                                        video_clip = video_clip.set_duration(sentence_duration)
-                                    print(f"      루프 클립 최종 duration: {video_clip.duration:.2f}초")
-                        else:
-                            # source_duration이 0 이하인 경우
-                            clip_end = min(sentence_duration, source_duration)
-                            video_clip = source_video.subclip(0, clip_end)
-                            video_clip = video_clip.set_duration(clip_end)  # 강제 duration 설정
-                    
-                    # 해상도 설정
-                    video_clip = video_clip.resize((1080, 1920))
-                    # duration은 이미 설정되었지만, resize 후에도 확인
-                    if abs(video_clip.duration - sentence_duration) > 0.01:
-                        print(f"   문장 {i+1} duration 재설정: {video_clip.duration:.2f}초 -> {sentence_duration:.2f}초")
-                    video_clip = video_clip.set_duration(sentence_duration)
-                    print(f"   문장 {i+1} 최종 클립 duration: {video_clip.duration:.2f}초 (목표: {sentence_duration:.2f}초)")
-                    
-                    # 자막 추가
-                    try:
-                        print(f"   문장 {i+1} 배경 영상 자막 추가 시도: {sentence[:30]}...")
-                        subtitle_clip = self._create_subtitle_clip(sentence, sentence_duration)
-                        if subtitle_clip:
-                            video_clip = CompositeVideoClip([video_clip, subtitle_clip])
-                            # CompositeVideoClip 후 duration 강제 설정 (반복 방지)
+                                # 다음 문장을 위해 시작점 업데이트
+                                video_start_times[bg_video_path] = end_time
+                            
+                            # subclip으로 정확히 자르기 (반복 방지)
+                            safe_end_time = min(end_time, source_duration - 0.01)  # 0.01초 여유
+                            video_clip = source_video.subclip(start_time, safe_end_time)
+                            
+                            print(f"   📍 배경 영상 재생 위치: {start_time:.2f}초~{safe_end_time:.2f}초 (원본: {source_duration:.2f}초)")
+                            
+                            # subclip이 정확한 길이로 잘렸는지 확인하고, 필요시 다시 정확히 자르기
+                            actual_clip_duration = video_clip.duration
+                            if abs(actual_clip_duration - sentence_duration) > 0.01:
+                                # 정확한 길이로 다시 자르기
+                                if actual_clip_duration > sentence_duration:
+                                    video_clip = video_clip.subclip(0, sentence_duration)
+                                    actual_clip_duration = video_clip.duration
+                            
+                            # 정확한 duration으로 강제 설정
                             video_clip = video_clip.set_duration(sentence_duration)
-                            print(f"   ✅ 배경 영상 자막 추가 성공 (duration: {video_clip.duration:.2f}초)")
-                        else:
-                            print(f"   ⚠️ 자막 클립이 None입니다")
-                    except Exception as e:
-                        print(f"   ❌ 자막 추가 실패 (계속 진행): {e}")
-                        import traceback
-                        traceback.print_exc()
+                            print(f"   문장 {i+1} 배경 영상 클립: {start_time:.2f}초~{safe_end_time:.2f}초 (원본: {source_duration:.2f}초, 실제: {actual_clip_duration:.2f}초, 설정: {video_clip.duration:.2f}초)")
+                    else:
+                        # 영상이 짧으면 반복하지 않고 이미지로 대체
+                        print(f"   ⚠️ 문장 {i+1}: 배경 영상이 짧아서 ({source_duration:.2f}초 < {sentence_duration:.2f}초) 이미지로 대체")
+                        source_video.close()
+                        bg_video_path = None  # 이미지로 대체하기 위해 None으로 설정
+                        # 다음 문장도 이미지 사용하도록 시작점 제거
+                        if bg_video_path in video_start_times:
+                            video_start_times[bg_video_path] = None
+                        # 아래 이미지 처리 로직으로 넘어감
                     
-                    # 페이드 효과 (duration 유지)
-                    if i == 0:
-                        video_clip = video_clip.fx(fadein, 0.5)
-                        video_clip = video_clip.set_duration(sentence_duration)  # 페이드 후 duration 재설정
-                    elif i == len(script) - 1:
-                        video_clip = video_clip.fx(fadeout, 0.5)
-                        video_clip = video_clip.set_duration(sentence_duration)  # 페이드 후 duration 재설정
-                    
-                    # 최종 duration 확인 및 강제 설정 (반복 방지)
-                    if abs(video_clip.duration - sentence_duration) > 0.01:
-                        print(f"   문장 {i+1} 최종 duration 재설정: {video_clip.duration:.2f}초 -> {sentence_duration:.2f}초")
+                    # video_clip이 정의된 경우에만 처리 (이미지로 대체하는 경우는 아래 이미지 처리로 넘어감)
+                    if bg_video_path is not None:
+                        # 해상도 설정
+                        video_clip = video_clip.resize((1080, 1920))
+                        # duration은 이미 설정되었지만, resize 후에도 확인
+                        if abs(video_clip.duration - sentence_duration) > 0.01:
+                            print(f"   문장 {i+1} duration 재설정: {video_clip.duration:.2f}초 -> {sentence_duration:.2f}초")
                         video_clip = video_clip.set_duration(sentence_duration)
-                    
-                    # source_video는 나중에 닫기 (video_clip이 완전히 생성된 후)
-                    print(f"   ✅ 문장 {i+1} 클립 추가: {video_clip.duration:.2f}초 (목표: {sentence_duration:.2f}초)")
-                    print(f"   📁 사용한 배경 영상: {bg_video_path}")
-                    
-                    # 클립 전환 지점 확인을 위한 로깅
-                    if i > 0 and len(clips) > 0:
-                        prev_clip = clips[-1]
-                        prev_end_time = sum(c.duration for c in clips)
-                        print(f"   🔄 클립 전환: 이전 클립({prev_clip.duration:.2f}초) -> 현재 클립({video_clip.duration:.2f}초)")
-                        print(f"      이전 클립 끝 시간: {prev_end_time:.2f}초")
-                        print(f"      현재 클립 시작 시간: {prev_end_time:.2f}초")
-                    
-                    clips.append(video_clip)
-                    # source_video는 나중에 정리 (close하지 않음 - subclip이 참조하고 있음)
-                    continue
+                        print(f"   문장 {i+1} 최종 클립 duration: {video_clip.duration:.2f}초 (목표: {sentence_duration:.2f}초)")
+                        
+                        # 자막 추가
+                        try:
+                            print(f"   문장 {i+1} 배경 영상 자막 추가 시도: {sentence[:30]}...")
+                            subtitle_clip = self._create_subtitle_clip(sentence, sentence_duration)
+                            if subtitle_clip:
+                                video_clip = CompositeVideoClip([video_clip, subtitle_clip])
+                                # CompositeVideoClip 후 duration 강제 설정 (반복 방지)
+                                video_clip = video_clip.set_duration(sentence_duration)
+                                print(f"   ✅ 배경 영상 자막 추가 성공 (duration: {video_clip.duration:.2f}초)")
+                            else:
+                                print(f"   ⚠️ 자막 클립이 None입니다")
+                        except Exception as e:
+                            print(f"   ❌ 자막 추가 실패 (계속 진행): {e}")
+                            import traceback
+                            traceback.print_exc()
+                        
+                        # 페이드 효과 (duration 유지)
+                        if i == 0:
+                            video_clip = video_clip.fx(fadein, 0.5)
+                            video_clip = video_clip.set_duration(sentence_duration)  # 페이드 후 duration 재설정
+                        elif i == len(script) - 1:
+                            video_clip = video_clip.fx(fadeout, 0.5)
+                            video_clip = video_clip.set_duration(sentence_duration)  # 페이드 후 duration 재설정
+                        
+                        # 최종 duration 확인 및 강제 설정 (반복 방지)
+                        if abs(video_clip.duration - sentence_duration) > 0.01:
+                            print(f"   문장 {i+1} 최종 duration 재설정: {video_clip.duration:.2f}초 -> {sentence_duration:.2f}초")
+                            video_clip = video_clip.set_duration(sentence_duration)
+                        
+                        # source_video는 나중에 닫기 (video_clip이 완전히 생성된 후)
+                        print(f"   ✅ 문장 {i+1} 클립 추가: {video_clip.duration:.2f}초 (목표: {sentence_duration:.2f}초)")
+                        print(f"   📁 사용한 배경 영상: {bg_video_path}")
+                        
+                        # 클립 전환 지점 확인을 위한 로깅
+                        if i > 0 and len(clips) > 0:
+                            prev_clip = clips[-1]
+                            prev_end_time = sum(c.duration for c in clips)
+                            print(f"   🔄 클립 전환: 이전 클립({prev_clip.duration:.2f}초) -> 현재 클립({video_clip.duration:.2f}초)")
+                            print(f"      이전 클립 끝 시간: {prev_end_time:.2f}초")
+                            print(f"      현재 클립 시작 시간: {prev_end_time:.2f}초")
+                        
+                        clips.append(video_clip)
+                        # source_video는 나중에 정리 (close하지 않음 - subclip이 참조하고 있음)
+                        continue
                 except Exception as e:
                     print(f"   배경 영상 사용 실패, 이미지로 대체: {e}")
                     import traceback
                     traceback.print_exc()
             
-            # 배경 영상이 없거나 실패 시 이미지 사용
+            # 배경 영상이 없거나 실패 시 해당 문장에 맞는 이미지 다운로드
             if bg_image is None:
-                bg_image = self._create_gradient_background(i, len(script))
+                print(f"   🖼️ 문장 {i+1}에 맞는 이미지 다운로드 시도: {sentence[:30]}...")
+                bg_image = self._download_image_for_sentence(sentence, i)
+                if bg_image is None:
+                    # 이미지 다운로드 실패 시 그라데이션 배경 사용
+                    print(f"   ⚠️ 이미지 다운로드 실패, 그라데이션 배경 사용")
+                    bg_image = self._create_gradient_background(i, len(script))
             
             # 자막 추가 (이미지에 텍스트 그리기)
             text_image = self._draw_text_on_image(bg_image.copy(), sentence)
@@ -1080,27 +1031,44 @@ class AIVideoGenerator:
                 if actual_audio_duration > actual_video_duration:
                     # 음성이 더 길면 영상 길이를 음성에 맞춤
                     actual_video_duration = actual_audio_duration
-                    # 이미 만들어진 final_video를 사용하고, 마지막 부분을 반복하여 길이를 늘림
-                    # 다시 연결하지 않고, 기존 final_video를 확장
                     current_video_duration = final_video.duration
                     if actual_video_duration > current_video_duration:
-                        # 마지막 클립을 반복하여 길이를 늘림
                         extension_needed = actual_video_duration - current_video_duration
-                        # 마지막 1초를 반복하여 확장
-                        last_second = final_video.subclip(max(0, current_video_duration - 1.0), current_video_duration)
+                        print(f"   음성 길이에 맞추기 위해 영상 확장: {current_video_duration:.2f}초 -> {actual_video_duration:.2f}초 (추가: {extension_needed:.2f}초)")
+                        # 마지막 부분을 반복하여 확장 (중복 방지를 위해 정확한 계산)
+                        # 마지막 2초를 사용하여 반복 (너무 짧으면 전체 영상 사용)
+                        extension_source_duration = min(2.0, current_video_duration)
+                        extension_source = final_video.subclip(max(0, current_video_duration - extension_source_duration), current_video_duration)
+                        
+                        # 필요한 반복 횟수 계산
+                        num_extensions = int(extension_needed / extension_source_duration) + (1 if extension_needed % extension_source_duration > 0.01 else 0)
                         extension_clips = []
-                        while sum(c.duration for c in extension_clips) < extension_needed:
-                            clip_duration = min(1.0, extension_needed - sum(c.duration for c in extension_clips))
-                            ext_clip = last_second.subclip(0, clip_duration)
-                            ext_clip = ext_clip.set_duration(clip_duration)
+                        remaining_extension = extension_needed
+                        
+                        for ext_idx in range(num_extensions):
+                            if remaining_extension <= 0.01:
+                                break
+                            ext_clip_duration = min(extension_source_duration, remaining_extension)
+                            ext_clip = extension_source.subclip(0, min(extension_source_duration, ext_clip_duration))
+                            ext_clip = ext_clip.set_duration(ext_clip_duration)
                             extension_clips.append(ext_clip)
+                            remaining_extension -= ext_clip_duration
                         
                         if extension_clips:
-                            extension_video = concatenate_videoclips(extension_clips, method="chain", transition=None)
-                            final_video = concatenate_videoclips([final_video, extension_video], method="chain", transition=None)
+                            extension_video = concatenate_videoclips(extension_clips, method="compose")
+                            # 정확한 길이로 자르기
+                            if abs(extension_video.duration - extension_needed) > 0.01:
+                                extension_video = extension_video.subclip(0, extension_needed)
+                            extension_video = extension_video.set_duration(extension_needed)
+                            # 원본 영상과 확장 영상 연결
+                            final_video = concatenate_videoclips([final_video, extension_video], method="compose")
+                            # 최종 길이 확인 및 조정
+                            if abs(final_video.duration - actual_video_duration) > 0.01:
+                                final_video = final_video.subclip(0, actual_video_duration)
                             final_video = final_video.set_duration(actual_video_duration)
                         else:
                             final_video = final_video.set_duration(actual_video_duration)
+                        print(f"   최종 영상 길이: {final_video.duration:.2f}초")
                     else:
                         final_video = final_video.set_duration(actual_video_duration)
                 elif actual_audio_duration < actual_video_duration:

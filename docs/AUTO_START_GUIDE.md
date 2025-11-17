@@ -65,9 +65,14 @@ tmux attach -t youtubeshorts
 
 `.env` 파일에서 설정:
 ```
-UPLOAD_SCHEDULE_TIME=09:00
+UPLOAD_SCHEDULE_TIME=09:00  # 기본 시작 시간 (4시간 간격으로 6번 업로드)
 UPLOAD_TIMEZONE=Asia/Seoul
 ```
+
+**참고**: 
+- 기본 시작 시간에서 4시간 간격으로 총 6번 자동 업로드됩니다
+- 예: `UPLOAD_SCHEDULE_TIME=09:00`이면 → 09:00, 13:00, 17:00, 21:00, 01:00, 05:00에 업로드
+- YouTube Shorts는 하루에 최대 6개까지 업로드 가능합니다
 
 변경 후 봇을 재시작하세요.
 

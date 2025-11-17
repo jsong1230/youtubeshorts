@@ -217,14 +217,24 @@ class YouTubeUploader:
             print(f"🔗 URL: https://www.youtube.com/watch?v={video_id}")
             
             # 썸네일 업로드 (있는 경우)
-            if thumbnail_path and os.path.exists(thumbnail_path):
-                try:
-                    print("\n🖼️ 썸네일 업로드 중...")
-                    self.upload_thumbnail(video_id, thumbnail_path)
-                    print("✅ 썸네일 업로드 완료!")
-                except Exception as e:
-                    print(f"⚠️ 썸네일 업로드 실패: {e}")
+            if thumbnail_path:
+                print(f"\n🖼️ 썸네일 경로 확인: {thumbnail_path}")
+                if os.path.exists(thumbnail_path):
+                    print(f"   ✅ 썸네일 파일 존재 확인됨 (크기: {os.path.getsize(thumbnail_path)} bytes)")
+                    try:
+                        print("   📤 썸네일 업로드 중...")
+                        self.upload_thumbnail(video_id, thumbnail_path)
+                        print("   ✅ 썸네일 업로드 완료!")
+                    except Exception as e:
+                        print(f"   ⚠️ 썸네일 업로드 실패: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        print("   영상은 정상적으로 업로드되었습니다.")
+                else:
+                    print(f"   ⚠️ 썸네일 파일을 찾을 수 없습니다: {thumbnail_path}")
                     print("   영상은 정상적으로 업로드되었습니다.")
+            else:
+                print("\n⚠️ 썸네일 경로가 제공되지 않았습니다.")
             
             return video_id
             
@@ -262,6 +272,12 @@ class YouTubeUploader:
         if not os.path.exists(thumbnail_path):
             raise FileNotFoundError(f"썸네일 파일을 찾을 수 없습니다: {thumbnail_path}")
         
+        # 절대 경로로 변환 (상대 경로 문제 방지)
+        thumbnail_path = os.path.abspath(thumbnail_path)
+        
+        print(f"   📁 썸네일 절대 경로: {thumbnail_path}")
+        print(f"   📏 파일 크기: {os.path.getsize(thumbnail_path)} bytes")
+        
         # 썸네일 파일 업로드
         media = MediaFileUpload(
             thumbnail_path,
@@ -270,10 +286,15 @@ class YouTubeUploader:
         )
         
         # 썸네일 업로드 요청
-        self.youtube.thumbnails().set(
-            videoId=video_id,
-            media_body=media
-        ).execute()
+        try:
+            response = self.youtube.thumbnails().set(
+                videoId=video_id,
+                media_body=media
+            ).execute()
+            print(f"   ✅ 썸네일 업로드 API 응답: {response}")
+        except Exception as e:
+            print(f"   ❌ 썸네일 업로드 API 오류: {e}")
+            raise
     
     def get_video_stats(self, video_id: str):
         """영상 통계 정보 가져오기"""
