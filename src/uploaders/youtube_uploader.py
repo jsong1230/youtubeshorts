@@ -4,6 +4,7 @@ YouTube Shorts 자동 업로드 모듈
 import os
 import json
 from datetime import datetime
+from dateutil import parser as date_parser
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -275,8 +276,7 @@ class YouTubeUploader:
                     published_at = item['snippet'].get('publishedAt', '')
                     if published_at:
                         # ISO 형식의 날짜를 파싱
-                        from dateutil import parser
-                        published_date = parser.parse(published_at).date()
+                        published_date = date_parser.parse(published_at).date()
                         if published_date == today:
                             print(f"✅ 오늘 이미 업로드된 영상 발견: {item['snippet']['title']}")
                             return True
