@@ -12,6 +12,7 @@ AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하
 ## ✨ 주요 기능
 
 ### 1. AI 영상 자동 생성
+
 - **AI API 지원**: OpenAI GPT 또는 Claude API를 활용한 고품질 스크립트 생성
 - **API 자동 선택**: 설정에 따라 OpenAI 또는 Claude API 자동 사용
 - **API 폴백**: Claude API 실패 시 자동으로 OpenAI로 전환

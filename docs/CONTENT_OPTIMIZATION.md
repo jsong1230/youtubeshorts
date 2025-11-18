@@ -203,4 +203,3 @@ CONTENT_TYPE=short_story python main.py upload
 - 성과 좋은 콘텐츠 타입
 
 성과 기반 프롬프트가 자동으로 적용되어 점점 더 좋은 콘텐츠를 생성합니다.
-
