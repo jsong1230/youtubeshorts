@@ -391,7 +391,7 @@ launchctl unload ~/Library/LaunchAgents/com.youtubeshorts.bot.plist
 3. **API 할당량**
 
    - **YouTube Data API v3**: 일일 할당량 확인 필요 (기본 10,000 units/day)
-
+   - **썸네일 업로드 제한**: 하루에 약 6-10개 정도의 썸네일 업로드 제한이 있습니다. 할당량 초과 시 429 에러가 발생하며, 영상은 정상 업로드되지만 썸네일은 나중에 수동으로 업로드해야 할 수 있습니다.
    - **OpenAI API**: 사용량에 따른 비용 발생 (GPT-4o-mini 권장)
    - **이미지 API**: Pexels, Unsplash는 무료이지만 일일 제한 확인 필요
 

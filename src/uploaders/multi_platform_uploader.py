@@ -161,4 +161,37 @@ class MultiPlatformUploader:
     def get_results(self) -> Dict[str, Optional[str]]:
         """마지막 업로드 결과 반환"""
         return self.results
+    
+    def get_video_stats(self, video_id: str):
+        """
+        영상 통계 정보 가져오기 (YouTube만 지원)
+        
+        Args:
+            video_id: YouTube 영상 ID
+        
+        Returns:
+            통계 정보 딕셔너리 또는 None
+        """
+        if 'youtube' in self.uploaders:
+            try:
+                return self.uploaders['youtube'].get_video_stats(video_id)
+            except Exception as e:
+                print(f"⚠️ YouTube 통계 정보 가져오기 실패: {e}")
+                return None
+        return None
+    
+    def check_today_uploaded(self) -> bool:
+        """
+        오늘 업로드한 영상이 있는지 확인 (YouTube만 지원)
+        
+        Returns:
+            오늘 업로드한 영상이 있으면 True, 없으면 False
+        """
+        if 'youtube' in self.uploaders:
+            try:
+                return self.uploaders['youtube'].check_today_uploaded()
+            except Exception as e:
+                print(f"⚠️ 오늘 업로드 확인 실패: {e}")
+                return False
+        return False
 
