@@ -28,8 +28,11 @@ def main():
         
         elif command == 'upload':
             # 즉시 업로드
-            topic = sys.argv[2] if len(sys.argv) > 2 else None
-            bot.create_and_upload(topic=topic)
+            # --force 또는 -f 플래그 제외하고 주제 추출
+            args = [arg for arg in sys.argv[2:] if arg not in ['--force', '-f']]
+            topic = args[0] if args else None
+            force = '--force' in sys.argv or '-f' in sys.argv
+            bot.create_and_upload(topic=topic, force=force)
         
         elif command == 'stats':
             # 통계 업데이트 및 리포트
@@ -51,7 +54,7 @@ def main():
         else:
             print("사용법:")
             print("  python main.py test [주제]     - 영상 생성만 (업로드 없음)")
-            print("  python main.py upload [주제]  - 즉시 영상 생성 및 업로드")
+            print("  python main.py upload [주제] [--force]  - 즉시 영상 생성 및 업로드 (--force: 중복 체크 건너뛰기)")
             print("  python main.py stats          - 모든 영상 통계 업데이트")
             print("  python main.py report         - 수익화 리포트 출력")
             print("  python main.py schedule       - 자동 업로드 스케줄러 시작")

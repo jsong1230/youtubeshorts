@@ -130,38 +130,51 @@ class ShortsBot:
             traceback.print_exc()
             return None
     
-    def create_and_upload(self, topic: str = None, content_type: ContentType = None):
-        """영상 생성 및 업로드"""
+    def create_and_upload(self, topic: str = None, content_type: ContentType = None, force: bool = False):
+        """
+        영상 생성 및 업로드
+        
+        Args:
+            topic: 영상 주제 (None이면 자동 생성)
+            content_type: 콘텐츠 타입 (None이면 자동 선택)
+            force: True이면 중복 체크를 건너뛰고 강제 업로드
+        """
         try:
             content_type_name = content_type.value if content_type else "자동"
             print(f"\n{'='*50}")
             print(f"🚀 영상 생성 및 업로드 시작 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             print(f"📌 콘텐츠 타입: {content_type_name}")
+            if force:
+                print(f"⚠️ 강제 업로드 모드: 중복 체크를 건너뜁니다")
             print(f"{'='*50}\n")
             
             # 동기화 상태 확인
             self.sync_manager.print_sync_status()
             
-            # 오늘 이미 업로드했는지 확인 (로컬 상태)
-            if self.sync_manager.check_today_uploaded():
+            # 오늘 이미 업로드했는지 확인 (로컬 상태) - force 모드가 아닐 때만
+            if not force and self.sync_manager.check_today_uploaded():
                 today_info = self.sync_manager.get_today_upload_info()
                 print(f"\n⚠️ 경고: 로컬 상태 파일에 따르면 오늘 이미 업로드했습니다.")
                 print(f"   영상 ID: {today_info.get('video_id', 'N/A')}")
                 print(f"   제목: {today_info.get('title', 'N/A')}")
                 print(f"   컴퓨터: {today_info.get('computer_id', 'N/A')}")
                 print(f"\n계속하시겠습니까? (y/n): ", end='')
-                response = input().strip().lower()
-                if response != 'y':
-                    print("❌ 업로드를 취소했습니다.")
-                    return None
+                try:
+                    response = input().strip().lower()
+                    if response != 'y':
+                        print("❌ 업로드를 취소했습니다.")
+                        return None
+                except EOFError:
+                    # 비대화형 환경에서는 자동으로 진행
+                    print("y (자동 진행)")
             
-            # YouTube API로 오늘 업로드 확인 (실제 서버 상태)
-            if not self.use_multi_platform:
+            # YouTube API로 오늘 업로드 확인 (실제 서버 상태) - force 모드가 아닐 때만
+            if not force and not self.use_multi_platform:
                 if hasattr(self.uploader, 'check_today_uploaded'):
                     if self.uploader.check_today_uploaded():
                         print(f"\n⚠️ YouTube API 확인 결과, 오늘 이미 업로드된 영상이 있습니다.")
                         print(f"   중복 업로드를 방지하기 위해 업로드를 건너뜁니다.")
-                        print(f"   강제로 업로드하려면 수동으로 실행하세요.")
+                        print(f"   강제로 업로드하려면 force=True 옵션을 사용하세요.")
                         return None
             
             # 성과 기반 프롬프트 가져오기 (하루 1개 생성 전)
@@ -187,6 +200,10 @@ class ShortsBot:
                 title = actual_topic
             else:
                 title = datetime.now().strftime('%Y년 %m월 %d일')
+            
+            # 제목에 #Shorts 추가 (YouTube Shorts로 인식되도록)
+            if '#Shorts' not in title and '#shorts' not in title:
+                title = f"{title} #Shorts"
             
             # 3. 매력적인 썸네일 생성
             print("\n🖼️ 썸네일 생성 중...")
