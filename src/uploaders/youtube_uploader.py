@@ -3,6 +3,7 @@ YouTube Shorts 자동 업로드 모듈
 """
 import os
 import json
+from datetime import datetime
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -241,6 +242,49 @@ class YouTubeUploader:
         except Exception as e:
             print(f"❌ 업로드 실패: {str(e)}")
             raise
+    
+    def check_today_uploaded(self) -> bool:
+        """
+        오늘 업로드한 영상이 있는지 확인
+        
+        Returns:
+            오늘 업로드한 영상이 있으면 True, 없으면 False
+        """
+        try:
+            if not self.youtube:
+                return False
+            
+            # 오늘 날짜
+            today = datetime.now().date()
+            today_start = datetime.combine(today, datetime.min.time())
+            today_start_iso = today_start.isoformat() + 'Z'
+            
+            # 채널의 최근 업로드 영상 조회
+            request = self.youtube.search().list(
+                part='snippet',
+                forMine=True,
+                type='video',
+                maxResults=10,
+                order='date'
+            )
+            
+            response = request.execute()
+            
+            if 'items' in response:
+                for item in response['items']:
+                    published_at = item['snippet'].get('publishedAt', '')
+                    if published_at:
+                        # ISO 형식의 날짜를 파싱
+                        from dateutil import parser
+                        published_date = parser.parse(published_at).date()
+                        if published_date == today:
+                            print(f"✅ 오늘 이미 업로드된 영상 발견: {item['snippet']['title']}")
+                            return True
+            
+            return False
+        except Exception as e:
+            print(f"⚠️ 오늘 업로드 확인 실패: {e}")
+            return False
     
     def _resumable_upload(self, insert_request):
         """재개 가능한 업로드 처리"""

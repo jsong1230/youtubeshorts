@@ -6,9 +6,9 @@ token.json
 client_secrets.json
 
 # 데이터 파일
-data/
-*.db
-*.json
+data/*.db
+data/*.json
+!data/sync_state.json
 !requirements.txt
 
 # 출력 파일

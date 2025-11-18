@@ -18,6 +18,7 @@ from src.uploaders.youtube_uploader import YouTubeUploader
 from src.uploaders.multi_platform_uploader import MultiPlatformUploader
 from src.analytics.monetization import MonetizationTracker
 from src.pipeline.database import VideoDatabase
+from src.pipeline.sync_manager import SyncManager
 import config
 
 
@@ -38,6 +39,7 @@ class ShortsBot:
             self.use_multi_platform = False
         self.monetization = MonetizationTracker()
         self.database = VideoDatabase(db_path=config.DATABASE_PATH)
+        self.sync_manager = SyncManager()
         self.timezone = pytz.timezone(config.UPLOAD_TIMEZONE)
     
     def _get_performance_based_prompt(self) -> str:
@@ -136,6 +138,31 @@ class ShortsBot:
             print(f"🚀 영상 생성 및 업로드 시작 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             print(f"📌 콘텐츠 타입: {content_type_name}")
             print(f"{'='*50}\n")
+            
+            # 동기화 상태 확인
+            self.sync_manager.print_sync_status()
+            
+            # 오늘 이미 업로드했는지 확인 (로컬 상태)
+            if self.sync_manager.check_today_uploaded():
+                today_info = self.sync_manager.get_today_upload_info()
+                print(f"\n⚠️ 경고: 로컬 상태 파일에 따르면 오늘 이미 업로드했습니다.")
+                print(f"   영상 ID: {today_info.get('video_id', 'N/A')}")
+                print(f"   제목: {today_info.get('title', 'N/A')}")
+                print(f"   컴퓨터: {today_info.get('computer_id', 'N/A')}")
+                print(f"\n계속하시겠습니까? (y/n): ", end='')
+                response = input().strip().lower()
+                if response != 'y':
+                    print("❌ 업로드를 취소했습니다.")
+                    return None
+            
+            # YouTube API로 오늘 업로드 확인 (실제 서버 상태)
+            if not self.use_multi_platform:
+                if hasattr(self.uploader, 'check_today_uploaded'):
+                    if self.uploader.check_today_uploaded():
+                        print(f"\n⚠️ YouTube API 확인 결과, 오늘 이미 업로드된 영상이 있습니다.")
+                        print(f"   중복 업로드를 방지하기 위해 업로드를 건너뜁니다.")
+                        print(f"   강제로 업로드하려면 수동으로 실행하세요.")
+                        return None
             
             # 성과 기반 프롬프트 가져오기 (하루 1개 생성 전)
             performance_prompt = self._get_performance_based_prompt()
@@ -246,6 +273,15 @@ class ShortsBot:
                 script=None  # 향후 추가 가능
             )
             
+            # 6. 동기화 상태 업데이트
+            print("\n🔄 동기화 상태 업데이트 중...")
+            self.sync_manager.record_upload(
+                video_id=video_id,
+                title=title,
+                topic=topic
+            )
+            print("✅ 동기화 상태 업데이트 완료")
+            
             # 멀티 플랫폼 업로드 결과 출력
             if self.use_multi_platform:
                 print("\n📊 업로드 결과:")
@@ -255,7 +291,7 @@ class ShortsBot:
                     else:
                         print(f"   ⚠️ {platform.capitalize()}: 업로드 실패 또는 건너뜀")
             
-            # 6. 수익화 추적에 추가
+            # 7. 수익화 추적에 추가
             print("\n📊 4단계: 수익화 추적에 추가 중...")
             self.monetization.add_video(
                 video_id=video_id,

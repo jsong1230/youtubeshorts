@@ -44,6 +44,10 @@ def main():
             bot.schedule_daily_upload()
             bot.run_scheduler()
         
+        elif command == 'sync-status':
+            # 동기화 상태 확인
+            bot.sync_manager.print_sync_status()
+        
         else:
             print("사용법:")
             print("  python main.py test [주제]     - 영상 생성만 (업로드 없음)")
@@ -51,6 +55,7 @@ def main():
             print("  python main.py stats          - 모든 영상 통계 업데이트")
             print("  python main.py report         - 수익화 리포트 출력")
             print("  python main.py schedule       - 자동 업로드 스케줄러 시작")
+            print("  python main.py sync-status    - 동기화 상태 확인")
     else:
         # 기본: 즉시 업로드
         bot.create_and_upload()
