@@ -191,7 +191,7 @@ python main.py upload
 
 ## 📁 프로젝트 구조
 
-```
+```text
 youtubeshorts/
 ├── main.py                      # 메인 실행 파일
 ├── config.py                    # 설정 관리 (환경 변수 로드)
@@ -342,32 +342,6 @@ launchctl unload ~/Library/LaunchAgents/com.youtubeshorts.bot.plist
 
 실제 CPM은 채널, 주제, 지역 등에 따라 달라질 수 있습니다.
 
-## 📁 프로젝트 구조
-
-```
-youtubeshorts/
-├── main.py                      # 메인 실행 파일
-├── config.py                    # 설정 관리 (환경 변수 로드)
-├── ai_video_generator.py        # AI 영상 생성 (스크립트, 음성, 이미지)
-├── youtube_uploader.py          # YouTube API 업로드
-├── monetization.py              # 수익화 추적 및 분석
-├── create_client_secrets.py     # client_secrets.json 생성 도우미
-├── requirements.txt             # Python 의존성
-├── .env                         # 환경 변수 (생성 필요)
-├── client_secrets.json          # YouTube API 인증 (생성 필요)
-├── token.json                   # 인증 토큰 (자동 생성)
-├── monetization_data.json       # 수익화 데이터 (자동 생성)
-├── com.youtubeshorts.bot.plist  # macOS LaunchAgent 설정
-├── start_daemon.sh              # 데몬 시작 스크립트
-├── AUTO_START_GUIDE.md          # 자동 시작 가이드
-├── SETUP_GUIDE.md               # 상세 설정 가이드
-└── output/                       # 생성된 파일 저장
-    ├── videos/                  # 생성된 영상 파일
-    ├── thumbnails/              # 썸네일 (향후 지원)
-    ├── temp/                    # 임시 파일
-    └── bot.log                  # 봇 실행 로그
-```
-
 ## ⚙️ 설정 커스터마이징
 
 ### 영상 설정 (`config.py`)
@@ -462,11 +436,13 @@ python main.py upload
    ```
 
 2. **디스크 공간 확인**
+
    ```bash
    df -h  # macOS/Linux
    ```
 
 3. **임시 디렉토리 권한 확인**
+
    ```bash
    ls -la output/temp/
    ```
@@ -583,6 +559,7 @@ python main.py upload
 ## 📚 추가 리소스
 
 ### 로드맵
+
 - **3개월 수익화 도달 로드맵**: [docs/3month_roadmap.md](./docs/3month_roadmap.md)
 - **TTS 개선 가이드**: [docs/TTS_IMPROVEMENT.md](./docs/TTS_IMPROVEMENT.md)
 
