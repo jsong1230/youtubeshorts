@@ -80,17 +80,17 @@ AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하
    - OAuth 2.0 클라이언트 ID 생성
 
 2. **AI API (선택사항)**
-   - **OpenAI API**: OpenAI Platform에서 API 키 발급: https://platform.openai.com/
+   - **OpenAI API**: OpenAI Platform에서 API 키 발급: <https://platform.openai.com/>
      - GPT-4o-mini, GPT-4o, GPT-3.5-turbo 모델 사용 가능
      - **모델 접근 권한**: Settings > Model access에서 사용할 모델 활성화 필요
-   - **Claude API**: Anthropic Platform에서 API 키 발급: https://console.anthropic.com/
+   - **Claude API**: Anthropic Platform에서 API 키 발급: <https://console.anthropic.com/>
      - Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet 모델 사용 가능
    - **API 제공자 선택**: `.env` 파일에서 `AI_API_PROVIDER=openai` 또는 `AI_API_PROVIDER=claude` 설정
    - 자세한 내용은 [API_SETUP.md](./docs/API_SETUP.md) 참고
 
 3. **이미지 API (선택사항)**
-   - Pexels API: https://www.pexels.com/api/ (무료)
-   - Unsplash API: https://unsplash.com/developers (무료)
+   - Pexels API: <https://www.pexels.com/api/> (무료)
+   - Unsplash API: <https://unsplash.com/developers> (무료)
 
 ## 🚀 설치 및 설정
 
@@ -287,7 +287,7 @@ python main.py schedule
 
 #### 백그라운드 실행 방법
 
-**방법 1: nohup 사용 (간단)**
+##### 방법 1: nohup 사용 (간단)
 
 ```bash
 nohup python main.py schedule > output/bot.log 2>&1 &
@@ -299,7 +299,7 @@ tail -f output/bot.log
 pkill -f "main.py schedule"
 ```
 
-**방법 2: macOS LaunchAgent (재부팅 후에도 자동 시작)**
+##### 방법 2: macOS LaunchAgent (재부팅 후에도 자동 시작)
 
 ```bash
 # LaunchAgent 파일 복사
