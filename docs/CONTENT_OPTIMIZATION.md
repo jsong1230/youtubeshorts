@@ -5,6 +5,7 @@
 ## 🎯 지원하는 콘텐츠 타입
 
 ### 1. Hook (한국어 한 문장 학습)
+
 - **특징**: 짧고 강한 Hook으로 시작
 - **길이**: 55초 (목표)
 - **구조**: Hook 문장 → 설명 → 반복/강조
@@ -15,6 +16,7 @@
   - 🧠 자기계발: 아침 루틴, 성공 습관, 사고방식
 
 ### 2. Quote (AI·비즈니스·명언·지식 한 줄)
+
 - **특징**: 강력한 명언이나 인사이트로 시작
 - **길이**: 55초 (목표)
 - **구조**: 명언 → 설명 → 실생활 적용법
@@ -24,6 +26,7 @@
   - 🧠 자기계발: 루틴과 습관, 꾸준함의 힘, 1% 성장
 
 ### 3. Story (스토리텔링)
+
 - **특징**: 심리/역사/부자습관 등 스토리로 교훈 전달
 - **길이**: 55초 (목표)
 - **구조**: Hook → 전개 → 교훈 → 마무리
@@ -33,6 +36,7 @@
   - 🧠 자기계발: 하루 10분 루틴 변화, 계획에서 실행으로
 
 ### 4. Fact (숏폼 팩트 기반)
+
 - **특징**: 놀라운 팩트로 Hook 생성
 - **길이**: 55초 (목표)
 - **구조**: 팩트 → 설명 → 왜 놀라운지 강조
@@ -43,6 +47,7 @@
   - 🧠 자기계발: 아침 루틴과 집중력, 작은 습관의 힘
 
 ### 5. Short Story (AI 이미지 기반 짧은 스토리)
+
 - **특징**: 인생 교훈, 영감, 성공 스토리
 - **길이**: 55초 (목표)
 - **구조**: Hook → 사건 → 교훈 → 마무리
@@ -75,36 +80,42 @@ CONTENT_TYPE=auto  # 'hook', 'quote', 'story', 'fact', 'short_story', 'auto'
 ### 콘텐츠 타입별 설정
 
 #### Hook 영상
+
 ```bash
 CONTENT_TYPE=hook
 PREFER_SHORT_VIDEOS=true
 ```
 
 #### 명언/지식 영상
+
 ```bash
 CONTENT_TYPE=quote
 PREFER_SHORT_VIDEOS=true
 ```
 
 #### 스토리텔링 영상
+
 ```bash
 CONTENT_TYPE=story
 PREFER_SHORT_VIDEOS=true
 ```
 
 #### 팩트 기반 영상
+
 ```bash
 CONTENT_TYPE=fact
 PREFER_SHORT_VIDEOS=true
 ```
 
 #### 짧은 스토리 영상
+
 ```bash
 CONTENT_TYPE=short_story
 PREFER_SHORT_VIDEOS=true
 ```
 
 #### 자동 선택 (랜덤)
+
 ```bash
 CONTENT_TYPE=auto
 PREFER_SHORT_VIDEOS=true
@@ -134,6 +145,7 @@ PREFER_SHORT_VIDEOS=true
    - 실용적인 정보로 재방문 유도
 
 5. **퀄리티 중심 전략**
+
    - 하루 1개의 고품질 영상에 집중
    - 6가지 콘텐츠 타입 중 최적의 타입을 선택하여 고품질 영상 생성
    - 양보다 질에 집중하여 시청자 참여도와 수익을 극대화
@@ -141,6 +153,7 @@ PREFER_SHORT_VIDEOS=true
 ## 🎬 실행 예시
 
 ### Hook 영상 생성
+
 ```bash
 python main.py upload
 # 또는
@@ -148,21 +161,25 @@ CONTENT_TYPE=hook python main.py upload
 ```
 
 ### 명언 영상 생성
+
 ```bash
 CONTENT_TYPE=quote python main.py upload
 ```
 
 ### 스토리텔링 영상 생성
+
 ```bash
 CONTENT_TYPE=story python main.py upload
 ```
 
 ### 팩트 기반 영상 생성
+
 ```bash
 CONTENT_TYPE=fact python main.py upload
 ```
 
 ### 짧은 스토리 영상 생성
+
 ```bash
 CONTENT_TYPE=short_story python main.py upload
 ```
@@ -170,6 +187,7 @@ CONTENT_TYPE=short_story python main.py upload
 ## 💡 최적화 팁
 
 1. **Hook 강화**: 첫 3초가 가장 중요합니다
+
 2. **충분한 내용**: 55초 분량으로 자세한 설명과 예시 포함
 3. **다양성**: 스케줄러가 자동으로 6개 타입 모두 생성하여 다양성 확보
 4. **계절 맞춤**: 계절에 맞는 주제가 자동으로 우선 선택되어 시청자 관심도 향상
@@ -179,6 +197,7 @@ CONTENT_TYPE=short_story python main.py upload
 ## 📈 성과 추적
 
 데이터베이스에서 다음 정보를 확인할 수 있습니다:
+
 - 콘텐츠 타입별 평균 조회수
 - 콘텐츠 타입별 참여율
 - 성과 좋은 콘텐츠 타입

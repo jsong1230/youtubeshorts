@@ -26,18 +26,21 @@ AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하
 - **동기화**: 음성과 영상이 정확히 일치하도록 자동 동기화
 
 ### 2. YouTube 자동 업로드
+
 - **YouTube Data API v3**: 안정적인 API를 통한 자동 업로드
 - **한글 설명 자동 생성**: 상세하고 친절한 한글 설명 자동 작성
 - **최적화된 태그**: 검색 최적화를 위한 한글/영문 태그 자동 설정
 - **공개 설정**: 즉시 공개 또는 예약 업로드 가능
 
 ### 3. 수익화 추적 및 분석
+
 - **실시간 통계**: 조회수, 좋아요, 댓글 수 자동 추적
 - **수익 예측**: CPM 기반 예상 수익 자동 계산
 - **진행 상황 분석**: 수익화까지 남은 일수 및 목표 달성률 표시
 - **월별 리포트**: 월별 수익 추이 및 통계 분석
 
 ### 4. 스케줄링
+
 - **자동 스케줄러**: 매일 지정된 시간에 1개의 고품질 영상을 생성하여 업로드
 - **퀄리티 중심 생성**: 6가지 콘텐츠 타입(HOOK, QUOTE, STORY, FACT, SHORT_STORY, AUTO) 중 최적의 타입을 선택하여 고품질 영상 생성
 - **계절별 주제 선택**: 현재 날짜를 기반으로 계절에 맞는 주제를 우선적으로 선택 (50% 확률)
@@ -49,11 +52,13 @@ AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하
 ### 필수 소프트웨어
 
 1. **Python 3.8 이상**
+
    ```bash
    python3 --version
    ```
 
 2. **FFmpeg** (영상 처리용)
+
    ```bash
    # macOS
    brew install ffmpeg
@@ -68,6 +73,7 @@ AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하
 ### 필수 API 키
 
 1. **YouTube Data API v3**
+
    - Google Cloud Console에서 프로젝트 생성
    - YouTube Data API v3 활성화
    - OAuth 2.0 클라이언트 ID 생성
@@ -166,12 +172,14 @@ python main.py upload
 ### 4. AI API 키 발급
 
 #### OpenAI API (선택사항)
+
 1. [OpenAI Platform](https://platform.openai.com/) 접속
 2. 계정 생성 또는 로그인
 3. **API Keys** 메뉴에서 새 API 키 생성
 4. `.env` 파일에 `OPENAI_API_KEY` 설정
 
 #### Claude API (선택사항)
+
 1. [Anthropic Platform](https://console.anthropic.com/) 접속
 2. 계정 생성 또는 로그인
 3. **API Keys** 메뉴에서 새 API 키 생성
@@ -279,6 +287,7 @@ python main.py schedule
 #### 백그라운드 실행 방법
 
 **방법 1: nohup 사용 (간단)**
+
 ```bash
 nohup python main.py schedule > output/bot.log 2>&1 &
 
@@ -290,6 +299,7 @@ pkill -f "main.py schedule"
 ```
 
 **방법 2: macOS LaunchAgent (재부팅 후에도 자동 시작)**
+
 ```bash
 # LaunchAgent 파일 복사
 cp com.youtubeshorts.bot.plist ~/Library/LaunchAgents/
@@ -324,6 +334,7 @@ launchctl unload ~/Library/LaunchAgents/com.youtubeshorts.bot.plist
 ### 수익 계산 방식
 
 - **CPM (Cost Per Mille)**: $1.00 per 1,000 views (기본값)
+
 - YouTube Shorts는 일반적으로 낮은 CPM을 가짐
 - **월 $100 목표**: 약 100,000 뷰 필요
 - **월 $500 목표**: 약 500,000 뷰 필요
@@ -361,12 +372,14 @@ youtubeshorts/
 ### 영상 설정 (`config.py`)
 
 - **영상 길이**: 목표 55초 (최대 60초, YouTube Shorts 제한)
+
 - **해상도**: 1080x1920 (세로형, YouTube Shorts 최적화)
 - **FPS**: 30fps (YouTube 권장)
 
 ### 업로드 설정 (`.env`)
 
 - **업로드 시간**: `UPLOAD_SCHEDULE_TIME=09:00` (24시간 형식, 이 시간에 1개의 고품질 영상 생성)
+
 - **타임존**: `UPLOAD_TIMEZONE=Asia/Seoul`
 - **기본 설명**: `DEFAULT_DESCRIPTION` (한글 설명)
 - **기본 태그**: `DEFAULT_TAGS` (쉼표로 구분)
@@ -388,24 +401,29 @@ youtubeshorts/
 ### YouTube 정책 준수
 
 1. **자동 업로드 정책**
+
    - YouTube의 자동 업로드 정책을 반드시 확인하세요
    - 저작권 및 커뮤니티 가이드라인 준수 필수
    - 스팸성 콘텐츠 업로드 금지
 
 2. **수익화 요구사항**
+
    - YouTube 파트너 프로그램 가입 필요
    - **일반 채널**: 1,000명 구독자 + 4,000시간 시청 시간
    - **Shorts 전용**: 1,000명 구독자 + 1,000만 Shorts 조회수 (90일 내)
    - 3개월 후 수익화는 예상 시점이며, 실제 달성 시점은 다를 수 있습니다
 
 3. **API 할당량**
+
    - **YouTube Data API v3**: 일일 할당량 확인 필요 (기본 10,000 units/day)
+
    - **OpenAI API**: 사용량에 따른 비용 발생 (GPT-4o-mini 권장)
    - **이미지 API**: Pexels, Unsplash는 무료이지만 일일 제한 확인 필요
 
 ### 기술적 주의사항
 
 1. **디스크 공간**: 영상 생성 시 충분한 디스크 공간 필요
+
 2. **인터넷 연결**: 안정적인 인터넷 연결 필수
 3. **컴퓨터 전원**: 자동 업로드를 위해서는 컴퓨터가 켜져 있어야 함
 
@@ -436,6 +454,7 @@ python main.py upload
 ### 영상 생성 실패
 
 1. **AI API 키 확인**
+
    ```bash
    # .env 파일에서 OPENAI_API_KEY 또는 CLAUDE_API_KEY 확인
    # AI_API_PROVIDER 설정 확인 (openai 또는 claude)
@@ -454,10 +473,13 @@ python main.py upload
 ### 업로드 실패
 
 1. **YouTube API 할당량 확인**
+
    - Google Cloud Console에서 할당량 확인
+
    - 일일 할당량 초과 시 다음 날까지 대기
 
 2. **인증 토큰 만료**
+
    ```bash
    # token.json 삭제 후 재인증
    rm token.json
@@ -467,23 +489,33 @@ python main.py upload
 ## 📈 성공 전략
 
 ### 1. 일관성 유지
+
 - 매일 정해진 시간에 업로드
+
 - 꾸준한 콘텐츠 제작으로 알고리즘 신뢰도 향상
 
 ### 2. 주제 다양화
+
 - 다양한 주제로 영상 생성하여 다양한 관심사 타겟팅
+
 - 인기 주제와 트렌드 파악
 
 ### 3. 최적화
+
 - 제목, 설명, 태그 최적화로 검색 노출 증가
+
 - 썸네일 최적화 (향후 지원 예정)
 
 ### 4. 커뮤니티 구축
+
 - 댓글에 답변하고 커뮤니티와 상호작용
+
 - 시청자 요청 주제 반영
 
 ### 5. 데이터 분석
+
 - 통계를 통해 인기 주제 파악
+
 - 조회수, 참여도가 높은 영상 분석
 
 ## 🛠️ 기술 스택
@@ -539,6 +571,7 @@ python main.py upload
 - **겨울 (12-2월)**: 난방비 절약, 자동차 점검, 겨울 대비
 
 **장점**:
+
 - 저작권 위험 없음
 - 짧아서 Click-Through Rate 좋음
 - 조회수 폭발 확률 높음
@@ -563,6 +596,7 @@ python main.py upload
 ## 📞 지원
 
 문제가 발생하거나 질문이 있으시면:
+
 1. GitHub Issues에 이슈 등록
 2. [docs/AUTO_START_GUIDE.md](./docs/AUTO_START_GUIDE.md) 및 [docs/SETUP_GUIDE.md](./docs/SETUP_GUIDE.md) 참고
 
