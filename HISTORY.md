@@ -54,11 +54,23 @@
 
 - 매일 지정된 시간에 1개의 고품질 영상을 생성하여 업로드
 - 퀄리티 중심 생성: 6가지 콘텐츠 타입 중 최적의 타입을 선택하여 고품질 영상 생성
-- 계절별 주제 선택: 현재 날짜를 기반으로 계절에 맞는 주제를 우선적으로 선택 (50% 확률)
+- 계절별 주제 선택: 현재 날짜를 기반으로 계절에 맞는 주제를 우선적으로 선택 (25% 확률)
 - 백그라운드 실행 지원
 - macOS LaunchAgent 지원
 
 ## 개발 히스토리 (Git Log 기반)
+
+### 2025-11-19: 모든 콘텐츠 타입 영어 테스트 러닝
+- `main.py test` 모드로 5개 콘텐츠 타입(HOOK, QUOTE, STORY, FACT, SHORT_STORY) + AUTO 시나리오를 각각 실행하여 6개의 영어 Shorts를 생성
+- 각 테스트는 썸네일 삽입, 영어 자막/스크립트/썸네일 텍스트, 배경 영상 무중복, 오디오-비디오 길이 일치 여부를 점검
+- 생성 결과 (파일명/길이):
+  - HOOK `autumn routine reset` → `output/videos/shorts_20251119_171551.mp4` (57.15s), 썸네일 `output/thumbnails/thumb_20251119_171712.jpg`
+  - QUOTE `mindset quote boost` → `output/videos/shorts_20251119_171807.mp4` (55.99s), 썸네일 `output/thumbnails/thumb_20251119_171914.jpg`
+  - STORY `rebuilt finances story` → `output/videos/shorts_20251119_172000.mp4` (55.88s), 썸네일 `output/thumbnails/thumb_20251119_172120.jpg`
+  - FACT `surprising money fact` → `output/videos/shorts_20251119_172208.mp4` (56.64s), 썸네일 `output/thumbnails/thumb_20251119_172319.jpg`
+  - SHORT_STORY `routine micro story` → `output/videos/shorts_20251119_172417.mp4` (56.73s), 썸네일 `output/thumbnails/thumb_20251119_172557.jpg`
+  - AUTO `black friday sales tip` → `output/videos/shorts_20251119_172737.mp4` (55.71s), 썸네일 `output/thumbnails/thumb_20251119_172902.jpg`
+- 모든 테스트는 업로드 없이 로컬 생성만 수행했으며, 영어 전용 파이프라인과 썸네일 첫 프레임 삽입이 정상 동작함을 확인
 
 ### 2025-11-17: Claude API 지원 추가
 
@@ -82,7 +94,7 @@
   - 가을 (9-11월): 환절기 정리, 겨울 준비, 옷장 정리
   - 겨울 (12-2월): 난방비 절약, 자동차 점검, 겨울 대비
 - `video_generator.py`에 `_get_season()` 메서드 추가
-- 주제 선택 시 계절에 맞는 주제를 50% 확률로 우선 선택
+- 주제 선택 시 계절에 맞는 주제를 25% 확률로 우선 선택
 
 ### 2025-11-17: 문서 업데이트
 
@@ -133,8 +145,14 @@
 - sentence_audio_durations 스케일링을 제거하고 TTS가 생성한 실측 길이를 그대로 사용하여 누적 지연을 원천 차단
 - 배경/자막 CompositeVideoClip을 매 문장마다 새로 만들고 `start=0`을 강제하여 타임라인 기준을 고정
 - `SUBTITLE_MODE=full_sentence` 환경 변수로 전체 문장 자막 모드를 테스트 (`output/videos/shorts_20251119_155131.mp4`), 음성·영상 모두 49.2초로 일치
+- 기본 자막 모드를 `full_sentence`로 전환해 테스트 시 별도 환경 변수 없이도 전체 문장 자막 제공
+- AI 스크립트 실패 시 주제 키워드를 반영하는 16문장 기본 스크립트 생성기로 교체하여 토픽별 차별화 보장
+- 전체 문장 자막의 줄 간격을 넓혀 가독성 향상 (30px line spacing)
 - 영어 콘텐츠에서도 `SUBTITLE_MODE=full_sentence` 설정을 존중하도록 수정하여 전체 문장 자막이 정상 노출
 - GPT 제안사항 기록: 향후 FFmpeg 무음 제거 + CFR 고정 파이프라인 검토(TODO에 아이디어 추가 완료)
+- Claude 모델 호출 시 404가 발생하는 `claude-3-5-sonnet-20241022`는 마지막으로 돌리고 `claude-3-opus-20240229` → `claude-3-sonnet-20240229` 순으로 안정 모델을 먼저 시도하도록 변경
+- AI가 출력한 "Here's a YouTube Shorts script..." 같은 안내 문장은 필터링하여 실제 콘텐츠 문장만 음성으로 사용
+- `_generate_topic()` 기본/계절 주제 풀을 모두 영어로 업데이트하여 언어 감지가 확실히 영어로 인식되도록 개선
 
 ### 2025-11-17: 전략 변경 - 하루 1개 퀄리티 중심 전략
 

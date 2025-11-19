@@ -12,7 +12,20 @@
 - **음성과 영상 싱크**: 자막 클립의 시작 시간을 0으로 설정하고, duration을 실제 음성 길이와 정확히 일치시킴 ✅
 - **영어 콘텐츠 지원**: 영어 주제 감지 시 모든 콘텐츠(스크립트, 자막, 썸네일)를 영어로 생성 ✅
 - **전체 문장 자막 모드**: `SUBTITLE_MODE=full_sentence` 환경 변수로 QA 완료 (2025-11-19), 기본값은 `key_words` 유지 ✅
+- **자막 가독성**: 전체 문장 자막의 줄 간격을 30px로 확대하여 읽기 쉬움 ✅
+- **Claude 모델 우선순위**: 404가 나는 `claude-3-5-sonnet-20241022`는 마지막으로, 안정 모델을 먼저 시도하도록 조정 ✅
 - **상태**: 주요 개선 사항 완료, 지속적인 테스트 및 최적화 필요
+
+## 🧪 최근 테스트 로그
+
+- **2025-11-19**: 모든 콘텐츠 타입별 영어 테스트 영상 생성 (업로드 없음)
+  - HOOK `autumn routine reset` → `output/videos/shorts_20251119_171551.mp4` (57.15s)
+  - QUOTE `mindset quote boost` → `output/videos/shorts_20251119_171807.mp4` (55.99s)
+  - STORY `rebuilt finances story` → `output/videos/shorts_20251119_172000.mp4` (55.88s)
+  - FACT `surprising money fact` → `output/videos/shorts_20251119_172208.mp4` (56.64s)
+  - SHORT_STORY `routine micro story` → `output/videos/shorts_20251119_172417.mp4` (56.73s)
+  - AUTO `black friday sales tip` → `output/videos/shorts_20251119_172737.mp4` (55.71s)
+- 모든 테스트에서 썸네일 첫 프레임 삽입, 영어 자막/썸네일, 배경 영상 무중복, 오디오-비디오 동기화가 정상임을 확인
 
 ## 🚀 단기 목표 (우선순위 높음)
 
@@ -203,6 +216,6 @@
 
 ---
 
-**마지막 업데이트**: 2025-11-17
+**마지막 업데이트**: 2025-11-19
 
 **다음 리뷰 예정일**: 작업 진행에 따라 업데이트
