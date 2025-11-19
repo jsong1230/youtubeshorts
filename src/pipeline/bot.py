@@ -129,6 +129,9 @@ class ShortsBot:
                 script=script,
                 language=language
             )
+            if thumbnail_path:
+                print("🎞️ 썸네일 이미지를 영상 첫 프레임에 삽입합니다...")
+                self.video_generator.embed_thumbnail_frame(video_path, thumbnail_path)
             
             print(f"\n✅ 영상 생성 완료!")
             print(f"📁 파일 위치: {video_path}")
@@ -246,6 +249,9 @@ class ShortsBot:
                 script=script,
                 language=language
             )
+            if thumbnail_path:
+                print("🎞️ 썸네일 이미지를 영상 첫 프레임에 삽입합니다...")
+                self.video_generator.embed_thumbnail_frame(video_path, thumbnail_path)
             
             # 썸네일 생성 확인
             if thumbnail_path:

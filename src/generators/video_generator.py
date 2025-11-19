@@ -4,11 +4,13 @@ AI 영상 생성 모듈 (15초~60초 YouTube Shorts)
 import os
 import random
 import re
+import time
 from datetime import datetime
 from moviepy.editor import (
     VideoFileClip, ImageClip, TextClip,
     concatenate_videoclips, AudioFileClip, CompositeVideoClip
 )
+from typing import Optional, Tuple
 from moviepy.video.fx.all import fadein, fadeout
 from PIL import Image, ImageDraw, ImageFont
 try:
@@ -119,7 +121,155 @@ class AIVideoGenerator:
         os.makedirs(config.VIDEO_OUTPUT_DIR, exist_ok=True)
         os.makedirs(config.TEMP_DIR, exist_ok=True)
         os.makedirs(config.THUMBNAIL_OUTPUT_DIR, exist_ok=True)
+
+    def _build_default_script(self, topic: str, language: str = 'en', target_sentences: int = 12) -> list:
+        """AI 생성 실패 시 주제 기반 기본 스크립트를 생성."""
+        topic = (topic or "").strip()
+        topic_placeholder = topic if topic else ("success" if language == 'en' else "성공")
+        keywords = [
+            part.strip()
+            for part in re.split(r'[,/&]| and ', topic_placeholder)
+            if part.strip()
+        ]
+        focus = keywords[0] if keywords else topic_placeholder
+
+        if language == 'en':
+            base_lines = [
+                f"Let's break down {topic_placeholder} in a way you can apply today.",
+                f"This matters because {focus} only becomes real when you take daily action.",
+                f"Define what {topic_placeholder} means for your lifestyle and money goals.",
+                f"Track one metric tied to {focus} so you can see progress every day.",
+                f"Study a real example of {topic_placeholder} and copy the first three moves.",
+                f"Protect your time because {focus} rewards deep focus, not random effort.",
+                f"Invest in skills that multiply how fast you can execute {topic_placeholder}.",
+                f"Limit distractions so your brain connects directly with your {focus} target.",
+                f"Build a simple routine: research, decide, take one action about {topic_placeholder}.",
+                f"Review last week's choices and grade how each one supported {focus}.",
+                f"Share your plan with one ally so you stay accountable for {topic_placeholder}.",
+                f"Automate repetitive steps and save energy for creative {focus} decisions.",
+                f"Celebrate micro-wins tied to {topic_placeholder}; momentum keeps you consistent.",
+                f"Replace fear with data—track experiments related to {focus} and learn fast.",
+                f"Think bigger each week; ask how {topic_placeholder} can upgrade your future self.",
+                f"Take one bold action right now that proves you own {focus}.",
+                f"Visualize the lifestyle unlocked by {topic_placeholder} and let that guide today.",
+                f"Remember every master of {focus} started small but stayed in motion."
+            ]
+        else:
+            base_lines = [
+                f"오늘은 {topic_placeholder}를 생활 속에서 실천하는 방법을 이야기합니다.",
+                f"{focus}는 매일 행동할 때만 현실이 되므로 지금 이유를 분명히 하세요.",
+                f"{topic_placeholder}가 내 삶과 수입에서 무엇을 의미하는지 먼저 정의하세요.",
+                f"{focus}와 연결된 지표를 하나 정해 매일 변화를 숫자로 확인하세요.",
+                f"{topic_placeholder} 성공 사례를 찾아 처음 세 가지 동작을 그대로 따라 해보세요.",
+                f"집중력을 지키세요. {focus}는 우연이 아니라 깊은 집중에서 탄생합니다.",
+                f"{topic_placeholder}를 실행할 수 있는 역량에 투자해 복리를 만들어 주세요.",
+                f"잡음을 줄여 두뇌가 {focus} 목표와 직접 연결되도록 환경을 정리하세요.",
+                f"연구-결정-실행으로 이어지는 간단한 루틴을 만들어 {topic_placeholder}를 습관화하세요.",
+                f"지난주 선택을 되돌아보며 각각이 {focus}에 어떻게 기여했는지 적어보세요.",
+                f"주변 한 사람에게 계획을 공유하고 {topic_placeholder} 실천을 약속하세요.",
+                f"반복적인 일은 자동화해 {focus}와 관련된 창의적 판단에 에너지를 쓰세요.",
+                f"{topic_placeholder}와 연결된 작은 성과를 축하하고 꾸준함을 유지하세요.",
+                f"두려움 대신 데이터를 선택하고 {focus}와 관련된 실험을 추적하며 배우세요.",
+                f"매주 질문하세요. {topic_placeholder}가 내 미래를 어떻게 바꿀 수 있을까?",
+                f"지금 당장 {focus}를 증명할 과감한 행동을 하나 실행하며 마무리하세요.",
+                f"{topic_placeholder}가 열어줄 라이프스타일을 구체적으로 상상하고 오늘을 설계하세요.",
+                f"{focus}의 달인도 작은 걸음에서 시작했지만 멈추지 않았음을 기억하세요."
+            ]
+
+        if target_sentences <= 0:
+            return []
+        return base_lines[:target_sentences]
     
+    def _prepare_thumbnail_canvas(self, thumbnail_path: str, target_size: Tuple[int, int]) -> Optional[str]:
+        """썸네일 이미지를 영상 해상도에 맞춰 중앙 정렬한 캔버스 생성."""
+        if not os.path.exists(thumbnail_path):
+            return None
+        try:
+            img = Image.open(thumbnail_path).convert('RGB')
+            target_w, target_h = target_size
+            target_ratio = target_w / target_h
+            img_ratio = img.width / img.height if img.height else target_ratio
+            
+            if img_ratio > target_ratio:
+                new_width = target_w
+                new_height = int(target_w / img_ratio)
+            else:
+                new_height = target_h
+                new_width = int(target_h * img_ratio)
+            
+            resample_filter = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
+            resized = img.resize((new_width, new_height), resample_filter)
+            
+            canvas = Image.new('RGB', (target_w, target_h), (0, 0, 0))
+            offset = ((target_w - new_width) // 2, (target_h - new_height) // 2)
+            canvas.paste(resized, offset)
+            
+            temp_path = os.path.join(config.TEMP_DIR, f"thumb_canvas_{int(time.time()*1000)}.jpg")
+            canvas.save(temp_path, 'JPEG')
+            return temp_path
+        except Exception as e:
+            print(f"⚠️ 썸네일 캔버스 생성 실패: {e}")
+            return None
+    
+    def embed_thumbnail_frame(self, video_path: str, thumbnail_path: str, duration: float = 0.6) -> str:
+        """생성된 썸네일을 영상의 첫 프레임으로 삽입."""
+        if not video_path or not os.path.exists(video_path):
+            print("⚠️ 영상 파일을 찾을 수 없어 썸네일 프레임을 삽입하지 않습니다.")
+            return video_path
+        if not thumbnail_path or not os.path.exists(thumbnail_path):
+            print("⚠️ 썸네일 파일이 없어 썸네일 프레임을 삽입하지 않습니다.")
+            return video_path
+        
+        intro_clip = None
+        video_clip = None
+        combined_clip = None
+        canvas_path = None
+        try:
+            video_clip = VideoFileClip(video_path)
+            fps = video_clip.fps or 30
+            target_size = video_clip.size
+            
+            canvas_path = self._prepare_thumbnail_canvas(thumbnail_path, target_size)
+            if not canvas_path:
+                return video_path
+            
+            intro_clip = ImageClip(canvas_path).set_duration(duration).set_fps(fps).resize(target_size)
+            combined_clip = concatenate_videoclips([intro_clip, video_clip], method="compose")
+            
+            temp_output = os.path.join(config.TEMP_DIR, f"with_thumb_{int(time.time()*1000)}.mp4")
+            temp_audio = os.path.join(config.TEMP_DIR, f"with_thumb_audio_{int(time.time()*1000)}.m4a")
+            combined_clip.write_videofile(
+                temp_output,
+                fps=fps,
+                codec="libx264",
+                audio_codec="aac",
+                temp_audiofile=temp_audio,
+                remove_temp=True,
+                logger=None
+            )
+            
+            combined_clip.close()
+            intro_clip.close()
+            video_clip.close()
+            
+            os.replace(temp_output, video_path)
+            print("✅ 썸네일 이미지를 영상 첫 프레임으로 삽입했습니다.")
+        except Exception as e:
+            print(f"⚠️ 썸네일 프레임 삽입 실패: {e}")
+        finally:
+            for clip in (combined_clip, intro_clip, video_clip):
+                try:
+                    if clip:
+                        clip.close()
+                except Exception:
+                    pass
+            if canvas_path and os.path.exists(canvas_path):
+                try:
+                    os.remove(canvas_path)
+                except OSError:
+                    pass
+        return video_path
+
     def generate_video(
         self,
         topic: str = None,
@@ -236,145 +386,205 @@ class AIVideoGenerator:
         # 타입별 주제 생성
         if content_type == ContentType.HOOK:
             topics = [
-                # 🔥 계절 HOOK
-                "여름 전기요금 폭등 막는 단 한 가지",
-                "장마철 곰팡이 안 생기는 집의 비밀",
-                "가을 환절기 집이 깨끗해지는 정리법",
-                "겨울 준비를 지금 시작해야 하는 이유",
-                "겨울 난방비가 확 줄어드는 설정 하나",
-                # 🏠 생활 HOOK
-                "집이 항상 깨끗한 사람들의 공통점",
-                "냉장고 음식 안 버리는 간단한 기준",
-                "옷장이 정리되는 5분 법칙",
-                "자동차 고장 막는 1가지 체크",
-                "전기요금 새는 포인트 한 곳",
-                # 💰 돈·재테크 HOOK
-                "월급을 모으는 사람과 못 모으는 사람의 차이",
-                "건드리면 돈이 모이는 루틴 하나",
-                "부자가 되려면 반드시 버려야 할 습관",
-                "절약이 아니라 투자를 해야 하는 이유",
-                "평범한 사람이 자산을 키우는 가장 빠른 방법",
-                # 🧠 자기계발 HOOK
-                "아침 10분이 인생을 바꾸는 이유",
-                "성공하는 사람 1%의 루틴",
-                "일이 잘 풀리는 사람들의 사고방식",
+                # 💸 Money / Investing Hooks
+                "Why your salary alone will never make you wealthy",
+                "Top earners share the same exact bank account structure",
+                "Rich people refuse to make this one impulse purchase",
+                "Feel richer without earning more: the invisible income trick",
+                "The single habit every maxed-out credit-card user shares",
+                "Disciplined savers always do this first on payday",
+                "How some people grow assets faster than their paycheck",
+                "The most realistic investing path for busy professionals",
+                # 🧠 Self-improvement / Routine Hooks
+                "Ten minutes of routine that completely reroutes your life",
+                "The morning behaviors high performers never skip",
+                "The exact moment weak follow-through collapses",
+                "Why top performers rely on systems, not motivation",
+                "Why late-night work rarely turns into real results",
+                # 🏠 Lifestyle / Declutter Hooks
+                "The simple rule people with tidy homes follow every day",
+                "Why you keep buying clothes but feel you have nothing to wear",
+                "A chaotic fridge usually signals chaotic money habits",
+                "Declutter one room and watch your stress plummet",
+                # 🚨 Risk / Downside Protection Hooks
+                "One accident that can erase years of savings overnight",
+                "Why insurance alone can’t keep you from bankruptcy",
+                "How some people turn crises into opportunities while others crumble",
             ]
             # 계절별 우선 주제
             seasonal_topics = {
-                'spring': ["가을 환절기 집이 깨끗해지는 정리법", "옷장이 정리되는 5분 법칙"],
-                'summer': ["여름 전기요금 폭등 막는 단 한 가지", "장마철 곰팡이 안 생기는 집의 비밀", "전기요금 새는 포인트 한 곳"],
-                'autumn': ["가을 환절기 집이 깨끗해지는 정리법", "겨울 준비를 지금 시작해야 하는 이유", "옷장이 정리되는 5분 법칙"],
-                'winter': ["겨울 준비를 지금 시작해야 하는 이유", "겨울 난방비가 확 줄어드는 설정 하나", "자동차 고장 막는 1가지 체크"]
+                'spring': [
+                    "Why new-year plans keep collapsing by March",
+                    "How people who reset each season look five years later",
+                    "Why your salary alone will never make you wealthy",
+                    "The simple rule people with tidy homes follow every day",
+                ],
+                'summer': [
+                    "One vacation drained your bank account—here’s why",
+                    "The real culprit eating more power than your AC",
+                    "The single habit every maxed-out credit-card user shares",
+                    "Disciplined savers always do this first on payday",
+                ],
+                'autumn': [
+                    "Half the year is gone—here’s why your goals still aren’t done",
+                    "People who flip their year in Q3 are decluttering right now",
+                    "How some people grow assets faster than their paycheck",
+                    "Declutter one room and watch your stress plummet",
+                ],
+                'winter': [
+                    "Why money vanishes the moment the holidays arrive",
+                    "The winter expense scarier than heating bills",
+                    "One accident that can erase years of savings overnight",
+                    "Rich people refuse to make this one impulse purchase",
+                ]
             }
         elif content_type == ContentType.QUOTE:
             topics = [
-                # 🌤 계절·생활 명언
-                "정리는 공간을 바꾸고, 공간은 생각을 바꾼다.",
-                "계절이 바뀌면 삶도 정리할 때다.",
-                "깨끗한 집은 마음을 쉬게 해준다.",
-                "작은 루틴이 큰 평온을 만든다.",
-                "겨울 준비는 '불편함'을 미리 없애는 과정이다.",
-                # 💸 돈·재테크 명언
-                "돈은 저축이 아니라 구조가 만든다.",
-                "투자는 타이밍보다 지속이 이긴다.",
-                "지출을 알면 자유를 얻는다.",
-                "모으는 사람보다 관리하는 사람이 부자가 된다.",
-                "부의 차이는 선택의 누적으로 결정된다.",
-                # 🧠 자기계발 명언
-                "루틴이 습관을 만들고, 습관이 삶을 만든다.",
-                "어제보다 1% 나으면 충분하다.",
-                "꾸준함은 천재를 이긴다.",
+                # 🌤 Lifestyle / Routine Quotes
+                "Decluttering a room calms your mind, and a calm mind cuts anxiety.",
+                "When seasons change, your priorities must be reorganized too.",
+                "A clean home is a shortcut to a rested mind.",
+                "Tiny routines create massive peace.",
+                "Preparing for winter is really about removing future discomfort.",
+                # 💸 Money / Investing Quotes
+                "Wealth is built by structure, not random savings.",
+                "Time in the market beats timing the market.",
+                "The moment you track spending, new options appear.",
+                "Managers of money become rich; earners alone rarely do.",
+                "Wealth gaps come from repeated choices, not single wins.",
+                # 🧠 Self-development Quotes
+                "Routines become habits, and habits build your life.",
+                "Improve by one percent today and you become someone else in a year.",
+                "Consistency outruns talent every single time.",
             ]
             seasonal_topics = {
-                'spring': ["계절이 바뀌면 삶도 정리할 때다.", "정리는 공간을 바꾸고, 공간은 생각을 바꾼다."],
-                'summer': ["작은 루틴이 큰 평온을 만든다.", "깨끗한 집은 마음을 쉬게 해준다."],
-                'autumn': ["계절이 바뀌면 삶도 정리할 때다.", "정리는 공간을 바꾸고, 공간은 생각을 바꾼다."],
-                'winter': ["겨울 준비는 '불편함'을 미리 없애는 과정이다.", "작은 루틴이 큰 평온을 만든다."]
+                'spring': [
+                    "When seasons change, your priorities must be reorganized too.",
+                    "Decluttering a room calms your mind, and a calm mind cuts anxiety.",
+                ],
+                'summer': [
+                    "The moment you track spending, new options appear.",
+                    "Busy people are common; people doing important work are rare.",
+                ],
+                'autumn': [
+                    "Wealth gaps come from repeated choices, not single wins.",
+                    "Your home shows who you are; your routines show who you'll become.",
+                ],
+                'winter': [
+                    "Wealth is built by structure, not random savings.",
+                    "Routines become habits, and habits build your life.",
+                ],
             }
         elif content_type == ContentType.STORY:
             topics = [
-                # 🌤 계절·라이프 스토리
-                "장마철마다 곰팡이에 시달리던 집을 바꾼 한 사람의 이야기",
-                "매년 겨울마다 난방비 폭탄 맞던 가족이 바뀐 이유",
-                "옷장이 항상 지저분하던 사람이 계절 교체 루틴으로 변한 과정",
-                "자동차 점검을 미뤄 큰 수리비를 낼 뻔했던 직장인의 이야기",
-                # 💸 돈·재테크 스토리
-                "월급 280으로 살던 사람이 3년 만에 자산 3억 만든 이야기",
-                "작은 자동투자 하나로 인생이 바뀐 평범한 직장인",
-                "소비 습관을 바꿨더니 매달 30만원이 남기 시작한 실화",
-                "경제적 자유까지 걸린 시간을 기록한 사람의 이야기",
-                # 🧠 자기계발 스토리
-                "하루 10분 루틴으로 삶이 달라진 사람",
-                "계획만 하던 사람이 실행하는 사람이 되기까지",
+                # 🌤 Lifestyle Stories
+                "How one family finally killed the summer mold problem",
+                "The winter their heating bill dropped in half",
+                "The messy closet that turned into a seasonal reset routine",
+                "A driver who almost paid thousands because they skipped one inspection",
+                # 💸 Money / Investing Stories
+                "The employee who grew $250K of assets on a $40K salary",
+                "A simple auto-invest rule that changed an average worker’s life",
+                "She tracked spending for 60 days and freed $300 every month",
+                "The notebook that documented the road to financial independence",
+                # 🧠 Self-development Stories
+                "Ten-minute routines that rescued someone’s burnout",
+                "How a chronic planner finally became an action-taker",
             ]
             seasonal_topics = {
-                'spring': ["옷장이 항상 지저분하던 사람이 계절 교체 루틴으로 변한 과정"],
-                'summer': ["장마철마다 곰팡이에 시달리던 집을 바꾼 한 사람의 이야기"],
-                'autumn': ["옷장이 항상 지저분하던 사람이 계절 교체 루틴으로 변한 과정"],
-                'winter': ["매년 겨울마다 난방비 폭탄 맞던 가족이 바뀐 이유", "자동차 점검을 미뤄 큰 수리비를 낼 뻔했던 직장인의 이야기"]
+                'spring': ["The messy closet that turned into a seasonal reset routine"],
+                'summer': ["How one family finally killed the summer mold problem"],
+                'autumn': ["The messy closet that turned into a seasonal reset routine"],
+                'winter': [
+                    "The winter their heating bill dropped in half",
+                    "A driver who almost paid thousands because they skipped one inspection",
+                ]
             }
         elif content_type == ContentType.FACT:
             topics = [
-                # 🌤 계절·생활 FACT
-                "여름 전기요금이 실제로 새는 지점",
-                "가을 환절기에 집이 가장 더러워지는 이유",
-                "겨울 난방비가 크게 차이 나는 과학적 원리",
-                "옷이 변색되는 진짜 이유",
-                "냉장고 냄새가 다시 생기는 구조적 원인",
-                # 🚗 자동차 FACT
-                "겨울철 엔진오일 점검이 중요한 이유",
-                "타이어 마모가 사고 위험을 높이는 수치",
-                "와이퍼를 계절별로 교체해야 하는 이유",
-                # 💰 돈·경제 FACT
-                "부자들이 지출을 기록하는 진짜 이유",
-                "복리가 시간이 지날수록 폭발적으로 커지는 구조",
-                "ETF가 초보에게 좋은 이유",
-                # 🧠 자기계발 FACT
-                "아침 루틴이 집중력을 높이는 과학적 근거",
-                "작은 습관이 의사결정을 바꾸는 이유",
+                # 🌤 Lifestyle Facts
+                "Most summer power bills leak from one forgotten appliance",
+                "Homes get dirtiest during seasonal transitions because humidity spikes",
+                "The physics behind why some homes pay half the heating cost",
+                "Clothes discolor faster when your closet airflow is blocked",
+                "Fridge odor usually means you’re throwing away 20% of groceries",
+                # 🚗 Car Facts
+                "Skipping one winter oil check can cost a full engine replacement",
+                "Worn tires raise stopping distance by up to 40%",
+                "Wiper blades lose 20% visibility every season",
+                # 💰 Money / Economy Facts
+                "Wealthy people track spending to see direction, not guilt",
+                "Compound interest is a patience game, not a math trick",
+                "Broad-market ETFs are the safest on-ramp for new investors",
+                # 🧠 Self-development Facts
+                "Morning routines increase decision-making speed by 23%",
+                "Small habits change your default choices—not just your mood",
             ]
             seasonal_topics = {
-                'spring': ["가을 환절기에 집이 가장 더러워지는 이유", "옷이 변색되는 진짜 이유"],
-                'summer': ["여름 전기요금이 실제로 새는 지점", "냉장고 냄새가 다시 생기는 구조적 원인"],
-                'autumn': ["가을 환절기에 집이 가장 더러워지는 이유", "와이퍼를 계절별로 교체해야 하는 이유"],
-                'winter': ["겨울 난방비가 크게 차이 나는 과학적 원리", "겨울철 엔진오일 점검이 중요한 이유", "타이어 마모가 사고 위험을 높이는 수치"]
+                'spring': [
+                    "Homes get dirtiest during seasonal transitions because humidity spikes",
+                    "Clothes discolor faster when your closet airflow is blocked",
+                ],
+                'summer': [
+                    "Most summer power bills leak from one forgotten appliance",
+                    "Fridge odor usually means you’re throwing away 20% of groceries",
+                ],
+                'autumn': [
+                    "Homes get dirtiest during seasonal transitions because humidity spikes",
+                    "Wiper blades lose 20% visibility every season",
+                ],
+                'winter': [
+                    "The physics behind why some homes pay half the heating cost",
+                    "Skipping one winter oil check can cost a full engine replacement",
+                    "Worn tires raise stopping distance by up to 40%",
+                ]
             }
         elif content_type == ContentType.SHORT_STORY:
             topics = [
-                # 🌤 계절·정리·생활 짧은 스토리
-                "옷장 정리 하나로 출근 스트레스가 줄어든 이야기",
-                "겨울 대비를 한 번 해봤더니 난방비가 절반이 된 사례",
-                "냉장고를 구역별로 나눴더니 음식 쓰레기가 줄어든 이유",
-                "습기 관리를 시작하자 집 냄새가 사라진 하루",
-                # 💸 짧은 돈 스토리
-                "적금만 하던 사람이 자동투자 바꾸고 돈이 남기 시작한 이유",
-                "한 달 지출 점검만 했는데 통장이 달라진 이야기",
-                # 🧠 자기계발 짧은 스토리
-                "하루 5분 루틴이 삶을 바꾼 순간",
-                "작은 선택이 큰 변화를 만든 경험",
+                # 🌤 Lifestyle Short Stories
+                "Decluttering one closet erased my morning panic",
+                "Preparing for winter once cut our heating bill in half",
+                "Labeling fridge zones stopped us from throwing away food",
+                "Controlling humidity removed that strange smell overnight",
+                # 💸 Money Short Stories
+                "Switching from savings to auto-investing finally left money in my account",
+                "Logging expenses for 30 days changed my bank balance",
+                # 🧠 Self-development Short Stories
+                "A five-minute evening review saved my burnout",
+                "Choosing one tiny action daily created a huge pivot",
             ]
             seasonal_topics = {
-                'spring': ["옷장 정리 하나로 출근 스트레스가 줄어든 이야기", "습기 관리를 시작하자 집 냄새가 사라진 하루"],
-                'summer': ["냉장고를 구역별로 나눴더니 음식 쓰레기가 줄어든 이유", "습기 관리를 시작하자 집 냄새가 사라진 하루"],
-                'autumn': ["옷장 정리 하나로 출근 스트레스가 줄어든 이야기"],
-                'winter': ["겨울 대비를 한 번 해봤더니 난방비가 절반이 된 사례"]
+                'spring': [
+                    "Decluttering one closet erased my morning panic",
+                    "Controlling humidity removed that strange smell overnight",
+                ],
+                'summer': [
+                    "Labeling fridge zones stopped us from throwing away food",
+                    "Controlling humidity removed that strange smell overnight",
+                ],
+                'autumn': [
+                    "Decluttering one closet erased my morning panic",
+                ],
+                'winter': [
+                    "Preparing for winter once cut our heating bill in half",
+                ]
             }
         else:
             # 기본 주제
             topics = [
-                "지금 바로 할 수 있는 계절 준비",
-                "돈을 아끼지 않고도 생활이 편해지는 방법",
-                "오늘 하루를 바꾸는 간단한 루틴",
+                "A seasonal refresh you can do right now",
+                "How to make life easier without cutting every expense",
+                "The ten-minute routine that changes the next year",
             ]
             seasonal_topics = {
-                'spring': ["지금 바로 할 수 있는 계절 준비"],
-                'summer': ["지금 바로 할 수 있는 계절 준비"],
-                'autumn': ["지금 바로 할 수 있는 계절 준비"],
-                'winter': ["지금 바로 할 수 있는 계절 준비"]
+                'spring': ["A seasonal refresh you can do right now"],
+                'summer': ["A seasonal refresh you can do right now"],
+                'autumn': ["A seasonal refresh you can do right now"],
+                'winter': ["A seasonal refresh you can do right now"]
             }
         
-        # 계절에 맞는 주제를 우선적으로 선택 (50% 확률)
-        if random.random() < 0.5 and current_season in seasonal_topics:
+        # 계절에 맞는 주제를 우선적으로 선택 (25% 확률)
+        if random.random() < 0.25 and current_season in seasonal_topics:
             seasonal_list = seasonal_topics[current_season]
             if seasonal_list:
                 topic = random.choice(seasonal_list)
@@ -397,55 +607,16 @@ class AIVideoGenerator:
         # AI 생성이 성공하지 못한 경우
         if not self.openai_client and not self.claude_client:
             print(f"⚠️ AI 클라이언트가 없어 기본 스크립트를 사용합니다.")
-            if language == 'en':
-                return [
-                    f"Let's learn about {topic}.",
-                    "Here are the key points you need to know.",
-                    "You can see results if you practice.",
-                    "Start right now!"
-                ]
-            else:
-                return [
-                    f"{topic}에 대해 알아보겠습니다.",
-                    "중요한 포인트를 알려드립니다.",
-                    "실천하면 효과를 볼 수 있습니다.",
-                    "지금 바로 시작하세요!"
-                ]
+            return self._build_default_script(topic, language=language)
         
         # 이 코드는 실행되지 않아야 하지만 안전을 위해 추가
-        if language == 'en':
-            return [
-                f"Let's learn about {topic}.",
-                "Here are the key points you need to know.",
-                "You can see results if you practice.",
-                "Start right now!"
-            ]
-        else:
-            return [
-                f"{topic}에 대해 알아보겠습니다.",
-                "중요한 포인트를 알려드립니다.",
-                "실천하면 효과를 볼 수 있습니다.",
-                "지금 바로 시작하세요!"
-            ]
+        return self._build_default_script(topic, language=language)
     
     def _generate_script_with_claude(self, topic: str, performance_prompt: str = None, content_type: ContentType = None, language: str = 'ko') -> list:
         """Claude API로 영상 스크립트 생성 (콘텐츠 타입별 최적화)"""
         if not self.claude_client:
             print(f"⚠️ Claude 클라이언트가 없습니다.")
-            if language == 'en':
-                return [
-                    f"Let's learn about {topic}.",
-                    "Here are the key points you need to know.",
-                    "You can see results if you practice.",
-                    "Start right now!"
-                ]
-            else:
-                return [
-                    f"{topic}에 대해 알아보겠습니다.",
-                    "중요한 포인트를 알려드립니다.",
-                    "실천하면 효과를 볼 수 있습니다.",
-                    "지금 바로 시작하세요!"
-                ]
+            return self._build_default_script(topic, language=language)
         
         try:
             # 콘텐츠 타입별 설정 (55초 목표로 충분한 내용 생성)
@@ -581,7 +752,12 @@ class AIVideoGenerator:
                 user_prompt = f"'{topic}'에 대한 YouTube Shorts 영상 스크립트를 작성해주세요. 각 문장은 3-4초 분량이며, 총 {max_sentences}개 문장으로 작성하여 약 {target_duration}초 분량이 되도록 충분히 자세하게 작성해주세요 (최대 60초 제한). **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요.** 중요한 점: 순수한 대사나 설명만 작성하고, '배경음악', '자막', '시작' 같은 제작 지시사항은 절대 포함하지 마세요. 첫 문장은 반드시 강력한 Hook이어야 하며, 내용을 충분히 전개하여 시청자가 이해할 수 있도록 자세히 설명하세요."
             
             # Claude API 호출
-            models_to_try = ["claude-3-5-sonnet-20241022", "claude-3-opus-20240229", "claude-3-sonnet-20240229"]
+            # 최우선 모델에서 404가 지속 발생하여 안정적인 모델을 먼저 시도하도록 순서를 조정
+            models_to_try = [
+                "claude-3-opus-20240229",
+                "claude-3-sonnet-20240229",
+                "claude-3-5-sonnet-20241022",
+            ]
             response = None
             last_error = None
                 
@@ -631,6 +807,12 @@ class AIVideoGenerator:
                             continue
                         # 필터 키워드가 포함된 문장 제거
                         if any(keyword in s for keyword in filter_keywords):
+                            continue
+                        # 스크립트 안내 문장 제거 (예: "Here's a YouTube Shorts script...")
+                        lower_s = s.lower()
+                        if "youtube shorts script" in lower_s or (
+                            "script" in lower_s and ("youtube" in lower_s or "shorts" in lower_s)
+                        ):
                             continue
                         # 괄호 안의 설명 제거 (예: "텍스트 (참고사항)" -> "텍스트")
                         s = re.sub(r'\([^)]*\)', '', s).strip()
@@ -682,38 +864,12 @@ class AIVideoGenerator:
             
             # AI 생성 실패 시 기본 스크립트 반환
             print(f"⚠️ AI 스크립트 생성 실패로 기본 스크립트를 사용합니다.")
-            if language == 'en':
-                return [
-                    f"Let's learn about {topic}.",
-                    "Here are the key points you need to know.",
-                    "You can see results if you practice.",
-                    "Start right now!"
-                ]
-            else:
-                return [
-                    f"{topic}에 대해 알아보겠습니다.",
-                    "중요한 포인트를 알려드립니다.",
-                    "실천하면 효과를 볼 수 있습니다.",
-                    "지금 바로 시작하세요!"
-                ]
+            return self._build_default_script(topic, language=language)
     
     def _generate_script_with_openai(self, topic: str, performance_prompt: str = None, content_type: ContentType = None, language: str = 'ko') -> list:
         """OpenAI API로 영상 스크립트 생성 (기존 로직을 별도 메서드로 분리)"""
         if not self.openai_client:
-            if language == 'en':
-                return [
-                    f"Let's learn about {topic}.",
-                    "Here are the key points you need to know.",
-                    "You can see results if you practice.",
-                    "Start right now!"
-                ]
-            else:
-                return [
-                    f"{topic}에 대해 알아보겠습니다.",
-                    "중요한 포인트를 알려드립니다.",
-                    "실천하면 효과를 볼 수 있습니다.",
-                    "지금 바로 시작하세요!"
-                ]
+            return self._build_default_script(topic, language=language)
         
         try:
             # 콘텐츠 타입별 설정 (55초 목표로 충분한 내용 생성)
@@ -906,6 +1062,12 @@ class AIVideoGenerator:
                             # 필터 키워드가 포함된 문장 제거
                             if any(keyword in s for keyword in filter_keywords):
                                 continue
+                            # 스크립트 안내 문장 제거 (예: "Here's a YouTube Shorts script...")
+                            lower_s = s.lower()
+                            if "youtube shorts script" in lower_s or (
+                                "script" in lower_s and ("youtube" in lower_s or "shorts" in lower_s)
+                            ):
+                                continue
                             # 괄호 안의 설명 제거 (예: "텍스트 (참고사항)" -> "텍스트")
                             s = re.sub(r'\([^)]*\)', '', s).strip()
                             s = re.sub(r'\[[^\]]*\]', '', s).strip()
@@ -948,46 +1110,7 @@ class AIVideoGenerator:
         
         # AI 생성 실패 시 기본 스크립트 반환 (55초 목표를 위해 12-16개 문장)
         print(f"⚠️ AI 스크립트 생성 실패로 기본 스크립트를 사용합니다.")
-        if language == 'en':
-            # 55초 목표를 위해 12-16개 문장으로 구성
-            return [
-                f"Let's learn about {topic}.",
-                "This is one of the most important topics you need to understand.",
-                "Here are the key points you need to know.",
-                "First, you should understand the basic concept.",
-                "Second, you need to know how to apply it in practice.",
-                "Third, you can see real results if you follow these steps.",
-                "Many people make mistakes because they don't understand this.",
-                "But if you follow these principles, you will succeed.",
-                "The key is to start with the basics and build from there.",
-                "Once you master the fundamentals, everything becomes easier.",
-                "Remember, consistency is more important than perfection.",
-                "You can achieve great results if you practice regularly.",
-                "Don't wait for the perfect moment to start.",
-                "The best time to begin is right now.",
-                "Take action today and see the difference it makes.",
-                "Start right now and transform your life!"
-            ]
-        else:
-            # 55초 목표를 위해 12-16개 문장으로 구성
-            return [
-                f"{topic}에 대해 알아보겠습니다.",
-                "이것은 여러분이 반드시 이해해야 할 중요한 주제입니다.",
-                "중요한 포인트를 알려드리겠습니다.",
-                "첫째, 기본 개념을 이해해야 합니다.",
-                "둘째, 실제로 어떻게 적용하는지 알아야 합니다.",
-                "셋째, 이 단계들을 따르면 실제 결과를 볼 수 있습니다.",
-                "많은 사람들이 이것을 이해하지 못해 실수를 합니다.",
-                "하지만 이 원칙들을 따르면 성공할 수 있습니다.",
-                "핵심은 기본부터 시작해서 점진적으로 발전시키는 것입니다.",
-                "기초를 마스터하면 모든 것이 쉬워집니다.",
-                "기억하세요, 완벽함보다 일관성이 더 중요합니다.",
-                "정기적으로 연습하면 훌륭한 결과를 얻을 수 있습니다.",
-                "완벽한 순간을 기다리지 마세요.",
-                "시작하기에 가장 좋은 시간은 지금입니다.",
-                "오늘 행동에 옮기고 차이를 확인하세요.",
-                "지금 바로 시작해서 인생을 변화시키세요!"
-            ]
+        return self._build_default_script(topic, language=language)
     
     def _create_video_from_script(
         self,
@@ -1700,6 +1823,7 @@ class AIVideoGenerator:
                 except:
                     continue
         
+        line_spacing = 30
         # 텍스트 크기 계산
         draw = ImageDraw.Draw(image)
         line_heights = []
@@ -1710,7 +1834,7 @@ class AIVideoGenerator:
             line_heights.append(bbox[3] - bbox[1])
             line_widths.append(bbox[2] - bbox[0])
         
-        total_height = sum(line_heights) + (len(lines) - 1) * 20  # 줄 간격
+        total_height = sum(line_heights) + (len(lines) - 1) * line_spacing  # 줄 간격
         max_line_width = max(line_widths) if line_widths else 0
         
         # 텍스트 위치 (중앙, 아래쪽)
@@ -1753,7 +1877,7 @@ class AIVideoGenerator:
             # 메인 텍스트 - 밝은 흰색
             draw.text((line_x, current_y), line, fill=(255, 255, 255), font=font)
             
-            current_y += line_heights[i] + 20  # 줄 간격
+            current_y += line_heights[i] + line_spacing  # 줄 간격
         
         return image
     

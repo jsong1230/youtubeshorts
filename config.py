@@ -59,9 +59,9 @@ SHORTS_ASPECT_RATIO = (9, 16)  # 세로형 (1080x1920)
 # 영상 길이는 스크립트 내용에 따라 자동으로 조정되며, 목표는 55초 (60초 초과 방지)
 
 # 자막 설정
-# 'key_words': 핵심 단어만 표시 (1-3개 단어, 기본값)
-# 'full_sentence': 전체 문장 표시
-SUBTITLE_MODE = os.getenv('SUBTITLE_MODE', 'key_words').lower()  # 'key_words' 또는 'full_sentence'
+# 'key_words': 핵심 단어만 표시 (1-3개 단어)
+# 'full_sentence': 전체 문장 표시 (기본값)
+SUBTITLE_MODE = os.getenv('SUBTITLE_MODE', 'full_sentence').lower()  # 'key_words' 또는 'full_sentence'
 
 # 데이터베이스 설정
 DATABASE_PATH = os.getenv('DATABASE_PATH', 'data/videos.db')
