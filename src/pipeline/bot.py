@@ -90,12 +90,25 @@ class ShortsBot:
             print(f"📹 영상 생성 테스트 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             print(f"{'='*50}\n")
             
+            # 언어 자동 감지 (기본값: 영어, 주제가 한글이면 한글로 설정)
+            language = 'en'  # 기본값을 영어로 변경
+            if topic:
+                import re
+                korean_chars = len(re.findall(r'[가-힣]', topic))
+                total_chars = len(re.findall(r'[a-zA-Z가-힣]', topic))
+                if total_chars > 0 and korean_chars / total_chars > 0.5:
+                    language = 'ko'
+                    print(f"🌐 언어 자동 감지: 한국어 (주제: {topic})")
+                else:
+                    print(f"🌐 언어 자동 감지: 영어 (주제: {topic})")
+            
             # AI로 영상 생성 (매번 새로운 아이디어로)
             print("📹 영상 생성 중...")
             video_path, script, generated_topic = self.video_generator.generate_video(
                 topic=topic, 
                 duration=None,
-                performance_prompt=None
+                performance_prompt=None,
+                language=language
             )
             
             # 실제 사용된 주제
@@ -113,7 +126,8 @@ class ShortsBot:
                 video_path, 
                 title,
                 topic=actual_topic,
-                script=script
+                script=script,
+                language=language
             )
             
             print(f"\n✅ 영상 생성 완료!")
@@ -130,7 +144,7 @@ class ShortsBot:
             traceback.print_exc()
             return None
     
-    def create_and_upload(self, topic: str = None, content_type: ContentType = None, force: bool = False):
+    def create_and_upload(self, topic: str = None, content_type: ContentType = None, force: bool = False, language: str = None):
         """
         영상 생성 및 업로드
         
@@ -138,6 +152,7 @@ class ShortsBot:
             topic: 영상 주제 (None이면 자동 생성)
             content_type: 콘텐츠 타입 (None이면 자동 선택)
             force: True이면 중복 체크를 건너뛰고 강제 업로드
+            language: 언어 코드 ('ko' 또는 'en', None이면 주제로 자동 감지)
         """
         try:
             content_type_name = content_type.value if content_type else "자동"
@@ -177,6 +192,22 @@ class ShortsBot:
                         print(f"   강제로 업로드하려면 force=True 옵션을 사용하세요.")
                         return None
             
+            # 언어 자동 감지 (기본값: 영어, 주제가 한글이면 한글로 설정)
+            if language is None and topic:
+                # 주제에 한글이 많으면 한글로 감지, 그 외는 모두 영어
+                import re
+                korean_chars = len(re.findall(r'[가-힣]', topic))
+                total_chars = len(re.findall(r'[a-zA-Z가-힣]', topic))
+                if total_chars > 0 and korean_chars / total_chars > 0.5:
+                    language = 'ko'
+                    print(f"🌐 언어 자동 감지: 한국어 (주제: {topic})")
+                else:
+                    language = 'en'
+                    print(f"🌐 언어 자동 감지: 영어 (주제: {topic})")
+            elif language is None:
+                language = 'en'  # 기본값을 영어로 변경
+                print(f"🌐 언어 기본값: 영어")
+            
             # 성과 기반 프롬프트 가져오기 (하루 1개 생성 전)
             performance_prompt = self._get_performance_based_prompt()
             if performance_prompt:
@@ -189,7 +220,8 @@ class ShortsBot:
                 topic=topic, 
                 duration=None,
                 performance_prompt=performance_prompt,
-                content_type=content_type
+                content_type=content_type,
+                language=language
             )
             
             # 실제 사용된 주제 (생성된 경우 generated_topic 사용)
@@ -211,7 +243,8 @@ class ShortsBot:
                 video_path, 
                 title, 
                 topic=actual_topic,
-                script=script
+                script=script,
+                language=language
             )
             
             # 썸네일 생성 확인

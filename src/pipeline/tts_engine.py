@@ -78,10 +78,11 @@ class OpenAIEngine(TTSEngineBase):
     def generate(self, text: str, output_path: str, lang: str = 'ko') -> bool:
         """OpenAI TTS로 음성 생성"""
         try:
-            # OpenAI TTS는 한국어를 지원하지 않으므로 영어로 변환하거나 기본 모델 사용
-            # 한국어의 경우 'nova' 또는 'alloy' 모델 사용 가능
+            # OpenAI TTS는 언어를 자동 감지하지만, voice 선택은 언어에 따라 다름
+            # 영어: alloy, echo, fable, onyx, nova, shimmer (모두 영어 지원)
+            # 한국어: nova가 가장 적합하지만, 기본적으로 영어로 생성
             # voice 옵션: alloy, echo, fable, onyx, nova, shimmer
-            voice = "nova"  # 한국어에 가장 적합한 음성
+            voice = "nova" if lang == 'ko' else "alloy"  # 언어에 따라 voice 선택
             
             response = self.client.audio.speech.create(
                 model="tts-1",  # 또는 "tts-1-hd" (더 고품질, 더 비쌈)
