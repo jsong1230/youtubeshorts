@@ -72,6 +72,11 @@
   - AUTO `black friday sales tip` → `output/videos/shorts_20251119_172737.mp4` (55.71s), 썸네일 `output/thumbnails/thumb_20251119_172902.jpg`
 - 모든 테스트는 업로드 없이 로컬 생성만 수행했으며, 영어 전용 파이프라인과 썸네일 첫 프레임 삽입이 정상 동작함을 확인
 
+### 2025-11-20: Instagram Graph API 테스트 보류
+- Long-lived Access Token을 생성하여 `.env`에 적용하고 Instagram 인증은 성공했으나, `me/accounts` 호출 시 Facebook 페이지가 반환되지 않는 문제 지속
+- 토큰 권한(`pages_show_list`, `pages_manage_posts`, `instagram_content_publish` 등)은 정상이나 Graph API가 해당 페이지를 “관리 대상”으로 인식하지 않아 Facebook 업로드 단계에서 오류 발생
+- 임시 방편으로 Instagram 업로드 비활성화 (`ENABLE_INSTAGRAM_UPLOAD=false`) 상태로 전환하고, 권한 전파/토큰 갱신을 기다린 뒤 추후 재시도 예정
+
 ### 2025-11-17: Claude API 지원 추가
 
 - **커밋**: `37b24ba`
