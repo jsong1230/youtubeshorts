@@ -9,23 +9,35 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-from src.pipeline.bot import ShortsBot
-
-
 def main():
     """메인 함수"""
-    bot = ShortsBot()
-    
     import sys
-    
+
+    if len(sys.argv) > 1 and sys.argv[1] == 'instagram-test':
+        from src.uploaders.instagram_uploader import InstagramUploader
+
+        print("🔄 Instagram Graph API 연결 테스트를 시작합니다...")
+        uploader = InstagramUploader()
+        success = uploader.test_connection(verbose=True)
+        if success:
+            print("✅ Instagram 연결 테스트가 완료되었습니다.")
+            sys.exit(0)
+        else:
+            print("❌ Instagram 연결 테스트에 실패했습니다. 위 로그를 참고해 설정을 점검하세요.")
+            sys.exit(1)
+
+    from src.pipeline.bot import ShortsBot
+
+    bot = ShortsBot()
+
     if len(sys.argv) > 1:
         command = sys.argv[1]
-        
+
         if command == 'test' or command == 'generate':
             # 영상 생성만 (업로드 없음)
             topic = sys.argv[2] if len(sys.argv) > 2 else None
             bot.create_video_only(topic=topic)
-        
+
         elif command == 'upload':
             # 즉시 업로드
             # --force 또는 -f 플래그 제외하고 주제 추출
@@ -33,24 +45,24 @@ def main():
             topic = args[0] if args else None
             force = '--force' in sys.argv or '-f' in sys.argv
             bot.create_and_upload(topic=topic, force=force)
-        
+
         elif command == 'stats':
             # 통계 업데이트 및 리포트
             bot.update_all_stats()
-        
+
         elif command == 'report':
             # 리포트만 출력
             bot.monetization.print_report()
-        
+
         elif command == 'schedule':
             # 스케줄러 시작
             bot.schedule_daily_upload()
             bot.run_scheduler()
-        
+
         elif command == 'sync-status':
             # 동기화 상태 확인
             bot.sync_manager.print_sync_status()
-        
+
         else:
             print("사용법:")
             print("  python main.py test [주제]     - 영상 생성만 (업로드 없음)")
@@ -59,6 +71,7 @@ def main():
             print("  python main.py report         - 수익화 리포트 출력")
             print("  python main.py schedule       - 자동 업로드 스케줄러 시작")
             print("  python main.py sync-status    - 동기화 상태 확인")
+            print("  python main.py instagram-test - Instagram Graph API 연결 테스트")
     else:
         # 기본: 즉시 업로드
         bot.create_and_upload()

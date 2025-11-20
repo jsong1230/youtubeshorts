@@ -60,6 +60,43 @@
 
 ## 개발 히스토리 (Git Log 기반)
 
+### 2025-11-20: 모바일 시청 시 자막 가독성 개선
+- `_create_subtitle_clip()`에서 자막 위치 계산 시 클립 높이만큼 추가로 올려 하단 여백을 확보
+- ImageMagick/PIL 경로 모두 동일하게 적용하여 Shorts 영상 하단 UI 영역과 겹치지 않도록 조정
+- 추가로 약 3줄 간격(기본 180px → 90px) 만큼 위로 이동시키는 오프셋을 도입·조정해 실제 기기 재생 시 가려지는 문제를 해소하면서도 화면 중앙으로 치우치지 않도록 튜닝
+- Composite 단계에서 자막 위치를 다시 하단으로 덮어쓰던 로직을 제거해 `_create_subtitle_clip()`에서 계산한 좌표가 그대로 반영되도록 수정
+- `output/videos/shorts_20251121_003213.mp4`를 생성한 뒤 `YouTubeUploader`를 직접 호출해 YouTube에 업로드(영상 ID: `yyTVlenTrj4`, 썸네일 `output/thumbnails/thumb_20251121_003425.jpg`)
+- 실제 기기에서 자막이 화면 중앙 쪽으로 이동해 가독성이 향상됨
+
+### 2025-11-21: 6개 영어 재태크 콘텐츠 생성 및 즉시 업로드
+- 자막 위치 조정값(추가 오프셋 90px)을 유지한 채로 6개 영어 주제를 연속 생성·업로드하여 실제 YouTube 채널에 공개 배포
+- `main.py upload "<topic>" --force` 워크플로로 생성 → 썸네일 생성/삽입 → YouTube 업로드 → 썸네일 업로드까지 자동화 확인
+- 업로드된 영상 (파일 → ID → 주제):
+  1. `shorts_20251121_003213.mp4` → `yyTVlenTrj4` → *November Budget Reset: 3 Micro Habits To Kill Impulse Spending* (자막 높이 튜닝 확인용 샘플)
+  2. `shorts_20251121_004149.mp4` → `9-nuUzhT5IM` → *Side Hustle Sprint: Flip Black Friday Deals for Extra $500*
+  3. `shorts_20251121_004533.mp4` → `hzXFwoh9oBs` → *AI-Powered Savings Jar: Automate Spare Change Into Index Funds*
+  4. `shorts_20251121_004859.mp4` → `q3uI1v923X8` → *Credit Score Glow-Up: 30-Day Plan for Millennials*
+  5. `shorts_20251121_005239.mp4` → `neKDpoaoWoQ` → *Micro-Morning Routine for High-Energy Productivity*
+  6. `shorts_20251121_005623.mp4` → `LEoAEnnYpGw` → *Recession-Proof Skill Stack: Combine Storytelling + Data*
+- 각 영상은 썸네일까지 정상 업로드 되었으며, `token.json` 기반 인증이 안정적으로 재사용됨
+
+### 2025-11-19: Instagram 연결 테스트 명령 추가
+- `InstagramUploader`가 Instagram Graph API(`v21.0`) 계정 정보를 직접 조회해 자격 증명을 검증하도록 개선
+- `python main.py instagram-test` 명령으로 `.env` 자격 증명을 사용해 연결을 점검하고 성공/실패 로그를 출력
+- README, MULTI_PLATFORM_SETUP.md, .cursorrules에 Instagram 연결 테스트 절차 문서화
+
+### 2025-11-19: 테스트용으로 생성했던 6개 영상 YouTube 업로드
+- 기존 `output/videos/shorts_20251119_*.mp4`를 다시 생성하지 않고 `YouTubeUploader`를 직접 호출해 순차 업로드
+- 업로드된 영상 ID:
+  1. `shorts_20251119_171551.mp4` → `OaqGCXeROeo`
+  2. `shorts_20251119_171807.mp4` → `OgUBCWgDQpE`
+  3. `shorts_20251119_172000.mp4` → `2Kp-2c65iyw`
+  4. `shorts_20251119_172208.mp4` → `Vu8xrbP7Fqs`
+  5. `shorts_20251119_172417.mp4` → `oHHjFBFcZY0`
+  6. `shorts_20251119_172737.mp4` → `T892L_SCKns`
+- 각 영상의 썸네일 경로(`output/thumbnails/thumb_*.jpg`)는 현재 워크스페이스에 존재하지 않아 업로드가 건너뛰어졌으며, 필요 시 YouTube Studio에서 썸네일을 수동 등록해야 함
+- 인증은 기존 `token.json`으로 진행되었고, 새로 발급받은 refresh token이 만료되었다는 경고가 한 번 출력됨
+
 ### 2025-11-19: 모든 콘텐츠 타입 영어 테스트 러닝
 - `main.py test` 모드로 5개 콘텐츠 타입(HOOK, QUOTE, STORY, FACT, SHORT_STORY) + AUTO 시나리오를 각각 실행하여 6개의 영어 Shorts를 생성
 - 각 테스트는 썸네일 삽입, 영어 자막/스크립트/썸네일 텍스트, 배경 영상 무중복, 오디오-비디오 길이 일치 여부를 점검

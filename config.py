@@ -10,7 +10,11 @@ BASE_DIR = Path(__file__).resolve().parent
 
 # .env 파일 경로 명시적으로 지정
 env_path = BASE_DIR / '.env'
-load_dotenv(dotenv_path=env_path)
+try:
+    load_dotenv(dotenv_path=env_path)
+except PermissionError:
+    print("⚠️ .env 파일을 읽을 권한이 없습니다. 파일 권한을 확인하세요.")
+    print(f"   경로: {env_path}")
 
 # YouTube API 설정
 YOUTUBE_CLIENT_ID = os.getenv('YOUTUBE_CLIENT_ID')

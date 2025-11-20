@@ -320,6 +320,16 @@ launchctl unload ~/Library/LaunchAgents/com.youtubeshorts.bot.plist
 
 자세한 내용은 [docs/AUTO_START_GUIDE.md](./docs/AUTO_START_GUIDE.md) 파일을 참고하세요.
 
+### Instagram 연결 테스트
+
+Instagram Graph API 자격 증명이 올바르게 설정되었는지 확인하려면 다음 명령을 실행하세요:
+
+```bash
+python main.py instagram-test
+```
+
+이 명령은 `.env`에 저장된 `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`, `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_ACCOUNT_ID`를 사용해 Graph API 연결을 시도하고 결과를 출력합니다. 연결에 성공하면 Instagram 사용자명과 계정 ID가 표시되고, 실패 시 원인을 로그로 확인할 수 있습니다.
+
 ## 📊 수익화 추적
 
 봇은 자동으로 다음 정보를 추적합니다:

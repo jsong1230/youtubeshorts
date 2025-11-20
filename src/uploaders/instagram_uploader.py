@@ -2,180 +2,270 @@
 Instagram Reels 자동 업로드 모듈
 """
 import os
+from typing import Dict, Optional
+
 import requests
-import json
+
 import config
 
 
 class InstagramUploader:
     """Instagram Graph API를 사용한 Reels 업로드 클래스"""
-    
+
+    GRAPH_API_DEFAULT_VERSION = "v21.0"
+
     def __init__(self):
         self.app_id = config.INSTAGRAM_APP_ID
         self.app_secret = config.INSTAGRAM_APP_SECRET
         self.access_token = config.INSTAGRAM_ACCESS_TOKEN
         self.instagram_account_id = config.INSTAGRAM_ACCOUNT_ID
+        self.graph_api_version = os.getenv(
+            "INSTAGRAM_GRAPH_API_VERSION",
+            self.GRAPH_API_DEFAULT_VERSION,
+        )
+        self.graph_api_base = f"https://graph.facebook.com/{self.graph_api_version}"
         self.authenticated = False
-        
-        if self.app_id and self.app_secret and self.access_token:
+        self.instagram_username: Optional[str] = None
+
+        if self._has_required_credentials():
             self._authenticate()
-    
-    def _authenticate(self):
+
+    def _has_required_credentials(self) -> bool:
+        """필수 자격 증명이 설정되었는지 확인"""
+        return all(
+            [
+                self.app_id,
+                self.app_secret,
+                self.access_token,
+                self.instagram_account_id,
+            ]
+        )
+
+    def _authenticate(self, verbose: bool = True) -> bool:
         """Instagram Graph API 인증"""
-        if not all([self.app_id, self.app_secret, self.access_token]):
-            print("⚠️ Instagram API 키가 설정되지 않았습니다.")
-            print("   Facebook for Developers에서 앱을 만들고 API 키를 발급받아 .env 파일에 설정하세요.")
+        if not self._has_required_credentials():
+            if verbose:
+                print("⚠️ Instagram API 자격 증명이 설정되지 않았습니다.")
+                print("   Facebook for Developers에서 앱을 만들고 API 키를 발급받아 .env 파일에 설정하세요.")
+            self.authenticated = False
             return False
-        
-        api_version = "v19.0"
-        
-        # 방법 1: Facebook 페이지를 통한 Instagram 계정 접근
-        print(f"🔍 Instagram Graph API 연결 테스트 중...")
-        
+
+        api_version = self.graph_api_version or self.GRAPH_API_DEFAULT_VERSION
+
+        if verbose:
+            print("🔍 Instagram Graph API 연결 테스트 중...")
+
         try:
-            # 먼저 Facebook 페이지 목록 조회
             pages_url = f"https://graph.facebook.com/{api_version}/me/accounts"
             pages_params = {
                 "fields": "id,name,access_token,instagram_business_account{id,username,name,account_type}",
-                "access_token": self.access_token
+                "access_token": self.access_token,
             }
-            
+
             pages_response = requests.get(pages_url, params=pages_params, timeout=10)
-            
+
             if pages_response.status_code == 200:
                 pages_data = pages_response.json()
-                pages = pages_data.get('data', [])
-                
-                if pages:
+                pages = pages_data.get("data", [])
+
+                if pages and verbose:
                     print(f"   ✅ Facebook 페이지 발견: {len(pages)}개")
-                    
-                    # 각 페이지의 Instagram 계정 확인
-                    for page in pages:
-                        page_name = page.get('name', 'N/A')
-                        instagram_account = page.get('instagram_business_account')
-                        
-                        if instagram_account:
-                            instagram_id = instagram_account.get('id')
-                            instagram_username = instagram_account.get('username')
-                            instagram_name = instagram_account.get('name')
-                            account_type = instagram_account.get('account_type')
-                            
-                            # 설정된 Account ID와 일치하는지 확인
-                            if self.instagram_account_id and instagram_id == self.instagram_account_id:
-                                print(f"   ✅ Instagram 계정 확인됨!")
-                                print(f"      페이지: {page_name}")
-                                print(f"      사용자명: @{instagram_username}")
-                                print(f"      이름: {instagram_name}")
-                                print(f"      계정 타입: {account_type}")
-                                
-                                # 페이지 Access Token으로 다시 확인
-                                page_token = page.get('access_token')
-                                if page_token:
-                                    instagram_url = f"https://graph.facebook.com/{api_version}/{instagram_id}"
-                                    instagram_params = {
-                                        "fields": "id,username,name",
-                                        "access_token": page_token
-                                    }
-                                    
-                                    instagram_response = requests.get(instagram_url, params=instagram_params, timeout=10)
-                                    if instagram_response.status_code == 200:
-                                        print(f"✅ Instagram 연결 성공! (페이지 토큰 사용)")
-                                        self.authenticated = True
-                                        # 페이지 토큰을 사용하도록 업데이트
-                                        self.access_token = page_token
-                                        return True
-                            
-                            # Account ID가 설정되지 않았거나 일치하지 않으면 첫 번째 Instagram 계정 사용
-                            elif not self.instagram_account_id:
-                                print(f"   ✅ Instagram 계정 발견 (Account ID 미설정 시 첫 번째 계정 사용)")
-                                print(f"      페이지: {page_name}")
-                                print(f"      사용자명: @{instagram_username}")
-                                print(f"      ID: {instagram_id}")
-                                
-                                # 페이지 Access Token으로 확인
-                                page_token = page.get('access_token')
-                                if page_token:
-                                    instagram_url = f"https://graph.facebook.com/{api_version}/{instagram_id}"
-                                    instagram_params = {
-                                        "fields": "id,username,name",
-                                        "access_token": page_token
-                                    }
-                                    
-                                    instagram_response = requests.get(instagram_url, params=instagram_params, timeout=10)
-                                    if instagram_response.status_code == 200:
-                                        print(f"✅ Instagram 연결 성공!")
-                                        self.authenticated = True
-                                        self.instagram_account_id = instagram_id
-                                        self.access_token = page_token
-                                        return True
-                                break
-                    
-                    # 페이지는 있지만 Instagram 계정이 연결되지 않은 경우
-                    if not self.authenticated:
-                        print(f"   ⚠️  Facebook 페이지는 있지만 Instagram 계정이 연결되지 않았습니다.")
-                        print(f"   Instagram 계정을 Facebook 페이지에 연결하세요.")
-                else:
-                    print(f"   ⚠️  Facebook 페이지를 찾을 수 없습니다.")
-            
-            # 방법 2: 직접 Account ID로 접근 시도 (설정된 경우)
+
+                for page in pages:
+                    instagram_account = page.get("instagram_business_account")
+                    if not instagram_account:
+                        continue
+
+                    page_name = page.get("name", "N/A")
+                    instagram_id = instagram_account.get("id")
+                    instagram_username = instagram_account.get("username")
+                    instagram_name = instagram_account.get("name")
+                    account_type = instagram_account.get("account_type")
+
+                    if self.instagram_account_id and instagram_id == self.instagram_account_id:
+                        if verbose:
+                            print("   ✅ Instagram 계정 확인됨!")
+                            print(f"      페이지: {page_name}")
+                            print(f"      사용자명: @{instagram_username}")
+                            print(f"      이름: {instagram_name}")
+                            print(f"      계정 타입: {account_type}")
+
+                        page_token = page.get("access_token")
+                        if page_token:
+                            instagram_url = f"https://graph.facebook.com/{api_version}/{instagram_id}"
+                            instagram_params = {
+                                "fields": "id,username,name",
+                                "access_token": page_token,
+                            }
+
+                            instagram_response = requests.get(
+                                instagram_url, params=instagram_params, timeout=10
+                            )
+                            if instagram_response.status_code == 200:
+                                data = instagram_response.json()
+                                self.instagram_username = data.get("username") or instagram_username
+                                self.authenticated = True
+                                self.access_token = page_token
+                                if verbose:
+                                    print("✅ Instagram 연결 성공! (페이지 토큰 사용)")
+                                return True
+
+                    elif not self.instagram_account_id:
+                        if verbose:
+                            print("   ✅ Instagram 계정 발견 (Account ID 미설정 시 첫 번째 계정 사용)")
+                            print(f"      페이지: {page_name}")
+                            print(f"      사용자명: @{instagram_username}")
+                            print(f"      ID: {instagram_id}")
+
+                        page_token = page.get("access_token")
+                        if page_token:
+                            instagram_url = f"https://graph.facebook.com/{api_version}/{instagram_id}"
+                            instagram_params = {
+                                "fields": "id,username,name",
+                                "access_token": page_token,
+                            }
+
+                            instagram_response = requests.get(
+                                instagram_url, params=instagram_params, timeout=10
+                            )
+                            if instagram_response.status_code == 200:
+                                data = instagram_response.json()
+                                self.instagram_username = data.get("username")
+                                self.authenticated = True
+                                self.instagram_account_id = instagram_id
+                                self.access_token = page_token
+                                if verbose:
+                                    print("✅ Instagram 연결 성공!")
+                                return True
+                        break
+
+                if pages and not self.authenticated and verbose:
+                    print("   ⚠️  Facebook 페이지는 있지만 Instagram 계정이 연결되지 않았습니다.")
+                    print("   Instagram 계정을 Facebook 페이지에 연결하세요.")
+                if not pages and verbose:
+                    print("   ⚠️  Facebook 페이지를 찾을 수 없습니다.")
+
             if self.instagram_account_id and not self.authenticated:
-                print(f"   🔍 직접 Account ID로 접근 시도...")
+                if verbose:
+                    print("   🔍 직접 Account ID로 접근 시도...")
                 url = f"https://graph.facebook.com/{api_version}/{self.instagram_account_id}"
-                # account_type 필드는 IGUser 타입에서 사용할 수 없으므로 제거
                 params = {
                     "fields": "id,username,name",
-                    "access_token": self.access_token
+                    "access_token": self.access_token,
                 }
-                
+
                 response = requests.get(url, params=params, timeout=10)
-                
+
                 if response.status_code == 200:
                     data = response.json()
                     username = data.get("username", "N/A")
                     name = data.get("name", "N/A")
-                    
-                    print(f"✅ Instagram 연결 성공! (직접 접근)")
-                    print(f"   ID: {data.get('id', 'N/A')}")
-                    print(f"   사용자명: @{username}")
-                    if name != "N/A":
-                        print(f"   이름: {name}")
+
+                    self.instagram_username = None if username == "N/A" else username
                     self.authenticated = True
+                    if verbose:
+                        print("✅ Instagram 연결 성공! (직접 접근)")
+                        print(f"   ID: {data.get('id', 'N/A')}")
+                        print(f"   사용자명: @{username}")
+                        if name != "N/A":
+                            print(f"   이름: {name}")
                     return True
-                else:
-                    error_data = response.json() if response.content else {}
-                    error_message = error_data.get("error", {}).get("message", "알 수 없는 오류")
-                    error_code = error_data.get("error", {}).get("code", response.status_code)
-                    
+
+                error_data = response.json() if response.content else {}
+                error_message = error_data.get("error", {}).get("message", "알 수 없는 오류")
+                error_code = error_data.get("error", {}).get("code", response.status_code)
+                if verbose:
                     print(f"   ❌ 직접 접근 실패 (코드: {error_code})")
                     print(f"   오류 메시지: {error_message}")
-            
-            # 모든 방법 실패
+
             if not self.authenticated:
-                print(f"❌ Instagram 연결 실패")
-                print(f"   💡 해결 방법:")
-                print(f"      1. Facebook 페이지가 생성되어 있는지 확인")
-                print(f"      2. Instagram 계정이 Facebook 페이지에 연결되어 있는지 확인")
-                print(f"      3. Access Token에 'pages_show_list' 권한이 있는지 확인")
-                print(f"      4. Facebook for Developers에서 Instagram Graph API 제품이 추가되어 있는지 확인")
-                
+                try:
+                    account_info = self._fetch_account_info()
+                    if account_info:
+                        self.instagram_username = account_info.get("username")
+                        self.authenticated = True
+                        if verbose:
+                            username = (
+                                f"@{self.instagram_username}"
+                                if self.instagram_username
+                                else "알 수 없음"
+                            )
+                            print(
+                                f"✅ Instagram Graph API 연결 성공: {username} (ID: {self.instagram_account_id})"
+                            )
+                        return True
+                except (requests.exceptions.RequestException, ValueError) as fallback_error:
+                    if verbose:
+                        print("⚠️ Instagram 계정 정보를 가져오지 못했습니다.")
+                        print(f"   상세: {fallback_error}")
+
+            if verbose:
+                print("❌ Instagram 연결 실패")
+                print("   💡 해결 방법:")
+                print("      1. Facebook 페이지가 생성되어 있는지 확인")
+                print("      2. Instagram 계정이 Facebook 페이지에 연결되어 있는지 확인")
+                print("      3. Access Token에 'pages_show_list' 권한이 있는지 확인")
+                print("      4. Facebook for Developers에서 Instagram Graph API 제품이 추가되어 있는지 확인")
+
             self.authenticated = False
             return False
-                
+
         except requests.exceptions.Timeout:
-            print("❌ Instagram 연결 실패: 요청 시간 초과")
+            if verbose:
+                print("❌ Instagram 연결 실패: 요청 시간 초과")
             self.authenticated = False
             return False
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Instagram 연결 실패: 네트워크 오류 - {e}")
+        except requests.exceptions.RequestException as request_error:
+            if verbose:
+                print("❌ Instagram 연결 실패: 네트워크 오류")
+                print(f"   상세: {request_error}")
             self.authenticated = False
             return False
-        except Exception as e:
-            print(f"❌ Instagram 인증 실패: {e}")
-            import traceback
-            traceback.print_exc()
+        except ValueError as api_error:
+            if verbose:
+                print(f"⚠️ Instagram API 응답 오류: {api_error}")
             self.authenticated = False
             return False
-    
+        except Exception as error:
+            if verbose:
+                print(f"❌ Instagram 인증 실패: {error}")
+                import traceback
+
+                traceback.print_exc()
+            self.authenticated = False
+            return False
+
+    def _fetch_account_info(self) -> Optional[Dict]:
+        """Instagram 계정 정보를 Graph API로 조회"""
+        url = f"{self.graph_api_base}/{self.instagram_account_id}"
+        params = {
+            "fields": "id,username",
+            "access_token": self.access_token,
+        }
+        response = requests.get(url, params=params, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+
+        if "error" in data:
+            error = data["error"]
+            message = error.get("message", "알 수 없는 오류")
+            error_code = error.get("code")
+            raise ValueError(f"{message} (code: {error_code})")
+
+        return data
+
+    def test_connection(self, verbose: bool = True) -> bool:
+        """
+        Instagram Graph API 연결 테스트
+
+        Args:
+            verbose: 상세 로그 출력 여부
+
+        Returns:
+            연결 성공 여부
+        """
+        return self._authenticate(verbose=verbose)
+
     def upload_reel(
         self,
         video_path: str,
@@ -195,6 +285,9 @@ class InstagramUploader:
         Returns:
             업로드된 Reels의 ID 또는 None
         """
+        if not self.authenticated and self._has_required_credentials():
+            self._authenticate()
+
         if not self.authenticated:
             print("⚠️ Instagram 인증이 필요합니다. 업로드를 건너뜁니다.")
             return None

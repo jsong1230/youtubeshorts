@@ -235,6 +235,11 @@ youtubeshorts/
 - **docs/API_SETUP.md**: AI API 설정 가이드
 - **docs/CONTENT_OPTIMIZATION.md**: 콘텐츠 최적화 전략
 
+## 📡 연결 테스트
+
+- Instagram Graph API 자격 증명이 준비되면 `python main.py instagram-test` 명령으로 연결을 먼저 확인하세요.
+- 테스트에 성공해야 `ENABLE_INSTAGRAM_UPLOAD=true` 설정 시 Instagram 업로드 로직이 활성화됩니다.
+
 ## 💡 기능 제안 시 참고사항
 
 **새로운 기능을 제안하거나 작업을 시작할 때:**

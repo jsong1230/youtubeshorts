@@ -66,9 +66,20 @@ INSTAGRAM_APP_ID=your_app_id_here
 INSTAGRAM_APP_SECRET=your_app_secret_here
 INSTAGRAM_ACCESS_TOKEN=your_access_token_here
 INSTAGRAM_ACCOUNT_ID=your_instagram_account_id_here
+INSTAGRAM_GRAPH_API_VERSION=v21.0  # 선택사항, 기본값 v21.0
 ```
 
 **참고**: Instagram Graph API는 Facebook 앱 승인과 Instagram 비즈니스 계정이 필요합니다.
+
+### 4. Instagram 연결 테스트
+
+자격 증명이 올바르게 설정되었는지 확인하려면 아래 명령을 실행하세요:
+
+```bash
+python main.py instagram-test
+```
+
+Graph API 연결이 성공하면 Instagram 사용자명이 표시되고, 실패 시 세부 오류 메시지가 출력됩니다.
 
 ## 🚀 사용 방법
 

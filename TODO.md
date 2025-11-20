@@ -14,6 +14,7 @@
 - **전체 문장 자막 모드**: `SUBTITLE_MODE=full_sentence` 환경 변수로 QA 완료 (2025-11-19), 기본값은 `key_words` 유지 ✅
 - **자막 가독성**: 전체 문장 자막의 줄 간격을 30px로 확대하여 읽기 쉬움 ✅
 - **Claude 모델 우선순위**: 404가 나는 `claude-3-5-sonnet-20241022`는 마지막으로, 안정 모델을 먼저 시도하도록 조정 ✅
+- **자막 위치 조정**: Shorts 영상 하단 UI와 겹치지 않도록 자막을 한 단계 위로 이동하고 추가 90px 오프셋 + Composite 단계 오버라이드 제거 ✅
 - **상태**: 주요 개선 사항 완료, 지속적인 테스트 및 최적화 필요
 
 ## 🧪 최근 테스트 로그
@@ -26,6 +27,14 @@
   - SHORT_STORY `routine micro story` → `output/videos/shorts_20251119_172417.mp4` (56.73s)
   - AUTO `black friday sales tip` → `output/videos/shorts_20251119_172737.mp4` (55.71s)
 - 모든 테스트에서 썸네일 첫 프레임 삽입, 영어 자막/썸네일, 배경 영상 무중복, 오디오-비디오 동기화가 정상임을 확인
+- **2025-11-19**: 위 테스트용 6개 영상을 `YouTubeUploader`로 수동 업로드 (ID: OaqGCXeROeo, OgUBCWgDQpE, 2Kp-2c65iyw, Vu8xrbP7Fqs, oHHjFBFcZY0, T892L_SCKns). 워크스페이스에 썸네일 파일이 없어 썸네일 업로드는 생략됨.
+- **2025-11-21**: `output/videos/shorts_20251121_003213.mp4` 자막 위치 조정 테스트 후 `YouTubeUploader`로 즉시 업로드 (ID: yyTVlenTrj4, 썸네일 `output/thumbnails/thumb_20251121_003425.jpg`)
+- **2025-11-21**: 동일 자막 설정으로 5개 추가 영어 영상을 생성해 즉시 업로드
+  - `shorts_20251121_004149.mp4` → `9-nuUzhT5IM` (*Side Hustle Sprint: Flip Black Friday Deals for Extra $500*)
+  - `shorts_20251121_004533.mp4` → `hzXFwoh9oBs` (*AI-Powered Savings Jar: Automate Spare Change Into Index Funds*)
+  - `shorts_20251121_004859.mp4` → `q3uI1v923X8` (*Credit Score Glow-Up: 30-Day Plan for Millennials*)
+  - `shorts_20251121_005239.mp4` → `neKDpoaoWoQ` (*Micro-Morning Routine for High-Energy Productivity*)
+  - `shorts_20251121_005623.mp4` → `LEoAEnnYpGw` (*Recession-Proof Skill Stack: Combine Storytelling + Data*)
 
 ## 🚀 단기 목표 (우선순위 높음)
 
@@ -49,6 +58,7 @@
   - [ ] 에러 처리 및 재시도 로직 추가
 - [ ] Instagram API 통합
   - [ ] Instagram Graph API 인증 구현
+  - [x] Instagram 연결 테스트 명령 추가 (`python main.py instagram-test`, 2025-11-19)
   - [ ] Instagram Reels 업로드 로직 구현
   - [ ] Instagram API 할당량 및 제한사항 확인
   - [ ] 에러 처리 및 재시도 로직 추가
