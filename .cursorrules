@@ -84,12 +84,14 @@ youtubeshorts/
 - **STORY**: 스토리텔링 (심리/역사/부자습관)
 - **FACT**: 숏폼 팩트 기반 영상
 - **SHORT_STORY**: AI 이미지 기반 짧은 스토리
+- **MEDITATION**: 1분 명상 가이드 (마음챙김, 스트레스 완화 등)
+- **BREATHING**: 호흡 가이드 (4-7-8 호흡법, 박스 호흡법 등)
 - **AUTO**: 자동 선택
 
 ### 2. 스케줄러 동작
 - 매일 지정된 시간(`UPLOAD_SCHEDULE_TIME`)에 실행
 - 하루 1개의 고품질 영상을 생성하여 업로드
-- 6가지 콘텐츠 타입(HOOK, QUOTE, STORY, FACT, SHORT_STORY, AUTO) 중 최적의 타입을 선택
+- 8가지 콘텐츠 타입(HOOK, QUOTE, STORY, FACT, SHORT_STORY, MEDITATION, BREATHING, AUTO) 중 최적의 타입을 선택
 - 계절에 맞는 주제를 우선적으로 선택 (50% 확률)
 
 ### 3. AI API 통합

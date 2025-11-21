@@ -85,7 +85,7 @@ class OpenAIEngine(TTSEngineBase):
             voice = "nova" if lang == 'ko' else "alloy"  # 언어에 따라 voice 선택
             
             response = self.client.audio.speech.create(
-                model="tts-1",  # 또는 "tts-1-hd" (더 고품질, 더 비쌈)
+                model="tts-1-hd",  # 고품질 TTS (더 나은 음질)
                 voice=voice,
                 input=text,
                 speed=1.0
