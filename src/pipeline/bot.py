@@ -19,7 +19,11 @@ from src.uploaders.multi_platform_uploader import MultiPlatformUploader
 from src.analytics.monetization import MonetizationTracker
 from src.pipeline.database import VideoDatabase
 from src.pipeline.sync_manager import SyncManager
+from src.analytics.ab_testing import ABTestDatabase, VideoStyle
+from src.pipeline.topic_database import TopicDatabase, TopicSource
+from src.analytics.thumbnail_optimizer import ThumbnailOptimizer
 import config
+import json
 
 
 class ShortsBot:
@@ -41,6 +45,9 @@ class ShortsBot:
         self.database = VideoDatabase(db_path=config.DATABASE_PATH)
         self.sync_manager = SyncManager()
         self.timezone = pytz.timezone(config.UPLOAD_TIMEZONE)
+        self.ab_test_db = ABTestDatabase()
+        self.topic_database = TopicDatabase()
+        self.thumbnail_optimizer = ThumbnailOptimizer()
     
     def _get_performance_based_prompt(self) -> str:
         """
@@ -274,6 +281,15 @@ class ShortsBot:
             else:
                 print("   ⚠️ 경고: 썸네일 생성 실패 (None 반환)")
             
+            # 썸네일 최적화 데이터베이스에 저장 (업로드 후 video_id로 업데이트)
+            thumbnail_style = None
+            if thumbnail_path:
+                try:
+                    # 썸네일 스타일 추출 (DALL-E 3 또는 프레임 추출)
+                    thumbnail_style = "dalle3" if thumbnail_path and "thumb_" in thumbnail_path else "frame_extract"
+                except Exception as e:
+                    print(f"⚠️ 썸네일 스타일 추출 실패: {e}")
+            
             # 채널 정보 가져오기 (구독 링크용)
             channel_info = None
             if hasattr(self.uploader, 'get_channel_info'):
@@ -429,6 +445,33 @@ class ShortsBot:
                 script=None  # 향후 추가 가능
             )
             
+            # A/B 테스트 데이터베이스에 저장 (기본 스타일)
+            try:
+                # 현재 영상의 스타일 정보 추출
+                style_info = {
+                    'background_music': getattr(config, 'USE_BACKGROUND_MUSIC', True),
+                    'subtitle_mode': getattr(config, 'SUBTITLE_MODE', 'full_sentence'),
+                    'content_type': content_type.value if content_type else 'auto'
+                }
+                
+                # 기본 스타일로 저장
+                style = VideoStyle.DEFAULT.value
+                if style_info.get('background_music'):
+                    style = VideoStyle.MUSIC.value
+                else:
+                    style = VideoStyle.NO_MUSIC.value
+                
+                self.ab_test_db.add_test(
+                    video_id=video_id,
+                    style=style,
+                    style_config=json.dumps(style_info),
+                    topic=actual_topic,
+                    content_type=content_type.value if content_type else 'auto'
+                )
+                print(f"✅ A/B 테스트 데이터베이스에 저장 완료: {style}")
+            except Exception as e:
+                print(f"⚠️ A/B 테스트 데이터베이스 저장 실패: {e}")
+            
             # 주제 데이터베이스에 주제 저장
             try:
                 from src.pipeline.topic_database import TopicDatabase, TopicSource
@@ -536,6 +579,48 @@ class ShortsBot:
                     print(f"✅ 주제 데이터베이스 통계 업데이트 완료")
                 except Exception as e:
                     print(f"⚠️ 주제 데이터베이스 통계 업데이트 실패: {e}")
+                
+                # A/B 테스트 통계 업데이트
+                try:
+                    watch_time = stats.get('watch_time', 0)  # 평균 시청 시간 (초)
+                    self.ab_test_db.update_test_stats(
+                        video_id=video_id,
+                        views=stats.get('views', 0),
+                        likes=stats.get('likes', 0),
+                        comments=stats.get('comments', 0),
+                        watch_time=watch_time
+                    )
+                    print(f"✅ A/B 테스트 통계 업데이트 완료")
+                except Exception as e:
+                    print(f"⚠️ A/B 테스트 통계 업데이트 실패: {e}")
+                
+                # 썸네일 최적화 데이터베이스에 저장 (video_id 포함)
+                if thumbnail_path:
+                    try:
+                        # 썸네일 스타일 추출 (DALL-E 3 또는 프레임 추출)
+                        if thumbnail_style is None:
+                            thumbnail_style = "dalle3" if thumbnail_path and "thumb_" in thumbnail_path else "frame_extract"
+                        self.thumbnail_optimizer.add_thumbnail(
+                            video_id=video_id,
+                            thumbnail_path=thumbnail_path,
+                            thumbnail_variant="default",
+                            thumbnail_style=thumbnail_style
+                        )
+                    except Exception as e:
+                        print(f"⚠️ 썸네일 최적화 데이터베이스 저장 실패: {e}")
+                
+                # 썸네일 최적화 통계 업데이트
+                try:
+                    # 조회수를 클릭 수로 추정, 노출 수는 조회수보다 크다고 가정 (실제로는 YouTube API에서 가져와야 함)
+                    impressions = stats.get('impressions', stats.get('views', 0) * 10)  # 기본값: 조회수의 10배
+                    self.thumbnail_optimizer.update_thumbnail_stats(
+                        video_id=video_id,
+                        views=stats.get('views', 0),
+                        impressions=impressions
+                    )
+                    print(f"✅ 썸네일 최적화 통계 업데이트 완료")
+                except Exception as e:
+                    print(f"⚠️ 썸네일 최적화 통계 업데이트 실패: {e}")
             
             print(f"\n✅ 완료! 영상 ID: {video_id}")
             print(f"🔗 https://www.youtube.com/watch?v={video_id}\n")
@@ -684,6 +769,38 @@ class ShortsBot:
             max_engagement_rate=0.5,
             min_use_count=1
         )
+        
+        # A/B 테스트 통계 업데이트
+        print("\n📊 A/B 테스트 통계 업데이트 중...")
+        for video in self.monetization.data.get('videos', []):
+            video_id = video['video_id']
+            stats = self.uploader.get_video_stats(video_id)
+            if stats:
+                try:
+                    watch_time = stats.get('watch_time', 0)
+                    self.ab_test_db.update_test_stats(
+                        video_id=video_id,
+                        views=stats.get('views', 0),
+                        likes=stats.get('likes', 0),
+                        comments=stats.get('comments', 0),
+                        watch_time=watch_time
+                    )
+                except Exception as e:
+                    print(f"⚠️ A/B 테스트 통계 업데이트 실패 ({video_id}): {e}")
+        
+        # 최적 스타일 분석 및 출력
+        print("\n📈 최적 스타일 분석 중...")
+        try:
+            best_styles = self.ab_test_db.get_best_styles_by_engagement(
+                days=30,
+                min_tests=3
+            )
+            if best_styles:
+                print("\n🏆 최고 성과 스타일 (참여율 기준):")
+                for style, engagement_rate, avg_views in best_styles[:5]:
+                    print(f"   {style}: 참여율 {engagement_rate:.2%}, 평균 조회수 {avg_views:.0f}")
+        except Exception as e:
+            print(f"⚠️ 최적 스타일 분석 실패: {e}")
         if filtered_count > 0:
             print(f"✅ {filtered_count}개 주제 필터링 완료")
         

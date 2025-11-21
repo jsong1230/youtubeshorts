@@ -7,6 +7,38 @@
 **YouTube Shorts 자동 업로드 봇**: AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하고 수익화를 추적하는 봇
 
 **최근 업데이트 (2025-11-22)**:
+- **배경 음악 추가 옵션**: 무료 음악 라이브러리 통합 및 콘텐츠 타입별 자동 선택
+  - **Pixabay Music API 통합**: 무료 배경 음악 다운로드 지원 (로컬 음악 라이브러리 디렉토리 구조 준비)
+  - **콘텐츠 타입별 음악 선택**: HOOK(에너지 넘치는), QUOTE(차분한), STORY(감성적), FACT(정보성), MEDITATION(평화로운), BREATHING(명상적) 등 콘텐츠 타입에 맞는 음악 자동 선택
+  - **오디오 믹싱**: MoviePy의 `CompositeAudioClip`을 사용하여 음성과 배경 음악을 자연스럽게 믹싱
+  - **볼륨 밸런싱**: 음성 100%, 배경 음악 25% (기본값, `BACKGROUND_MUSIC_VOLUME` 환경 변수로 조정 가능)
+  - **음악 길이 조정**: 영상 길이에 맞게 음악을 루프하거나 자르기, 페이드 아웃 효과 적용
+  - **설정 옵션**: `USE_BACKGROUND_MUSIC=true/false`로 배경 음악 사용 여부 제어, `BACKGROUND_MUSIC_VOLUME=0.25`로 볼륨 조정
+- **A/B 테스트 시스템**: 다양한 스타일의 영상 생성, 성과 데이터 수집 및 분석, 최적 스타일 자동 선택
+  - **ABTestDatabase 클래스 추가**: `src/analytics/ab_testing.py` - A/B 테스트 데이터베이스 관리
+  - **스타일 변형 추적**: DEFAULT, MINIMAL, BOLD, MUSIC, NO_MUSIC, GRADIENT, VIDEO_BG 등 다양한 스타일 변형 추적
+  - **성과 데이터 수집**: 조회수, 좋아요, 댓글, 참여율, 시청 시간 등 성과 지표 자동 수집
+  - **최적 스타일 자동 선택**: `get_best_style_by_engagement()` 메서드로 콘텐츠 타입별 최고 성과 스타일 자동 선택
+  - **성과 분석**: `get_style_performance()` 메서드로 스타일별 성과 데이터 조회 및 분석
+  - **bot.py 통합**: 영상 업로드 시 자동으로 A/B 테스트 데이터베이스에 저장, 통계 업데이트 시 A/B 테스트 통계도 함께 업데이트
+  - **최적 스타일 리포트**: `update_all_stats()` 실행 시 최고 성과 스타일 자동 분석 및 출력
+- **썸네일 최적화**: AI 기반 썸네일 자동 생성, 클릭률 최적화 썸네일 선택, 플랫폼별 썸네일 최적화
+  - **ThumbnailOptimizer 클래스 추가**: `src/analytics/thumbnail_optimizer.py` - 썸네일 최적화 데이터베이스 관리
+  - **클릭률 추적**: 썸네일별 조회수, 노출 수, 클릭률(CTR) 자동 추적
+  - **최적 썸네일 변형 선택**: `get_best_thumbnail_variant()` 메서드로 최고 성과 썸네일 변형 자동 선택
+  - **최적 썸네일 스타일 선택**: `get_best_thumbnail_style()` 메서드로 최고 성과 썸네일 스타일(DALL-E 3, 프레임 추출 등) 자동 선택
+  - **플랫폼별 최적화**: `optimize_for_platform()` 메서드로 YouTube Shorts, YouTube, TikTok, Instagram 등 플랫폼별 최적화 설정 제공
+  - **bot.py 통합**: 영상 업로드 시 자동으로 썸네일 최적화 데이터베이스에 저장, 통계 업데이트 시 썸네일 통계도 함께 업데이트
+- **음성 품질 개선**: TTS 음성 자연스러움, 발음 정확도, 감정 표현 개선
+  - **콘텐츠 타입별 voice/speed 최적화**: HOOK(onyx, 1.1x), QUOTE(alloy, 1.0x), STORY(shimmer, 0.9x), FACT(alloy, 1.05x), SHORT_STORY(nova, 0.95x) 등 콘텐츠 타입에 맞는 음성과 속도 자동 선택
+  - **텍스트 전처리 시스템**: 숫자 변환 ($500 → five hundred dollars, 30% → thirty percent), 약어 확장 (AI → A I, CEO → C E O), 특수 문자 정리
+  - **발음 정확도 향상**: 작은 숫자(0-99)를 단어로 변환하여 TTS 발음 정확도 향상
+  - **감정 표현 추가**: 콘텐츠 타입별로 최적화된 voice와 speed로 감정 표현 강화
+- **영상 시각적 품질 개선**: 자막 스타일, 배경 영상 선택, 전환 효과, 색상/밝기 분석 개선
+  - **자막 디자인 개선**: 그라데이션 배경, 더 강한 그림자 효과, 페이드 인/아웃 애니메이션 추가, 더 두꺼운 테두리 (가독성 향상)
+  - **배경 영상 선택 알고리즘 개선**: 해상도 체크 강화 (1080p > 720p > 540p > 480p 우선순위), 세로형 영상만 선택, 품질 점수 기반 선택
+  - **전환 효과 개선**: 첫 클립 fade in, 마지막 클립 fade out, 중간 클립 양쪽 fade (부드러운 전환)
+  - **색상/밝기 분석 추가**: 영상 다운로드 후 밝기, 대비, 채도 분석하여 자막 가독성에 영향을 주는 영상 경고
 - **YouTube 트렌드 키워드 수집 시스템 구현**: 주제 자동 업데이트 시스템의 첫 단계 완료
   - **TrendCollector 클래스 추가**: `src/analytics/trend_collector.py` - YouTube Data API v3를 사용하여 인기 Shorts 수집 및 키워드 추출
   - **인기 Shorts 분석**: 최근 7일간 조회수 기준 인기 Shorts 수집, 제목/태그/설명에서 키워드 추출

@@ -42,6 +42,8 @@ QUOTA_CRITICAL_THRESHOLD = 0.95  # 95% usage critical alert
 
 # 영상 생성 설정
 USE_BACKGROUND_VIDEO = os.getenv('USE_BACKGROUND_VIDEO', 'true').lower() == 'true'  # 배경 영상 사용 여부 (기본: true)
+USE_BACKGROUND_MUSIC = os.getenv('USE_BACKGROUND_MUSIC', 'true').lower() == 'true'  # 배경 음악 사용 여부 (기본: true)
+BACKGROUND_MUSIC_VOLUME = float(os.getenv('BACKGROUND_MUSIC_VOLUME', '0.25'))  # 배경 음악 볼륨 (0.0-1.0, 기본: 0.25 = 25%)
 
 # 콘텐츠 타입 설정
 CONTENT_TYPE = os.getenv('CONTENT_TYPE', 'auto')  # 'hook', 'quote', 'story', 'fact', 'short_story', 'auto'

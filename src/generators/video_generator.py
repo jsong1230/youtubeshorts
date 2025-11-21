@@ -10,6 +10,7 @@ from moviepy.editor import (
     VideoFileClip, ImageClip, TextClip,
     concatenate_videoclips, AudioFileClip, CompositeVideoClip
 )
+from moviepy.audio.AudioClip import CompositeAudioClip
 from typing import Optional, Tuple, List
 from moviepy.video.fx.all import fadein, fadeout
 from PIL import Image, ImageDraw, ImageFont
@@ -38,6 +39,9 @@ import config
 from enum import Enum
 from pathlib import Path
 from src.utils.retry_decorator import retry, retry_on_rate_limit
+
+# 프로젝트 루트 디렉토리
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # 새로운 TTS 엔진 사용 (선택적)
 try:
@@ -877,7 +881,7 @@ class AIVideoGenerator:
         
         # 영상 생성
         video_path = self._create_video_from_script(
-            script, topic, duration, output_filename, language=language)
+            script, topic, duration, output_filename, content_type=content_type, language=language)
         
         print(f"✅ 영상 생성 완료: {video_path} ({duration}초)")
         return video_path, script, topic
@@ -2101,9 +2105,20 @@ class AIVideoGenerator:
         topic: str,
         duration: int,
         output_filename: str = None,
+        content_type: ContentType = None,
         language: str = 'ko'
     ) -> str:
-        """스크립트로부터 영상 생성"""
+        """
+        스크립트로부터 영상 생성
+        
+        Args:
+            script: 스크립트 리스트
+            topic: 영상 주제
+            duration: 목표 영상 길이 (초)
+            output_filename: 출력 파일명
+            content_type: 콘텐츠 타입
+            language: 언어 코드
+        """
         # 출력 파일명 생성
         if not output_filename:
             import datetime
@@ -2122,7 +2137,8 @@ class AIVideoGenerator:
         print("🔊 음성 생성 및 길이 측정 중...")
         
         for i, sentence in enumerate(script):
-            audio_path = self._generate_audio(sentence, i, language=language)
+            content_type_str = content_type.value if content_type else None
+            audio_path = self._generate_audio(sentence, i, content_type=content_type_str, language=language)
             if audio_path and os.path.exists(audio_path):
                 audio_clip = AudioFileClip(audio_path)
                 actual_duration = audio_clip.duration
@@ -2371,19 +2387,26 @@ class AIVideoGenerator:
                             import traceback
                             traceback.print_exc()
 
-                        # 마지막 클립만 fade out
+                        # 전환 효과 개선: 첫 클립 fade in, 마지막 클립 fade out, 중간 클립은 양쪽 fade
                         is_last_sentence = (i == len(script) - 1)
-                        if is_last_sentence:
-                            print(f"   🎬 마지막 클립 fade out 적용")
-                            video_clip = video_clip.fx(fadeout, 1.0)
-                            video_clip = video_clip.set_duration(
-                                actual_audio_duration)  # duration 유지
-
-                        # 첫 문장만 fade in
-                        if i == 0:
-                            video_clip = video_clip.fx(fadein, 0.5)
-                            video_clip = video_clip.set_duration(
-                                actual_audio_duration)  # duration 유지
+                        is_first_sentence = (i == 0)
+                        fade_duration = min(0.5, actual_audio_duration * 0.1)  # 최대 0.5초, 또는 duration의 10%
+                        
+                        if is_first_sentence:
+                            # 첫 클립: fade in만
+                            if actual_audio_duration > fade_duration:
+                                video_clip = video_clip.fx(fadein, fade_duration)
+                                video_clip = video_clip.set_duration(actual_audio_duration)
+                        elif is_last_sentence:
+                            # 마지막 클립: fade out만
+                            if actual_audio_duration > fade_duration:
+                                video_clip = video_clip.fx(fadeout, fade_duration)
+                                video_clip = video_clip.set_duration(actual_audio_duration)
+                        else:
+                            # 중간 클립: 양쪽 fade (부드러운 전환)
+                            if actual_audio_duration > fade_duration * 2:
+                                video_clip = video_clip.fx(fadein, fade_duration).fx(fadeout, fade_duration)
+                                video_clip = video_clip.set_duration(actual_audio_duration)
 
                         print(
                             f"   ✅ 문장 {i+1} 클립 추가: {video_clip.duration:.2f}초 (음성 길이와 일치: {actual_audio_duration:.2f}초)")
@@ -2703,6 +2726,60 @@ class AIVideoGenerator:
                     actual_video_duration = max_safe_duration
                     final_video = final_video.subclip(0, actual_video_duration)
                 
+                # 배경 음악 추가 (선택적)
+                if getattr(config, 'USE_BACKGROUND_MUSIC', True):
+                    try:
+                        # topic 변수는 _create_video_from_script의 파라미터로 전달됨
+                        background_music_path = self._download_background_music(
+                            content_type=content_type if content_type else ContentType.AUTO,
+                            duration=actual_audio_duration,
+                            topic=topic
+                        )
+                        
+                        if background_music_path and os.path.exists(background_music_path):
+                            # 배경 음악 로드
+                            bg_music = AudioFileClip(background_music_path)
+                            
+                            # 음악 길이를 영상 길이에 맞게 조정 (루프 또는 자르기)
+                            if bg_music.duration < actual_audio_duration:
+                                # 음악이 짧으면 루프
+                                loops_needed = int(actual_audio_duration / bg_music.duration) + 1
+                                bg_music_clips = []
+                                original_duration = bg_music.duration
+                                for _ in range(loops_needed):
+                                    # 각 루프마다 새로운 클립 생성 (같은 파일에서)
+                                    loop_clip = AudioFileClip(background_music_path)
+                                    bg_music_clips.append(loop_clip)
+                                from moviepy.audio.AudioClip import concatenate_audioclips
+                                bg_music_looped = concatenate_audioclips(bg_music_clips)
+                                bg_music_looped = bg_music_looped.subclip(0, actual_audio_duration)
+                                # 원본 클립 정리
+                                bg_music.close()
+                                bg_music = bg_music_looped
+                            else:
+                                # 음악이 길면 자르기
+                                bg_music = bg_music.subclip(0, actual_audio_duration)
+                            
+                            # 배경 음악 볼륨 조정 (기본 25%)
+                            music_volume = getattr(config, 'BACKGROUND_MUSIC_VOLUME', 0.25)
+                            bg_music = bg_music.volumex(music_volume)
+                            
+                            # 페이드 인/아웃 효과 (부드러운 시작/종료)
+                            fade_duration = min(1.0, actual_audio_duration * 0.1)  # 최대 1초 또는 duration의 10%
+                            bg_music = bg_music.fx(fadein, fade_duration).fx(fadeout, fade_duration)
+                            bg_music = bg_music.set_duration(actual_audio_duration)
+                            
+                            # 음성과 배경 음악 믹싱
+                            final_audio = CompositeAudioClip([final_audio, bg_music])
+                            print(f"🎵 배경 음악 추가 완료 (볼륨: {music_volume*100:.0f}%)")
+                            
+                            # 배경 음악 클립 정리
+                            bg_music.close()
+                    except Exception as e:
+                        print(f"⚠️ 배경 음악 추가 실패 (계속 진행): {e}")
+                        import traceback
+                        traceback.print_exc()
+                
                 # 음성 추가
                 final_video = final_video.set_audio(final_audio)
                 # 영상 길이를 음성 길이와 정확히 일치시킴
@@ -2782,17 +2859,18 @@ class AIVideoGenerator:
         self,
         text: str,
         index: int,
+        content_type: str = None,
         language: str = 'ko') -> str:
-        """TTS로 음성 생성"""
+        """TTS로 음성 생성 (콘텐츠 타입별 voice/speed 최적화)"""
         audio_path = os.path.join(config.TEMP_DIR, f"audio_{index}.mp3")
 
         # 언어 코드 설정
         lang_code = 'en' if language == 'en' else 'ko'
         
-        # 새로운 TTS 엔진 사용 (우선)
+        # 새로운 TTS 엔진 사용 (우선, 콘텐츠 타입별 최적화)
         if self.tts_engine:
             try:
-                if self.tts_engine.generate(text, audio_path, lang=lang_code):
+                if self.tts_engine.generate(text, audio_path, lang=lang_code, content_type=content_type):
                     return audio_path
                 else:
                     print(f"⚠️ TTS 엔진 음성 생성 실패, 기본 gTTS 시도")
@@ -3547,23 +3625,47 @@ class AIVideoGenerator:
                                 print(f"   ⚠️ 모든 영상이 이미 다운로드됨, 이미지로 대체")
                                 return None
                             
-                            # 세로형 영상 파일 찾기 (1080p 이상)
+                            # 세로형 영상 파일 찾기 (1080p 이상 우선, 해상도 및 품질 체크 강화)
                             video_files = video_data.get('video_files', [])
                             video_url = None
+                            best_quality = 0
                             
-                            # 우선순위: 1080p > 720p > 기타
-                            for quality in ['1080', '720', '540', '480']:
-                                for vf in video_files:
-                                    if quality in str(
-                                            vf.get('width', 0)) and vf.get('link'):
-                                        video_url = vf['link']
-                                        break
-                                if video_url:
-                                    break
+                            # 우선순위: 1080p > 720p > 540p > 480p (해상도와 파일 크기 고려)
+                            for vf in video_files:
+                                width = vf.get('width', 0)
+                                height = vf.get('height', 0)
+                                file_size = vf.get('file_type', '')  # 파일 타입으로 품질 추정
+                                
+                                # 세로형 영상만 선택 (height >= width)
+                                if height >= width and height >= 480:
+                                    # 해상도 점수 계산 (width * height)
+                                    quality_score = width * height
+                                    
+                                    # 1080p 이상 우선 선택
+                                    if height >= 1080 and quality_score > best_quality:
+                                        video_url = vf.get('link')
+                                        best_quality = quality_score
+                                    # 1080p가 없으면 720p 선택
+                                    elif not video_url and height >= 720 and quality_score > best_quality:
+                                        video_url = vf.get('link')
+                                        best_quality = quality_score
+                                    # 720p도 없으면 540p 선택
+                                    elif not video_url and height >= 540 and quality_score > best_quality:
+                                        video_url = vf.get('link')
+                                        best_quality = quality_score
+                                    # 540p도 없으면 480p 선택
+                                    elif not video_url and height >= 480 and quality_score > best_quality:
+                                        video_url = vf.get('link')
+                                        best_quality = quality_score
                             
-                            # 영상 URL이 없으면 첫 번째 파일 사용
+                            # 영상 URL이 없으면 세로형 영상 중 첫 번째 사용
                             if not video_url and video_files:
-                                video_url = video_files[0].get('link')
+                                for vf in video_files:
+                                    height = vf.get('height', 0)
+                                    width = vf.get('width', 0)
+                                    if height >= width:  # 세로형만
+                                        video_url = vf.get('link')
+                                        break
                             
                             if video_url:
                                 # 영상 ID 가져오기 (중복 방지용)
@@ -3586,15 +3688,15 @@ class AIVideoGenerator:
                                         video_clip = VideoFileClip(video_path)
                                         video_duration = video_clip.duration
 
-                                        # 다운로드한 원본 영상 분석 (반복 여부 확인)
+                                        # 다운로드한 원본 영상 분석 (반복 여부, 색상/밝기 확인)
                                         print(f"📹 다운로드한 영상 분석: {video_path}")
                                         print(
                                             f"   원본 길이: {video_duration:.2f}초")
 
-                                        # 원본 영상이 반복되어 있는지 확인 (선택적, 오류 발생 시
-                                        # 건너뛰기)
+                                        # 원본 영상이 반복되어 있는지 확인 및 색상/밝기 분석
                                         if video_duration > 2.0:
                                             try:
+                                                import numpy as np
                                                 # 시작, 중간, 끝 지점 비교
                                                 start_frame = video_clip.get_frame(
                                                     0.5)
@@ -3614,7 +3716,6 @@ class AIVideoGenerator:
                                                 end_rgb = end_frame[center_y, center_x] if len(
                                                     end_frame.shape) == 3 else [0, 0, 0]
 
-                                                import numpy as np
                                                 start_mid_diff = np.abs(
                                                     start_rgb - mid_rgb).sum()
                                                 start_end_diff = np.abs(
@@ -3625,6 +3726,31 @@ class AIVideoGenerator:
                                                 if start_mid_diff < 20 or start_end_diff < 20:
                                                     print(
                                                         f"   ⚠️ 원본 영상이 반복되어 있을 가능성이 있습니다!")
+                                                
+                                                # 색상/밝기 분석 (자막 가독성을 위한 분석)
+                                                # 중간 프레임의 평균 밝기 계산
+                                                if len(mid_frame.shape) == 3:
+                                                    # RGB를 그레이스케일로 변환 (밝기 계산)
+                                                    gray_mid = np.dot(mid_frame[...,:3], [0.299, 0.587, 0.114])
+                                                    avg_brightness = np.mean(gray_mid)
+                                                    
+                                                    # 대비 계산 (표준편차)
+                                                    contrast = np.std(gray_mid)
+                                                    
+                                                    # 색상 채도 계산 (RGB 표준편차)
+                                                    color_saturation = np.std(mid_frame[...,:3], axis=2).mean()
+                                                    
+                                                    print(f"   📊 영상 품질 분석: 밝기={avg_brightness:.1f}/255, 대비={contrast:.1f}, 채도={color_saturation:.1f}")
+                                                    
+                                                    # 너무 어둡거나 밝은 영상 경고 (자막 가독성 고려)
+                                                    if avg_brightness < 30:
+                                                        print(f"   ⚠️ 영상이 너무 어둡습니다 (밝기: {avg_brightness:.1f}), 자막 가독성에 영향 가능")
+                                                    elif avg_brightness > 220:
+                                                        print(f"   ⚠️ 영상이 너무 밝습니다 (밝기: {avg_brightness:.1f}), 자막 가독성에 영향 가능")
+                                                    
+                                                    # 대비가 낮으면 경고 (자막 가독성 저하)
+                                                    if contrast < 20:
+                                                        print(f"   ⚠️ 영상 대비가 낮습니다 (대비: {contrast:.1f}), 자막 가독성에 영향 가능")
                                             except Exception as frame_check_error:
                                                 # 프레임 확인 실패해도 영상은 사용 (오류 무시)
                                                 print(
@@ -3669,6 +3795,120 @@ class AIVideoGenerator:
             
         except Exception as e:
             print(f"⚠️ 배경 영상 다운로드 실패 ({sentence[:20]}...): {e}")
+            return None
+    
+    def _select_music_category_for_content_type(self, content_type: ContentType) -> str:
+        """
+        콘텐츠 타입에 맞는 음악 카테고리 선택
+        
+        Args:
+            content_type: 콘텐츠 타입
+        
+        Returns:
+            Pixabay Music 카테고리 키워드
+        """
+        # 콘텐츠 타입별 음악 카테고리 매핑
+        music_categories = {
+            ContentType.HOOK: ['energetic', 'upbeat', 'motivational'],  # 에너지 넘치는, 업비트
+            ContentType.QUOTE: ['calm', 'peaceful', 'inspirational'],  # 차분한, 평화로운
+            ContentType.STORY: ['emotional', 'cinematic', 'dramatic'],  # 감성적인, 영화적
+            ContentType.FACT: ['corporate', 'modern', 'tech'],  # 기업적, 모던
+            ContentType.SHORT_STORY: ['ambient', 'soft', 'gentle'],  # 앰비언트, 부드러운
+            ContentType.MEDITATION: ['meditation', 'zen', 'calm'],  # 명상, 차분한
+            ContentType.BREATHING: ['ambient', 'peaceful', 'nature'],  # 자연, 평화로운
+            ContentType.AUTO: ['background', 'ambient', 'soft'],  # 기본 배경 음악
+        }
+        
+        categories = music_categories.get(content_type, ['background', 'ambient'])
+        return random.choice(categories)
+    
+    def _download_background_music(
+        self,
+        content_type: ContentType,
+        duration: float,
+        topic: str = None
+    ) -> Optional[str]:
+        """
+        배경 음악 다운로드 (무료 음악 라이브러리 사용)
+        
+        Args:
+            content_type: 콘텐츠 타입
+            duration: 필요한 음악 길이 (초)
+            topic: 영상 주제 (선택)
+        
+        Returns:
+            다운로드된 음악 파일 경로 또는 None
+        """
+        if not getattr(config, 'USE_BACKGROUND_MUSIC', True):
+            return None
+        
+        try:
+            # 콘텐츠 타입에 맞는 음악 카테고리 선택
+            music_category = self._select_music_category_for_content_type(content_type)
+            print(f"🎵 배경 음악 선택: {music_category} (콘텐츠 타입: {content_type.value})")
+            
+            # 방법 1: 로컬 음악 라이브러리 확인 (우선)
+            music_library_dir = os.path.join(BASE_DIR, 'data', 'music')
+            if os.path.exists(music_library_dir):
+                # 카테고리별 음악 파일 찾기
+                music_files = []
+                for ext in ['.mp3', '.wav', '.m4a', '.ogg']:
+                    # 카테고리 이름이 포함된 파일 찾기
+                    for file in os.listdir(music_library_dir):
+                        if file.endswith(ext) and music_category.lower() in file.lower():
+                            music_files.append(os.path.join(music_library_dir, file))
+                
+                # 카테고리 매칭이 없으면 모든 음악 파일에서 랜덤 선택
+                if not music_files:
+                    for ext in ['.mp3', '.wav', '.m4a', '.ogg']:
+                        music_files.extend([
+                            os.path.join(music_library_dir, f) 
+                            for f in os.listdir(music_library_dir) 
+                            if f.endswith(ext)
+                        ])
+                
+                if music_files:
+                    selected_music = random.choice(music_files)
+                    print(f"✅ 로컬 음악 라이브러리에서 선택: {os.path.basename(selected_music)}")
+                    return selected_music
+            
+            # 방법 2: Freesound.org API 사용 (API 키가 있는 경우)
+            freesound_api_key = os.getenv('FREESOUND_API_KEY')
+            if freesound_api_key:
+                try:
+                    # Freesound API로 음악 검색 및 다운로드
+                    freesound_url = f"https://freesound.org/apiv2/search/text/?query={music_category}&filter=duration:[{duration-5}:{duration+10}]&fields=id,name,previews&token={freesound_api_key}"
+                    response = self._http_get_with_retry(freesound_url, timeout=10)
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data.get('results') and len(data['results']) > 0:
+                            # 첫 번째 결과 선택
+                            sound = data['results'][0]
+                            preview_url = sound.get('previews', {}).get('preview-hq-mp3')
+                            if preview_url:
+                                # 음악 다운로드
+                                music_path = os.path.join(
+                                    config.TEMP_DIR, 
+                                    f"bg_music_{int(time.time()*1000)}.mp3"
+                                )
+                                music_response = self._http_get_with_retry(preview_url, timeout=15)
+                                if music_response.status_code == 200:
+                                    with open(music_path, 'wb') as f:
+                                        f.write(music_response.content)
+                                    print(f"✅ Freesound에서 배경 음악 다운로드: {sound.get('name', 'Unknown')}")
+                                    return music_path
+                except Exception as e:
+                    print(f"   Freesound API 실패: {e}")
+            
+            # 방법 3: YouTube Audio Library 스타일의 무료 음악 (로컬 파일)
+            # 사용자가 YouTube Audio Library에서 다운로드한 음악을 data/music/ 폴더에 저장하면 자동으로 사용됨
+            print(f"⚠️ 배경 음악을 찾을 수 없습니다. 로컬 음악 라이브러리(data/music/)에 음악 파일을 추가하거나 Freesound API 키를 설정하세요.")
+            return None
+            
+        except Exception as e:
+            print(f"⚠️ 배경 음악 다운로드 실패: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def _generate_thumbnail_with_dalle3(self,
@@ -4458,7 +4698,7 @@ Format: First line only or "First line / Second line"
                             font=font_path,
                             color='white',
                             stroke_color='black',
-                            stroke_width=2,
+                            stroke_width=3,  # 더 두꺼운 테두리 (가독성 향상)
                             method='caption',
                             size=(1000, None),
                             align='center'
@@ -4480,6 +4720,13 @@ Format: First line only or "First line / Second line"
                         txt_clip = txt_clip.set_start(0)
                         # duration 재확인 및 설정 (정확성 보장)
                         if abs(txt_clip.duration - duration) > 0.01:
+                            txt_clip = txt_clip.set_duration(duration)
+                        
+                        # 페이드 인/아웃 애니메이션 추가 (더 부드러운 등장/퇴장)
+                        fade_duration = min(0.3, duration * 0.1)  # 최대 0.3초, 또는 duration의 10%
+                        if duration > fade_duration * 2:
+                            txt_clip = txt_clip.fx(fadein, fade_duration).fx(fadeout, fade_duration)
+                            # 페이드 후에도 duration 유지
                             txt_clip = txt_clip.set_duration(duration)
                         print(
                             f"   ✅ ImageMagick 자막 생성 성공: duration={txt_clip.duration:.2f}초, start={txt_clip.start:.2f}초 (목표: {duration:.2f}초)")
@@ -4569,27 +4816,58 @@ Format: First line only or "First line / Second line"
                         text_height = bbox[3] - bbox[1]
                         x_pos = (1080 - text_width) // 2
 
-                        # 배경 박스 (반투명 검은색)
-                        padding = 10
+                        # 배경 박스 (그라데이션 배경 - 더 현대적인 스타일)
+                        padding = 15
+                        box_x1 = x_pos - padding
+                        box_y1 = y_offset - padding
+                        box_x2 = x_pos + text_width + padding
+                        box_y2 = y_offset + text_height + padding
+                        
+                        # 그라데이션 배경 생성 (검은색에서 약간 밝은 검은색으로)
                         overlay = Image.new(
                             'RGBA', (1080, subtitle_height), (0, 0, 0, 0))
                         overlay_draw = ImageDraw.Draw(overlay)
+                        
+                        # 그라데이션 배경 (위에서 아래로)
+                        for y in range(box_y1, box_y2):
+                            if y < subtitle_height:
+                                # 알파 값: 위쪽 200, 아래쪽 220 (더 진한 배경)
+                                alpha = int(200 + (y - box_y1) * 20 / (box_y2 - box_y1))
+                                alpha = min(255, max(180, alpha))
+                                overlay_draw.rectangle(
+                                    [box_x1, y, box_x2, y + 1],
+                                    fill=(0, 0, 0, alpha)
+                                )
+                        
+                        # 둥근 모서리 효과 (선택적, 성능 고려)
+                        # 배경 박스에 약간의 테두리 추가 (더 명확한 구분)
                         overlay_draw.rectangle(
-                            [x_pos - padding, y_offset - padding,
-                             x_pos + text_width + padding, y_offset + text_height + padding],
-                            fill=(0, 0, 0, 180)
+                            [box_x1, box_y1, box_x2, box_y2],
+                            outline=(255, 255, 255, 60),
+                            width=2
                         )
+                        
                         subtitle_img = Image.alpha_composite(
                             subtitle_img, overlay)
                         draw = ImageDraw.Draw(subtitle_img)
 
-                        # 그림자 효과
-                        draw.text((x_pos + 3, y_offset + 3), line,
-                                  fill=(0, 0, 0, 255), font=pil_font)
-                        # 메인 텍스트
+                        # 더 강한 그림자 효과 (가독성 향상)
+                        shadow_offset = 4
+                        shadow_blur = 2
+                        for dx in range(-shadow_blur, shadow_blur + 1):
+                            for dy in range(-shadow_blur, shadow_blur + 1):
+                                if dx != 0 or dy != 0:
+                                    draw.text(
+                                        (x_pos + shadow_offset + dx, y_offset + shadow_offset + dy),
+                                        line,
+                                        fill=(0, 0, 0, 200),
+                                        font=pil_font
+                                    )
+                        
+                        # 메인 텍스트 (더 밝은 흰색, 약간의 노란색 틴트)
                         draw.text(
                             (x_pos, y_offset), line, fill=(
-        255, 255, 255, 255), font=pil_font)
+        255, 255, 250, 255), font=pil_font)
                         y_offset += text_height + 15
                         total_text_height = y_offset
 
@@ -4624,6 +4902,13 @@ Format: First line only or "First line / Second line"
                 txt_clip = txt_clip.set_start(0)
                 # duration 재확인 및 설정 (정확성 보장)
                 if abs(txt_clip.duration - duration) > 0.01:
+                    txt_clip = txt_clip.set_duration(duration)
+                
+                # 페이드 인/아웃 애니메이션 추가 (더 부드러운 등장/퇴장)
+                fade_duration = min(0.3, duration * 0.1)  # 최대 0.3초, 또는 duration의 10%
+                if duration > fade_duration * 2:
+                    txt_clip = txt_clip.fx(fadein, fade_duration).fx(fadeout, fade_duration)
+                    # 페이드 후에도 duration 유지
                     txt_clip = txt_clip.set_duration(duration)
 
                 print(
