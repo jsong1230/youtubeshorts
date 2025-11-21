@@ -111,6 +111,7 @@ class TTSEngine:
         """
         if provider is None:
             # 자동 선택: OpenAI가 설정되어 있으면 OpenAI, 아니면 gTTS
+            # OpenAI TTS와 DALL-E 3는 OpenAI API로 사용 가능하므로 함께 사용
             if config.OPENAI_API_KEY and OPENAI_AVAILABLE:
                 provider = TTSProvider.OPENAI
             elif GTTS_AVAILABLE:

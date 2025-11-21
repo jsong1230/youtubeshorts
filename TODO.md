@@ -4,6 +4,17 @@
 
 ## 🎯 현재 진행 중인 작업
 
+### 구독자 수 증가 전략 적용 ✅
+
+- **목표**: YouTube Shorts 채널의 구독자 수를 효과적으로 늘리기 위한 종합 전략 연구 및 코드 적용
+- **완료된 작업**:
+  - ✅ 설명란에 구독 유도 텍스트 강화 (구독 링크, 이유, 시리즈 정보, 관련 영상 링크)
+  - ✅ 스크립트 끝에 구독 CTA 강화 (모든 콘텐츠 타입의 AI 프롬프트에 자연스러운 구독 요청 추가)
+  - ✅ 썸네일에 Subscribe 배지 추가 (상단 오른쪽, 빨간색 배경)
+  - ✅ YouTube API로 채널 URL 가져오기 기능 추가 (`get_channel_info()`, `get_recent_videos()`)
+- **기대 효과**: 구독 전환율 향상, 채널 성장 가속화
+- **다음 단계**: 실제 업로드 영상에서 구독자 수 변화 모니터링 및 추가 최적화
+
 ### 영상 품질 개선 작업
 
 - **동일 영상 반복 방지**: 하나의 Shorts 영상 내에서 동일한 배경 영상이 반복되지 않도록 영상 ID 추적 및 중복 방지 로직 구현 ✅
@@ -45,6 +56,30 @@
   - `shorts_20251121_005239.mp4` → `neKDpoaoWoQ` (*Micro-Morning Routine for High-Energy Productivity*)
   - `shorts_20251121_005623.mp4` → `LEoAEnnYpGw` (*Recession-Proof Skill Stack: Combine Storytelling + Data*)
 - **2025-11-21**: 트렌드 가중치 로직 테스트 (`output/videos/shorts_20251121_150056.mp4`, 53.5s, 타입: `short_story`, 주제: *Logging expenses for 30 days changed my bank balance*, 썸네일 `output/thumbnails/thumb_20251121_150222.jpg`)
+- **2025-11-22**: 구독자 수 증가 전략 연구 및 적용
+  - 설명란에 구독 유도 텍스트 강화 (채널 URL, 구독 이유, 관련 영상 링크)
+  - 스크립트 끝에 자연스러운 구독 CTA 추가 (모든 콘텐츠 타입)
+  - 썸네일에 "SUBSCRIBE" 배지 추가 (상단 오른쪽)
+  - YouTube API 채널 정보 기능 추가 (`get_channel_info()`, `get_recent_videos()`)
+- **2025-11-22**: AI 기반 주제 생성 시스템 구현 완료
+  - `generate_topics_from_trends()` 메서드 추가: 트렌드 키워드를 기반으로 콘텐츠 타입별 주제 생성
+  - `validate_topic_quality()` 메서드 추가: 주제 품질 검증 (중복 방지, 길이 검증, 관련 키워드 확인)
+  - `video_generator.py`에 통합: AI 생성 주제를 주제 풀에 자동 추가, 12시간 캐싱
+  - 품질 필터링: 검증 점수 50점 이상인 주제만 사용, 실패 이유 로깅
+- **2025-11-22**: YouTube 트렌드 키워드 수집 시스템 구현 완료
+  - `TrendCollector` 클래스 추가 (`src/analytics/trend_collector.py`)
+  - YouTube Data API v3를 사용하여 인기 Shorts 수집 및 키워드 추출
+  - AI 키워드 정제 및 24시간 캐싱 시스템 구현
+  - `video_generator.py`에 통합하여 `TREND_MODE=true`일 때 자동으로 트렌드 주제 사용
+  - 카테고리별 트렌드 수집 지원 (finance, productivity, self-improvement, lifestyle)
+- **2025-11-22**: 6개 겨울/연말 재태크 영상 일괄 생성 및 업로드
+  - `Q0qk_EGmOxU` → *December Tax Hack: How to Save $2,000 Before Year-End With These 3 Moves*
+  - `0DDhBYBuqaw` → *Holiday Spending Trap: Why Americans Waste $1,500 Every December and How to Stop It*
+  - `NVJHCu01knQ` → *Winter Heating Bill Shock: The One Change That Cut My Gas Bill by 50% Last Year*
+  - `rBkBC0q41eE` → *Year-End Bonus Strategy: What Smart People Do With Their December Paycheck*
+  - `yKQIb6o9_KM` → *January Financial Reset: The 30-Day Challenge That Built My Emergency Fund*
+  - `rXCDiFxBL2Q` → *401k Deadline Alert: Why Contributing Before December 31st Changes Everything*
+  - 총 업로드 영상: 36개, 총 조회수: 917회
 
 ## 🚀 단기 목표 (우선순위 높음)
 
@@ -87,23 +122,24 @@
 
 **필요한 작업**:
 
-- [ ] 트렌드 수집 시스템 구축
+- [x] 트렌드 수집 시스템 구축 ✅
 
-  - [ ] YouTube 트렌드 키워드 수집 (YouTube Data API v3)
-  - [ ] YouTube 인기 Shorts 분석 및 키워드 추출
-- [ ] 계절별 주제 자동 업데이트
-  - [ ] 현재 계절 감지 로직 개선 (이미 구현됨, 추가 개선 가능)
-  - [ ] 계절별 트렌드 키워드와 기존 주제 매칭
-  - [ ] 새로운 계절별 주제 자동 생성
+  - [x] YouTube 트렌드 키워드 수집 (YouTube Data API v3) ✅
+  - [x] YouTube 인기 Shorts 분석 및 키워드 추출 ✅
+  - [x] 수집한 트렌드 키워드를 주제 풀에 자동 추가 ✅
+- [x] 계절별 주제 자동 업데이트 ✅
+  - [x] 현재 계절 감지 로직 개선 (이미 구현됨, 추가 개선 가능) ✅
+  - [x] 계절별 트렌드 키워드와 기존 주제 매칭 ✅
+  - [x] 새로운 계절별 주제 자동 생성 ✅
 - [ ] 주제 데이터베이스 관리
   - [ ] 주제 데이터베이스 스키마 설계
   - [ ] 주제 추가/삭제/업데이트 API
   - [ ] 주제 성과 추적 (조회수, 참여도 등)
   - [ ] 성과가 낮은 주제 자동 필터링
-- [ ] AI 기반 주제 생성
-  - [ ] 트렌드 키워드를 기반으로 AI가 새로운 주제 생성
-  - [ ] 주제 품질 검증 로직
-  - [ ] 중복 주제 방지
+- [x] AI 기반 주제 생성 ✅
+  - [x] 트렌드 키워드를 기반으로 AI가 새로운 주제 생성 ✅
+  - [x] 주제 품질 검증 로직 ✅
+  - [x] 중복 주제 방지 ✅
 
 **기술적 고려사항**:
 
@@ -233,6 +269,6 @@
 
 ---
 
-**마지막 업데이트**: 2025-11-21
+**마지막 업데이트**: 2025-11-22 (구독자 수 증가 전략 적용 완료)
 
 **다음 리뷰 예정일**: 작업 진행에 따라 업데이트

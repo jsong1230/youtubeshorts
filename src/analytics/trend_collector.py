@@ -1,0 +1,878 @@
+"""
+YouTube 트렌드 키워드 수집 모듈
+YouTube Data API v3를 사용하여 인기 Shorts를 분석하고 트렌드 키워드를 추출
+"""
+import os
+import re
+from typing import List, Dict, Optional
+from datetime import datetime, timedelta
+from collections import Counter
+import config
+
+try:
+    from googleapiclient.discovery import build
+    from src.utils.youtube_auth import get_authenticated_service
+    YOUTUBE_API_AVAILABLE = True
+except ImportError:
+    YOUTUBE_API_AVAILABLE = False
+
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+
+
+class TrendCollector:
+    """YouTube 트렌드 키워드 수집 클래스"""
+    
+    def __init__(self):
+        """트렌드 수집기 초기화"""
+        self.youtube = None
+        self.openai_client = None
+        
+        # YouTube API 초기화
+        if YOUTUBE_API_AVAILABLE:
+            try:
+                self.youtube = get_authenticated_service()
+                print("✅ YouTube API 클라이언트 초기화 완료")
+            except Exception as e:
+                print(f"⚠️ YouTube API 클라이언트 초기화 실패: {e}")
+        
+        # OpenAI API 초기화 (키워드 추출용)
+        if OPENAI_AVAILABLE and config.OPENAI_API_KEY:
+            try:
+                self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
+            except Exception as e:
+                print(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
+    
+    def get_trending_shorts(
+        self,
+        max_results: int = 50,
+        region_code: str = 'US'
+    ) -> List[Dict]:
+        """
+        YouTube 인기 Shorts 영상 가져오기
+        
+        Args:
+            max_results: 가져올 영상 수 (최대 50)
+            region_code: 지역 코드 (기본값: 'US')
+        
+        Returns:
+            인기 Shorts 영상 리스트 (제목, 조회수, 좋아요 등 포함)
+        """
+        if not self.youtube:
+            print("⚠️ YouTube API가 초기화되지 않았습니다.")
+            return []
+        
+        try:
+            # YouTube Shorts 검색 (최근 7일간 인기 영상)
+            # Shorts는 보통 #shorts 태그가 있거나 duration이 60초 이하
+            request = self.youtube.search().list(
+                part='snippet',
+                q='#shorts',
+                type='video',
+                maxResults=min(max_results, 50),
+                order='viewCount',  # 조회수 순
+                publishedAfter=(datetime.now() - timedelta(days=7)).isoformat() + 'Z',
+                regionCode=region_code,
+                videoDuration='short',  # 4분 이하 영상
+                videoDefinition='high'  # 고화질
+            )
+            
+            response = request.execute()
+            
+            videos = []
+            if 'items' in response:
+                for item in response['items']:
+                    video_id = item['id']['videoId']
+                    snippet = item['snippet']
+                    
+                    # 영상 상세 정보 가져오기 (조회수, 좋아요 등)
+                    video_details = self._get_video_details(video_id)
+                    
+                    if video_details:
+                        videos.append({
+                            'video_id': video_id,
+                            'title': snippet['title'],
+                            'description': snippet.get('description', ''),
+                            'channel_title': snippet.get('channelTitle', ''),
+                            'published_at': snippet.get('publishedAt', ''),
+                            'views': video_details.get('views', 0),
+                            'likes': video_details.get('likes', 0),
+                            'comments': video_details.get('comments', 0),
+                            'duration': video_details.get('duration', 0),
+                            'tags': video_details.get('tags', [])
+                        })
+            
+            print(f"✅ 인기 Shorts {len(videos)}개 수집 완료")
+            return videos
+            
+        except Exception as e:
+            print(f"⚠️ 인기 Shorts 수집 실패: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+    
+    def _get_video_details(self, video_id: str) -> Optional[Dict]:
+        """영상 상세 정보 가져오기"""
+        if not self.youtube:
+            return None
+        
+        try:
+            request = self.youtube.videos().list(
+                part='statistics,contentDetails,snippet',
+                id=video_id
+            )
+            response = request.execute()
+            
+            if response.get('items') and len(response['items']) > 0:
+                video = response['items'][0]
+                stats = video.get('statistics', {})
+                content = video.get('contentDetails', {})
+                snippet = video.get('snippet', {})
+                
+                # duration 파싱 (PT1M30S 형식)
+                duration_str = content.get('duration', 'PT0S')
+                duration_seconds = self._parse_duration(duration_str)
+                
+                return {
+                    'views': int(stats.get('viewCount', 0)),
+                    'likes': int(stats.get('likeCount', 0)),
+                    'comments': int(stats.get('commentCount', 0)),
+                    'duration': duration_seconds,
+                    'tags': snippet.get('tags', [])
+                }
+            return None
+        except Exception as e:
+            print(f"⚠️ 영상 상세 정보 가져오기 실패 ({video_id}): {e}")
+            return None
+    
+    def _parse_duration(self, duration_str: str) -> int:
+        """ISO 8601 duration 형식을 초로 변환 (예: PT1M30S -> 90)"""
+        import re
+        pattern = r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?'
+        match = re.match(pattern, duration_str)
+        if match:
+            hours = int(match.group(1) or 0)
+            minutes = int(match.group(2) or 0)
+            seconds = int(match.group(3) or 0)
+            return hours * 3600 + minutes * 60 + seconds
+        return 0
+    
+    def extract_keywords_from_videos(
+        self,
+        videos: List[Dict],
+        min_views: int = 10000,
+        top_n: int = 20
+    ) -> List[str]:
+        """
+        영상 목록에서 트렌드 키워드 추출
+        
+        Args:
+            videos: 영상 리스트
+            min_views: 최소 조회수 필터
+            top_n: 반환할 키워드 수
+        
+        Returns:
+            트렌드 키워드 리스트
+        """
+        # 조회수 필터링
+        filtered_videos = [
+            v for v in videos 
+            if v.get('views', 0) >= min_views
+        ]
+        
+        if not filtered_videos:
+            print(f"⚠️ 조회수 {min_views} 이상인 영상이 없습니다.")
+            return []
+        
+        print(f"📊 {len(filtered_videos)}개 영상에서 키워드 추출 중...")
+        
+        # 제목과 태그에서 키워드 추출
+        all_keywords = []
+        
+        for video in filtered_videos:
+            title = video.get('title', '')
+            tags = video.get('tags', [])
+            description = video.get('description', '')
+            
+            # 제목에서 키워드 추출
+            title_keywords = self._extract_keywords_from_text(title)
+            all_keywords.extend(title_keywords)
+            
+            # 태그 추가
+            if tags:
+                all_keywords.extend([tag.lower() for tag in tags])
+            
+            # 설명에서도 키워드 추출 (선택적)
+            if description:
+                desc_keywords = self._extract_keywords_from_text(description[:200])  # 처음 200자만
+                all_keywords.extend(desc_keywords)
+        
+        # 키워드 빈도 계산
+        keyword_counter = Counter(all_keywords)
+        
+        # 상위 키워드 추출
+        top_keywords = [
+            keyword for keyword, count in keyword_counter.most_common(top_n * 2)
+            if len(keyword) > 3 and count >= 2  # 최소 2회 이상 등장, 3자 이상
+        ]
+        
+        # AI로 키워드 정제 및 재정렬 (선택적)
+        if self.openai_client and top_keywords:
+            try:
+                refined_keywords = self._refine_keywords_with_ai(top_keywords[:top_n])
+                if refined_keywords:
+                    print(f"✅ AI로 정제된 키워드 {len(refined_keywords)}개")
+                    return refined_keywords[:top_n]
+            except Exception as e:
+                print(f"⚠️ AI 키워드 정제 실패, 기본 키워드 사용: {e}")
+        
+        print(f"✅ 추출된 키워드 {len(top_keywords[:top_n])}개")
+        return top_keywords[:top_n]
+    
+    def _extract_keywords_from_text(self, text: str) -> List[str]:
+        """텍스트에서 키워드 추출"""
+        if not text:
+            return []
+        
+        # 영어 단어 추출 (2자 이상)
+        words = re.findall(r'\b[a-zA-Z]{2,}\b', text.lower())
+        
+        # 불용어 제거
+        stopwords = {
+            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+            'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'be',
+            'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will',
+            'would', 'should', 'could', 'may', 'might', 'must', 'can', 'this',
+            'that', 'these', 'those', 'what', 'which', 'who', 'whom', 'whose',
+            'where', 'when', 'why', 'how', 'all', 'each', 'every', 'both', 'few',
+            'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only',
+            'own', 'same', 'so', 'than', 'too', 'very', 'you', 'your', 'yours',
+            'he', 'him', 'his', 'she', 'her', 'hers', 'it', 'its', 'they', 'them',
+            'their', 'theirs', 'we', 'us', 'our', 'ours', 'i', 'me', 'my', 'mine'
+        }
+        
+        keywords = [word for word in words if word not in stopwords and len(word) > 2]
+        
+        return keywords
+    
+    def _refine_keywords_with_ai(self, keywords: List[str]) -> List[str]:
+        """AI를 사용하여 키워드를 정제하고 재정렬"""
+        if not self.openai_client or not keywords:
+            return keywords
+        
+        try:
+            keywords_text = ', '.join(keywords[:30])  # 최대 30개만 전달
+            
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a YouTube Shorts trend keyword analyzer. Given a list of keywords from popular Shorts videos, extract the most relevant and trending keywords for finance, productivity, self-improvement, and lifestyle content. Return only the keywords, separated by commas, in order of relevance."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Analyze these keywords from popular YouTube Shorts and return the most relevant ones for finance/productivity/self-improvement content (comma-separated, max 20):\n\n{keywords_text}"
+                    }
+                ],
+                max_tokens=100,
+                temperature=0.3
+            )
+            
+            refined_text = response.choices[0].message.content.strip()
+            refined_keywords = [
+                k.strip().lower() 
+                for k in refined_text.split(',') 
+                if k.strip()
+            ]
+            
+            return refined_keywords
+            
+        except Exception as e:
+            print(f"⚠️ AI 키워드 정제 실패: {e}")
+            return keywords
+    
+    def collect_trending_keywords(
+        self,
+        max_videos: int = 50,
+        min_views: int = 10000,
+        top_n: int = 20
+    ) -> List[str]:
+        """
+        트렌드 키워드 수집 (전체 프로세스)
+        
+        Args:
+            max_videos: 수집할 영상 수
+            min_views: 최소 조회수 필터
+            top_n: 반환할 키워드 수
+        
+        Returns:
+            트렌드 키워드 리스트
+        """
+        print(f"🔍 YouTube 트렌드 키워드 수집 시작...")
+        
+        # 1. 인기 Shorts 수집
+        videos = self.get_trending_shorts(max_results=max_videos)
+        
+        if not videos:
+            print("⚠️ 수집된 영상이 없습니다.")
+            return []
+        
+        # 2. 키워드 추출
+        keywords = self.extract_keywords_from_videos(
+            videos,
+            min_views=min_views,
+            top_n=top_n
+        )
+        
+        return keywords
+    
+    def get_trending_topics_for_category(
+        self,
+        category: str = 'finance',
+        max_videos: int = 30
+    ) -> List[str]:
+        """
+        특정 카테고리의 트렌드 주제 가져오기
+        
+        Args:
+            category: 카테고리 ('finance', 'productivity', 'self-improvement' 등)
+            max_videos: 수집할 영상 수
+        
+        Returns:
+            트렌드 주제 리스트
+        """
+        if not self.youtube:
+            return []
+        
+        try:
+            # 카테고리별 검색어
+            category_queries = {
+                'finance': ['money', 'finance', 'invest', 'wealth', 'saving', 'budget'],
+                'productivity': ['productivity', 'routine', 'habit', 'time management', 'focus'],
+                'self-improvement': ['self improvement', 'motivation', 'mindset', 'success', 'goal'],
+                'lifestyle': ['lifestyle', 'declutter', 'minimalist', 'organization', 'home']
+            }
+            
+            queries = category_queries.get(category.lower(), ['finance'])
+            
+            all_videos = []
+            for query in queries[:2]:  # 최대 2개 쿼리만 사용
+                request = self.youtube.search().list(
+                    part='snippet',
+                    q=f"{query} #shorts",
+                    type='video',
+                    maxResults=min(max_videos // len(queries), 25),
+                    order='viewCount',
+                    publishedAfter=(datetime.now() - timedelta(days=7)).isoformat() + 'Z',
+                    videoDuration='short'
+                )
+                
+                response = request.execute()
+                
+                if 'items' in response:
+                    for item in response['items']:
+                        video_id = item['id']['videoId']
+                        video_details = self._get_video_details(video_id)
+                        
+                        if video_details and video_details.get('views', 0) >= 5000:
+                            all_videos.append({
+                                'video_id': video_id,
+                                'title': item['snippet']['title'],
+                                'views': video_details.get('views', 0),
+                                'tags': video_details.get('tags', [])
+                            })
+            
+            # 제목에서 주제 추출
+            topics = []
+            for video in all_videos:
+                title = video.get('title', '')
+                # 제목을 그대로 주제로 사용 (간단한 버전)
+                if len(title) > 10 and len(title) < 100:
+                    topics.append(title)
+            
+            # 중복 제거 및 정렬
+            unique_topics = list(dict.fromkeys(topics))  # 순서 유지하면서 중복 제거
+            
+            print(f"✅ {category} 카테고리 트렌드 주제 {len(unique_topics)}개 수집")
+            return unique_topics[:20]  # 최대 20개
+            
+        except Exception as e:
+            print(f"⚠️ 카테고리별 트렌드 주제 수집 실패: {e}")
+            return []
+    
+    def generate_topics_from_trends(
+        self,
+        keywords: List[str] = None,
+        content_type: str = 'hook',
+        num_topics: int = 10,
+        language: str = 'en'
+    ) -> List[str]:
+        """
+        트렌드 키워드를 기반으로 AI가 새로운 주제 생성
+        
+        Args:
+            keywords: 트렌드 키워드 리스트 (None이면 자동 수집)
+            content_type: 콘텐츠 타입 ('hook', 'quote', 'story', 'fact', 'short_story')
+            num_topics: 생성할 주제 수
+            language: 언어 ('en' 또는 'ko', 기본값: 'en')
+        
+        Returns:
+            생성된 주제 리스트
+        """
+        if not self.openai_client:
+            print("⚠️ OpenAI API가 없어 주제 생성이 불가능합니다.")
+            return []
+        
+        # 키워드가 없으면 자동 수집
+        if not keywords:
+            print("📊 트렌드 키워드 자동 수집 중...")
+            keywords = self.collect_trending_keywords(
+                max_videos=30,
+                min_views=5000,
+                top_n=15
+            )
+        
+        if not keywords:
+            print("⚠️ 수집된 키워드가 없습니다.")
+            return []
+        
+        try:
+            # 콘텐츠 타입별 프롬프트
+            content_type_prompts = {
+                'hook': {
+                    'en': "Create powerful Hook-style topics that grab attention in the first 3 seconds. Use the 'Mindset Flip' technique: state a common negative thought and immediately reframe it positively.",
+                    'ko': "첫 3초 안에 시청자의 관심을 끄는 강력한 Hook 스타일 주제를 생성하세요. '마인드셋 플립' 기법을 사용하세요: 흔한 부정적 생각을 제시하고 즉시 긍정적으로 재해석하세요."
+                },
+                'quote': {
+                    'en': "Create quote/knowledge-style topics that deliver powerful insights about finance, productivity, self-improvement, or investment.",
+                    'ko': "재태크, 생산성, 자기계발, 투자에 대한 강력한 인사이트를 전달하는 명언/지식 스타일 주제를 생성하세요."
+                },
+                'story': {
+                    'en': "Create storytelling-style topics that deliver lessons through stories about psychology, history, rich habits, or real-life examples.",
+                    'ko': "심리, 역사, 부자습관, 실제 사례를 통해 교훈을 전달하는 스토리텔링 스타일 주제를 생성하세요."
+                },
+                'fact': {
+                    'en': "Create fact-based topics that present shocking numbers, statistics, or 'did you know' facts about finance, productivity, or lifestyle.",
+                    'ko': "재태크, 생산성, 라이프스타일에 대한 충격적인 숫자, 통계, '알고 계셨나요' 팩트를 제시하는 팩트 기반 주제를 생성하세요."
+                },
+                'short_story': {
+                    'en': "Create short story-style topics that deliver life lessons, inspiration, or success stories in a personal narrative format.",
+                    'ko': "인생 교훈, 영감, 성공 스토리를 개인적 서술 형식으로 전달하는 짧은 스토리 스타일 주제를 생성하세요."
+                }
+            }
+            
+            prompt_template = content_type_prompts.get(content_type.lower(), content_type_prompts['hook'])
+            system_prompt = prompt_template.get(language, prompt_template['en'])
+            
+            keywords_text = ', '.join(keywords[:20])  # 최대 20개 키워드만 사용
+            
+            user_prompt = f"""Based on these trending keywords from popular YouTube Shorts: {keywords_text}
+
+Generate {num_topics} new topic ideas for YouTube Shorts videos that:
+1. Are relevant to finance, productivity, self-improvement, or lifestyle
+2. Are engaging and click-worthy
+3. Can be explained in about 55 seconds
+4. Follow the {content_type} content style
+
+Return only the topics, one per line, without numbering or bullets. Each topic should be a complete sentence or phrase that can be used directly as a video title or topic."""
+
+            if language == 'ko':
+                user_prompt = f"""다음은 인기 YouTube Shorts에서 수집한 트렌드 키워드입니다: {keywords_text}
+
+재태크, 생산성, 자기계발, 라이프스타일과 관련된 YouTube Shorts 영상 주제 {num_topics}개를 생성하세요:
+1. 재태크, 생산성, 자기계발, 라이프스타일과 관련되어야 함
+2. 매력적이고 클릭을 유도해야 함
+3. 약 55초 분량으로 설명 가능해야 함
+4. {content_type} 콘텐츠 스타일을 따름
+
+번호나 불릿 없이 주제만 한 줄에 하나씩 반환하세요. 각 주제는 영상 제목이나 주제로 직접 사용할 수 있는 완전한 문장이나 구문이어야 합니다."""
+
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": system_prompt
+                    },
+                    {
+                        "role": "user",
+                        "content": user_prompt
+                    }
+                ],
+                max_tokens=500,
+                temperature=0.8
+            )
+            
+            topics_text = response.choices[0].message.content.strip()
+            
+            # 주제 파싱 (줄바꿈으로 분리)
+            topics = []
+            for line in topics_text.split('\n'):
+                line = line.strip()
+                # 번호나 불릿 제거
+                line = re.sub(r'^[\d\.\-\*\•\s]+', '', line)
+                if line and len(line) > 10:  # 최소 10자 이상
+                    topics.append(line)
+            
+            # 중복 제거
+            unique_topics = list(dict.fromkeys(topics))  # 순서 유지하면서 중복 제거
+            
+            print(f"✅ AI로 생성된 주제 {len(unique_topics)}개 (목표: {num_topics}개)")
+            return unique_topics[:num_topics]
+            
+        except Exception as e:
+            print(f"⚠️ AI 주제 생성 실패: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+    
+    def validate_topic_quality(
+        self,
+        topic: str,
+        existing_topics: List[str] = None
+    ) -> Dict[str, any]:
+        """
+        주제 품질 검증
+        
+        Args:
+            topic: 검증할 주제
+            existing_topics: 기존 주제 리스트 (중복 확인용)
+        
+        Returns:
+            검증 결과 딕셔너리 (is_valid, score, reasons)
+        """
+        reasons = []
+        score = 100
+        
+        # 1. 길이 검증
+        if len(topic) < 10:
+            reasons.append("주제가 너무 짧음")
+            score -= 30
+        elif len(topic) > 150:
+            reasons.append("주제가 너무 김")
+            score -= 20
+        
+        # 2. 중복 검증
+        if existing_topics:
+            topic_lower = topic.lower()
+            for existing in existing_topics:
+                existing_lower = existing.lower()
+                # 유사도 계산 (간단한 버전)
+                if topic_lower == existing_lower:
+                    reasons.append("완전히 동일한 주제")
+                    score -= 50
+                elif topic_lower in existing_lower or existing_lower in topic_lower:
+                    # 한 주제가 다른 주제에 포함되어 있으면 중복 가능성
+                    if abs(len(topic_lower) - len(existing_lower)) < 20:
+                        reasons.append("유사한 주제와 중복 가능성")
+                        score -= 20
+        
+        # 3. 키워드 검증 (재태크/생산성 관련 키워드 포함 여부)
+        finance_keywords = ['money', 'finance', 'invest', 'wealth', 'save', 'budget', 'income', 'cash', 'rich', 'poor', 'debt', 'credit', '401k', 'retirement', '돈', '부자', '투자', '금융', '저축']
+        productivity_keywords = ['productivity', 'routine', 'habit', 'time', 'focus', 'efficient', 'organize', '생산성', '습관', '루틴', '시간', '집중']
+        self_improvement_keywords = ['success', 'motivation', 'mindset', 'goal', 'achieve', 'growth', 'improve', '성공', '동기부여', '마인드셋', '목표', '성장']
+        
+        all_keywords = finance_keywords + productivity_keywords + self_improvement_keywords
+        topic_lower = topic.lower()
+        
+        has_relevant_keyword = any(keyword in topic_lower for keyword in all_keywords)
+        if not has_relevant_keyword:
+            reasons.append("관련 키워드 부족")
+            score -= 15
+        
+        # 4. 품질 점수 기반 검증
+        is_valid = score >= 50  # 50점 이상이면 유효
+        
+        return {
+            'is_valid': is_valid,
+            'score': score,
+            'reasons': reasons
+        }
+    
+    def collect_seasonal_trending_keywords(
+        self,
+        season: str,
+        max_videos: int = 30,
+        min_views: int = 5000,
+        top_n: int = 15
+    ) -> List[str]:
+        """
+        계절별 트렌드 키워드 수집
+        
+        Args:
+            season: 계절 ('spring', 'summer', 'autumn', 'winter')
+            max_videos: 수집할 영상 수
+            min_views: 최소 조회수 필터
+            top_n: 반환할 키워드 수
+        
+        Returns:
+            계절별 트렌드 키워드 리스트
+        """
+        if not self.youtube:
+            print("⚠️ YouTube API가 없어 계절별 트렌드 키워드 수집이 불가능합니다.")
+            return []
+        
+        # 계절별 검색어
+        seasonal_queries = {
+            'spring': [
+                'spring cleaning', 'spring finance', 'spring budget', 'spring savings',
+                'spring routine', 'spring reset', 'spring organization', 'tax season',
+                'spring investment', 'spring planning'
+            ],
+            'summer': [
+                'summer budget', 'summer savings', 'summer vacation money',
+                'summer spending', 'summer income', 'summer side hustle',
+                'summer financial planning', 'summer investment'
+            ],
+            'autumn': [
+                'fall budget', 'autumn savings', 'holiday budget', 'fall financial planning',
+                'autumn investment', 'year-end tax', 'fall routine', 'autumn reset',
+                'holiday spending', 'black friday savings'
+            ],
+            'winter': [
+                'winter budget', 'winter savings', 'holiday spending', 'winter heating costs',
+                'year-end financial', 'winter investment', 'holiday budget',
+                'winter financial planning', 'new year financial goals'
+            ]
+        }
+        
+        queries = seasonal_queries.get(season.lower(), [])
+        
+        if not queries:
+            print(f"⚠️ 알 수 없는 계절: {season}")
+            return []
+        
+        print(f"🍂 {season} 계절 트렌드 키워드 수집 시작...")
+        
+        all_keywords = []
+        
+        try:
+            for query in queries[:3]:  # 최대 3개 쿼리만 사용
+                # 검색 쿼리에 계절 키워드 추가
+                search_query = f"{query} #shorts"
+                
+                request = self.youtube.search().list(
+                    part='snippet',
+                    q=search_query,
+                    type='video',
+                    maxResults=min(max_videos // len(queries), 25),
+                    order='viewCount',
+                    publishedAfter=(datetime.now() - timedelta(days=30)).isoformat() + 'Z',  # 최근 30일
+                    videoDuration='short'
+                )
+                
+                response = request.execute()
+                
+                if 'items' in response:
+                    for item in response['items']:
+                        video_id = item['id']['videoId']
+                        video_details = self._get_video_details(video_id)
+                        
+                        if video_details and video_details.get('views', 0) >= min_views:
+                            title = item['snippet']['title']
+                            description = item['snippet'].get('description', '')
+                            tags = video_details.get('tags', [])
+                            
+                            # AI를 사용하여 키워드 추출
+                            combined_text = f"Title: {title}. Description: {description}. Tags: {', '.join(tags)}"
+                            
+                            if self.openai_client:
+                                try:
+                                    ai_response = self.openai_client.chat.completions.create(
+                                        model="gpt-4o-mini",
+                                        messages=[
+                                            {
+                                                "role": "system",
+                                                "content": f"You are an expert in extracting concise, impactful keywords related to {season} season, finance, productivity, and lifestyle from video titles, descriptions, and tags for YouTube Shorts. Focus on 1-3 core English keywords that capture the main theme and seasonal relevance."
+                                            },
+                                            {
+                                                "role": "user",
+                                                "content": f"Extract 1-3 core English keywords from the following text, separated by commas:\n\n{combined_text}"
+                                            }
+                                        ],
+                                        max_tokens=50,
+                                        temperature=0.3
+                                    )
+                                    keywords_text = ai_response.choices[0].message.content.strip()
+                                    extracted_keywords = [k.strip() for k in keywords_text.split(',') if k.strip()]
+                                    if extracted_keywords:
+                                        all_keywords.extend(extracted_keywords)
+                                except Exception as e:
+                                    print(f"⚠️ AI 키워드 추출 실패: {e}")
+                                    # AI 실패 시 제목에서 간단한 키워드 추출
+                                    words = title.lower().split()
+                                    relevant_words = [w for w in words if len(w) > 4 and w not in ['video', 'shorts', 'youtube']]
+                                    if relevant_words:
+                                        all_keywords.extend(relevant_words[:2])
+            
+            # 키워드 빈도 계산 및 상위 N개 선택
+            keyword_counter = Counter(all_keywords)
+            top_keywords = [keyword for keyword, count in keyword_counter.most_common(top_n)]
+            
+            print(f"✅ {season} 계절 트렌드 키워드 {len(top_keywords)}개 수집 완료")
+            return top_keywords
+            
+        except Exception as e:
+            print(f"⚠️ {season} 계절 트렌드 키워드 수집 실패: {e}")
+            return []
+    
+    def generate_seasonal_topics(
+        self,
+        season: str,
+        keywords: List[str] = None,
+        content_type: str = 'hook',
+        num_topics: int = 10,
+        language: str = 'en'
+    ) -> List[str]:
+        """
+        계절별 트렌드 키워드를 기반으로 AI가 새로운 계절별 주제 생성
+        
+        Args:
+            season: 계절 ('spring', 'summer', 'autumn', 'winter')
+            keywords: 계절별 트렌드 키워드 리스트 (None이면 자동 수집)
+            content_type: 콘텐츠 타입 ('hook', 'quote', 'story', 'fact', 'short_story')
+            num_topics: 생성할 주제 수
+            language: 언어 ('en' 또는 'ko', 기본값: 'en')
+        
+        Returns:
+            생성된 계절별 주제 리스트
+        """
+        if not self.openai_client:
+            print("⚠️ OpenAI API가 없어 계절별 주제 생성이 불가능합니다.")
+            return []
+        
+        # 키워드가 없으면 자동 수집
+        if not keywords:
+            print(f"📊 {season} 계절 트렌드 키워드 자동 수집 중...")
+            keywords = self.collect_seasonal_trending_keywords(
+                season=season,
+                max_videos=30,
+                min_views=5000,
+                top_n=15
+            )
+        
+        if not keywords:
+            print(f"⚠️ {season} 계절 키워드가 없습니다.")
+            return []
+        
+        try:
+            # 계절별 프롬프트
+            seasonal_prompts = {
+                'spring': {
+                    'en': "Create topics that are highly relevant to spring season (March-May), such as spring cleaning, tax season, spring financial planning, spring reset routines, and seasonal transitions.",
+                    'ko': "봄 시즌(3-5월)과 매우 관련된 주제를 생성하세요. 예: 봄 정리, 세금 시즌, 봄 재무 계획, 봄 리셋 루틴, 계절 전환 등."
+                },
+                'summer': {
+                    'en': "Create topics that are highly relevant to summer season (June-August), such as summer budget planning, vacation savings, summer side hustles, summer spending management, and seasonal financial strategies.",
+                    'ko': "여름 시즌(6-8월)과 매우 관련된 주제를 생성하세요. 예: 여름 예산 계획, 휴가 저축, 여름 부업, 여름 지출 관리, 계절별 재무 전략 등."
+                },
+                'autumn': {
+                    'en': "Create topics that are highly relevant to autumn/fall season (September-November), such as fall financial planning, holiday budget preparation, year-end tax strategies, autumn reset routines, Black Friday savings, and seasonal transitions.",
+                    'ko': "가을 시즌(9-11월)과 매우 관련된 주제를 생성하세요. 예: 가을 재무 계획, 연말 예산 준비, 연말 세금 전략, 가을 리셋 루틴, 블랙프라이데이 저축, 계절 전환 등."
+                },
+                'winter': {
+                    'en': "Create topics that are highly relevant to winter season (December-February), such as winter budget management, holiday spending, year-end financial review, winter heating costs, new year financial goals, and seasonal financial planning.",
+                    'ko': "겨울 시즌(12-2월)과 매우 관련된 주제를 생성하세요. 예: 겨울 예산 관리, 연말 지출, 연말 재무 검토, 겨울 난방비, 새해 재무 목표, 계절별 재무 계획 등."
+                }
+            }
+            
+            season_prompt = seasonal_prompts.get(season.lower(), seasonal_prompts['spring'])
+            system_prompt = season_prompt.get(language, season_prompt['en'])
+            
+            # 콘텐츠 타입별 추가 프롬프트
+            content_type_prompts = {
+                'hook': {
+                    'en': "Use the 'Mindset Flip' technique: state a common negative thought about this season and immediately reframe it positively.",
+                    'ko': "'마인드셋 플립' 기법을 사용하세요: 이 계절에 대한 흔한 부정적 생각을 제시하고 즉시 긍정적으로 재해석하세요."
+                },
+                'quote': {
+                    'en': "Deliver powerful insights about finance, productivity, or self-improvement that are relevant to this season.",
+                    'ko': "이 계절과 관련된 재태크, 생산성, 자기계발에 대한 강력한 인사이트를 전달하세요."
+                },
+                'story': {
+                    'en': "Tell stories about seasonal transitions, financial planning, or lifestyle changes that happen during this season.",
+                    'ko': "이 계절에 일어나는 계절 전환, 재무 계획, 라이프스타일 변화에 대한 스토리를 전달하세요."
+                },
+                'fact': {
+                    'en': "Present shocking numbers, statistics, or 'did you know' facts about this season's financial trends, spending patterns, or seasonal habits.",
+                    'ko': "이 계절의 재무 트렌드, 지출 패턴, 계절별 습관에 대한 충격적인 숫자, 통계, '알고 계셨나요' 팩트를 제시하세요."
+                },
+                'short_story': {
+                    'en': "Share personal narratives about seasonal changes, financial lessons learned during this season, or success stories related to seasonal planning.",
+                    'ko': "계절 변화, 이 계절 동안 배운 재무 교훈, 계절별 계획과 관련된 성공 스토리에 대한 개인적 서술을 공유하세요."
+                }
+            }
+            
+            content_prompt = content_type_prompts.get(content_type.lower(), content_type_prompts['hook'])
+            content_system_prompt = content_prompt.get(language, content_prompt['en'])
+            
+            combined_system_prompt = f"{system_prompt} {content_system_prompt}"
+            
+            keywords_text = ', '.join(keywords[:20])  # 최대 20개 키워드만 사용
+            
+            user_prompt = f"""Based on these {season} season trending keywords from popular YouTube Shorts: {keywords_text}
+
+Generate {num_topics} new topic ideas for YouTube Shorts videos that:
+1. Are highly relevant to {season} season (seasonal timing, events, trends)
+2. Are related to finance, productivity, self-improvement, or lifestyle
+3. Are engaging and click-worthy
+4. Can be explained in about 55 seconds
+5. Follow the {content_type} content style
+
+Return only the topics, one per line, without numbering or bullets. Each topic should be a complete sentence or phrase that can be used directly as a video title or topic."""
+
+            if language == 'ko':
+                user_prompt = f"""다음은 인기 YouTube Shorts에서 수집한 {season} 계절 트렌드 키워드입니다: {keywords_text}
+
+{season} 계절과 매우 관련된 YouTube Shorts 영상 주제 {num_topics}개를 생성하세요:
+1. {season} 계절과 매우 관련되어야 함 (계절적 타이밍, 이벤트, 트렌드)
+2. 재태크, 생산성, 자기계발, 라이프스타일과 관련되어야 함
+3. 매력적이고 클릭을 유도해야 함
+4. 약 55초 분량으로 설명 가능해야 함
+5. {content_type} 콘텐츠 스타일을 따름
+
+번호나 불릿 없이 주제만 한 줄에 하나씩 반환하세요. 각 주제는 영상 제목이나 주제로 직접 사용할 수 있는 완전한 문장이나 구문이어야 합니다."""
+
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": combined_system_prompt
+                    },
+                    {
+                        "role": "user",
+                        "content": user_prompt
+                    }
+                ],
+                max_tokens=500,
+                temperature=0.8
+            )
+            
+            topics_text = response.choices[0].message.content.strip()
+            
+            # 주제 파싱 (줄바꿈으로 분리)
+            topics = []
+            for line in topics_text.split('\n'):
+                line = line.strip()
+                # 번호나 불릿 제거
+                line = re.sub(r'^[\d\.\-\*\•\s]+', '', line)
+                if line and len(line) > 10:  # 최소 10자 이상
+                    topics.append(line)
+            
+            # 중복 제거
+            unique_topics = list(dict.fromkeys(topics))  # 순서 유지하면서 중복 제거
+            
+            print(f"✅ {season} 계절 AI 생성 주제 {len(unique_topics)}개 (목표: {num_topics}개)")
+            return unique_topics[:num_topics]
+            
+        except Exception as e:
+            print(f"⚠️ {season} 계절 AI 주제 생성 실패: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+

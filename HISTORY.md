@@ -6,7 +6,49 @@
 
 **YouTube Shorts 자동 업로드 봇**: AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하고 수익화를 추적하는 봇
 
-**최근 업데이트 (2025-11-21)**:
+**최근 업데이트 (2025-11-22)**:
+- **YouTube 트렌드 키워드 수집 시스템 구현**: 주제 자동 업데이트 시스템의 첫 단계 완료
+  - **TrendCollector 클래스 추가**: `src/analytics/trend_collector.py` - YouTube Data API v3를 사용하여 인기 Shorts 수집 및 키워드 추출
+  - **인기 Shorts 분석**: 최근 7일간 조회수 기준 인기 Shorts 수집, 제목/태그/설명에서 키워드 추출
+  - **AI 키워드 정제**: OpenAI API를 사용하여 수집한 키워드를 재정렬 및 정제
+  - **캐싱 시스템**: 24시간 캐시로 API 호출 최소화
+  - **video_generator.py 통합**: `TREND_MODE=true`일 때 YouTube 트렌드 주제를 자동으로 주제 풀에 포함
+  - **카테고리별 트렌드 수집**: finance, productivity, self-improvement, lifestyle 카테고리별 트렌드 주제 수집 지원
+- **AI 기반 주제 생성 시스템 구현**: 트렌드 키워드를 기반으로 AI가 새로운 주제를 자동 생성
+  - **generate_topics_from_trends() 메서드 추가**: 트렌드 키워드를 기반으로 콘텐츠 타입별 주제 생성
+  - **주제 품질 검증 로직**: `validate_topic_quality()` 메서드로 중복 방지, 길이 검증, 관련 키워드 확인
+  - **video_generator.py 통합**: `_generate_ai_topics_from_trends()` 메서드로 AI 생성 주제를 주제 풀에 자동 추가
+  - **12시간 캐싱**: AI 생성 주제는 12시간 캐시로 API 호출 최소화
+  - **품질 필터링**: 검증 점수 50점 이상인 주제만 사용, 실패 이유 로깅
+- **계절별 주제 자동 업데이트 시스템 구현**: 계절별 트렌드 키워드를 기반으로 AI가 새로운 계절별 주제를 자동 생성
+  - **collect_seasonal_trending_keywords() 메서드 추가**: 계절별 트렌드 키워드 수집 (spring, summer, autumn, winter)
+  - **generate_seasonal_topics() 메서드 추가**: 계절별 트렌드 키워드를 기반으로 콘텐츠 타입별 계절 주제 생성
+  - **계절별 검색어 최적화**: 각 계절에 맞는 검색어로 YouTube Shorts 수집 (예: spring cleaning, tax season, holiday budget 등)
+  - **video_generator.py 통합**: `_generate_seasonal_topics_from_trends()` 메서드로 AI 생성 계절별 주제를 계절별 주제 풀에 자동 추가
+  - **7일 캐싱**: 계절별 주제는 7일 캐시로 API 호출 최소화 (계절별 주제는 더 오래 유효)
+  - **품질 검증**: 기존 계절별 주제와 중복 방지, 품질 점수 50점 이상인 주제만 사용
+- **API 사용 정책 명확화**: ChatGPT API와 Claude API만 유료로 사용, DALL-E 3와 OpenAI TTS는 OpenAI API로 함께 사용
+  - **DALL-E 3 썸네일 생성**: OpenAI API로 사용 (기존대로 유지)
+  - **OpenAI TTS 자동 선택**: OpenAI API 키가 있으면 자동으로 OpenAI TTS 사용 (기존대로 유지)
+  - **무료 서비스**: 배경 영상/이미지 (Pexels, Unsplash, Pixabay), gTTS (TTS 폴백) 등은 무료 서비스 사용
+- **구독자 수 증가 전략 적용**: YouTube Shorts 구독자 수를 늘리기 위한 종합 전략 연구 및 코드 적용
+  - **설명란 구독 유도 강화**: 채널 URL, 구독 이유, 시리즈 정보, 관련 영상 링크 추가
+  - **스크립트 끝에 구독 CTA 강화**: 모든 콘텐츠 타입의 AI 프롬프트에 자연스러운 구독 요청 추가
+  - **썸네일에 Subscribe 배지 추가**: "SHORTS" 배지 옆에 "SUBSCRIBE" 배지 추가 (상단 오른쪽)
+  - **YouTube API 채널 정보 기능**: `get_channel_info()`, `get_recent_videos()` 메서드 추가
+  - **언어별 최적화**: 영어/한국어 모두에 맞춘 구독 유도 텍스트 생성
+- **6개 겨울/연말 재태크 영상 일괄 생성 및 업로드**: 12월/1월 시즌에 맞는 재태크 주제 6개를 연속 생성하여 YouTube에 즉시 업로드
+  - 업로드된 영상 (ID → 주제):
+    1. `Q0qk_EGmOxU` → *December Tax Hack: How to Save $2,000 Before Year-End With These 3 Moves*
+    2. `0DDhBYBuqaw` → *Holiday Spending Trap: Why Americans Waste $1,500 Every December and How to Stop It*
+    3. `NVJHCu01knQ` → *Winter Heating Bill Shock: The One Change That Cut My Gas Bill by 50% Last Year*
+    4. `rBkBC0q41eE` → *Year-End Bonus Strategy: What Smart People Do With Their December Paycheck*
+    5. `yKQIb6o9_KM` → *January Financial Reset: The 30-Day Challenge That Built My Emergency Fund*
+    6. `rXCDiFxBL2Q` → *401k Deadline Alert: Why Contributing Before December 31st Changes Everything*
+  - 모든 영상은 썸네일까지 정상 업로드되었으며, 총 업로드 영상 수는 36개로 증가
+  - 현재 총 조회수: 917회
+
+**이전 업데이트 (2025-11-21)**:
 - **전략 결정**: TikTok과 Instagram 연결의 복잡도가 높아 YouTube만 자동 업로드하는 것으로 결정
 - YouTube에 집중하여 품질과 수익을 극대화하는 것이 우선 목표
 - 1분 명상(MEDITATION) 콘텐츠 타입 추가
@@ -442,8 +484,46 @@ youtubeshorts/
 - 자동 A/B 테스트 기능
 - TikTok 및 Instagram 업로드는 현재 보류 (API 복잡도 및 앱 리뷰 과정 고려)
 
+### 2025-11-22: 구독자 수 증가 전략 연구 및 적용
+
+- **목표**: YouTube Shorts 채널의 구독자 수를 효과적으로 늘리기 위한 종합 전략 연구 및 코드 적용
+- **연구 결과**: 웹 검색을 통해 2025년 YouTube Shorts 구독자 증가 베스트 프랙티스 확인
+  - 고품질 콘텐츠 제작, 일관된 업로드, SEO 최적화, 소셜 미디어 활용, 커뮤니티 기능 활용 등
+- **코드 개선 사항**:
+  1. **설명란 구독 유도 강화** (`bot.py`):
+     - 채널 URL 자동 추가 (YouTube API로 채널 정보 가져오기)
+     - 구독 이유 명시 (매일 새로운 콘텐츠, 실용적인 팁 등)
+     - 최근 업로드 영상 링크 추가 (관련 영상 추천)
+     - 언어별 최적화 (영어/한국어)
+  2. **스크립트 끝에 구독 CTA 강화** (`video_generator.py`):
+     - 모든 콘텐츠 타입(HOOK, QUOTE, FACT 등)의 AI 프롬프트에 자연스러운 구독 요청 추가
+     - 예: "Subscribe for daily tips like this" / "매일 이런 팁을 받으려면 구독해주세요"
+     - 강요하지 않고 자연스럽게 유도하도록 프롬프트 개선
+  3. **썸네일에 Subscribe 배지 추가** (`video_generator.py`):
+     - "SHORTS" 배지 옆에 "SUBSCRIBE" 배지 추가 (상단 오른쪽)
+     - 언어별 텍스트 (영어: "SUBSCRIBE", 한국어: "구독하기")
+     - 빨간색 배경으로 눈에 띄게 표시
+  4. **YouTube API 채널 정보 기능** (`youtube_uploader.py`):
+     - `get_channel_info()`: 채널 ID, 채널 URL, 구독자 수 가져오기
+     - `get_recent_videos()`: 최근 업로드 영상 목록 가져오기 (관련 영상 링크용)
+- **기대 효과**: 설명란의 구독 링크, 썸네일의 Subscribe 배지, 스크립트의 자연스러운 구독 요청을 통해 구독 전환율 향상 기대
+
+### 2025-11-22: 6개 겨울/연말 재태크 영상 일괄 생성 및 업로드
+
+- 12월/1월 시즌에 맞는 재태크 주제 6개를 연속 생성하여 YouTube에 즉시 업로드
+- 모든 영상은 겨울철/연말 시즌에 맞는 실용적인 재태크 팁을 다룸 (세금 절감, 연말 보너스 활용, 401k 기여, 난방비 절약 등)
+- 업로드된 영상 ID:
+  1. `Q0qk_EGmOxU` → *December Tax Hack: How to Save $2,000 Before Year-End With These 3 Moves*
+  2. `0DDhBYBuqaw` → *Holiday Spending Trap: Why Americans Waste $1,500 Every December and How to Stop It*
+  3. `NVJHCu01knQ` → *Winter Heating Bill Shock: The One Change That Cut My Gas Bill by 50% Last Year*
+  4. `rBkBC0q41eE` → *Year-End Bonus Strategy: What Smart People Do With Their December Paycheck*
+  5. `yKQIb6o9_KM` → *January Financial Reset: The 30-Day Challenge That Built My Emergency Fund*
+  6. `rXCDiFxBL2Q` → *401k Deadline Alert: Why Contributing Before December 31st Changes Everything*
+- 각 영상은 썸네일까지 정상 업로드되었으며, `main.py upload "<topic>" --force` 워크플로로 생성 → 업로드까지 자동화 확인
+- 총 업로드 영상 수: 36개, 총 조회수: 917회
+
 ---
 
-**마지막 업데이트**: 2025-11-21
+**마지막 업데이트**: 2025-11-22 (구독자 수 증가 전략 적용 완료)
 **프로젝트 상태**: 활발히 개발 중
 

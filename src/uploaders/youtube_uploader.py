@@ -246,4 +246,70 @@ class YouTubeUploader:
         except Exception as e:
             print(f"통계 정보 가져오기 실패: {str(e)}")
             return None
+    
+    def get_channel_info(self):
+        """채널 정보 가져오기 (채널 ID, 채널 URL 등)"""
+        try:
+            if not self.youtube:
+                return None
+            
+            # 현재 인증된 사용자의 채널 정보 가져오기
+            request = self.youtube.channels().list(
+                part='snippet,contentDetails,statistics',
+                mine=True
+            )
+            response = request.execute()
+            
+            if response.get('items') and len(response['items']) > 0:
+                channel = response['items'][0]
+                channel_id = channel['id']
+                snippet = channel['snippet']
+                custom_url = snippet.get('customUrl', '')
+                
+                # 채널 URL 생성
+                if custom_url:
+                    channel_url = f"https://www.youtube.com/@{custom_url}"
+                else:
+                    channel_url = f"https://www.youtube.com/channel/{channel_id}"
+                
+                return {
+                    'channel_id': channel_id,
+                    'channel_url': channel_url,
+                    'channel_name': snippet.get('title', ''),
+                    'subscriber_count': int(channel.get('statistics', {}).get('subscriberCount', 0))
+                }
+            return None
+        except Exception as e:
+            print(f"⚠️ 채널 정보 가져오기 실패: {e}")
+            return None
+    
+    def get_recent_videos(self, max_results: int = 5):
+        """최근 업로드된 영상 목록 가져오기"""
+        try:
+            if not self.youtube:
+                return []
+            
+            request = self.youtube.search().list(
+                part='snippet',
+                forMine=True,
+                type='video',
+                maxResults=max_results,
+                order='date'
+            )
+            response = request.execute()
+            
+            videos = []
+            if 'items' in response:
+                for item in response['items']:
+                    video_id = item['id']['videoId']
+                    title = item['snippet']['title']
+                    videos.append({
+                        'video_id': video_id,
+                        'title': title,
+                        'url': f"https://www.youtube.com/watch?v={video_id}"
+                    })
+            return videos
+        except Exception as e:
+            print(f"⚠️ 최근 영상 목록 가져오기 실패: {e}")
+            return []
 

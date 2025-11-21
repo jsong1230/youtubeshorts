@@ -63,6 +63,8 @@ THUMBNAIL_OUTPUT_DIR = 'output/thumbnails'
 TEMP_DIR = 'output/temp'
 
 # TTS 설정
+# OpenAI TTS와 DALL-E 3는 OpenAI API로 사용 가능하므로 함께 사용
+# TTS_PROVIDER가 None이면 자동 선택 (OpenAI API 키가 있으면 OpenAI TTS, 없으면 gTTS)
 TTS_PROVIDER = os.getenv('TTS_PROVIDER', None)  # 'gtts' 또는 'openai', None이면 자동 선택
 
 # YouTube Shorts 요구사항
