@@ -7,8 +7,10 @@ client_secrets.json
 
 # 데이터 파일
 data/*.db
-data/*.json
-!data/sync_state.json
+# JSON 파일은 Git에 포함 (히스토리 추적용)
+# data/*.json
+# data/sync_state.json
+# data/monetization_data.json
 !requirements.txt
 
 # 출력 파일

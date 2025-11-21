@@ -191,16 +191,389 @@ class AIVideoGenerator:
             return topics
         return self.HIGH_PERFORMING_TOPICS.get(content_type, [])
 
+    def _get_youtube_trending_topics(self) -> List[str]:
+        """YouTube 트렌드 주제 가져오기 (캐싱 사용)"""
+        try:
+            from src.analytics.trend_collector import TrendCollector
+            
+            # 캐시 파일 경로
+            cache_file = os.path.join(config.TEMP_DIR, 'trending_topics_cache.json')
+            cache_duration = 24 * 3600  # 24시간 캐시
+            
+            # 캐시 확인
+            if os.path.exists(cache_file):
+                import json
+                import time
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    cache_data = json.load(f)
+                    cache_time = cache_data.get('timestamp', 0)
+                    if time.time() - cache_time < cache_duration:
+                        topics = cache_data.get('topics', [])
+                        if topics:
+                            print(f"📊 캐시된 트렌드 주제 {len(topics)}개 사용")
+                            return topics
+            
+            # 트렌드 수집
+            collector = TrendCollector()
+            topics = collector.get_trending_topics_for_category(
+                category='finance',
+                max_videos=20
+            )
+            
+            # 캐시 저장
+            if topics:
+                os.makedirs(config.TEMP_DIR, exist_ok=True)
+                import json
+                import time
+                with open(cache_file, 'w', encoding='utf-8') as f:
+                    json.dump({
+                        'timestamp': time.time(),
+                        'topics': topics
+                    }, f, ensure_ascii=False, indent=2)
+                print(f"✅ 트렌드 주제 {len(topics)}개 수집 및 캐시 저장")
+            
+            return topics
+        except Exception as e:
+            print(f"⚠️ YouTube 트렌드 주제 수집 실패: {e}")
+            return []
+    
+    def _generate_seasonal_topics_from_trends(
+        self,
+        season: str,
+        content_type: ContentType,
+        language: str = 'en'
+    ) -> List[str]:
+        """
+        계절별 트렌드 키워드를 기반으로 AI가 새로운 계절별 주제 생성
+        
+        Args:
+            season: 계절 ('spring', 'summer', 'autumn', 'winter')
+            content_type: 콘텐츠 타입
+            language: 언어 ('en' 또는 'ko')
+        
+        Returns:
+            생성된 계절별 주제 리스트
+        """
+        try:
+            from src.analytics.trend_collector import TrendCollector
+            
+            # 캐시 파일 경로
+            cache_file = os.path.join(
+                config.TEMP_DIR, 
+                f'ai_seasonal_topics_cache_{season}_{content_type.value}_{language}.json'
+            )
+            cache_duration = 7 * 24 * 3600  # 7일 캐시 (계절별 주제는 더 오래 유효)
+            
+            # 캐시 확인
+            if os.path.exists(cache_file):
+                import json
+                import time
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    cache_data = json.load(f)
+                    cache_time = cache_data.get('timestamp', 0)
+                    if time.time() - cache_time < cache_duration:
+                        topics = cache_data.get('topics', [])
+                        if topics:
+                            print(f"📊 캐시된 {season} 계절 AI 생성 주제 {len(topics)}개 사용")
+                            return topics
+            
+            # 계절별 트렌드 키워드 수집
+            collector = TrendCollector()
+            keywords = collector.collect_seasonal_trending_keywords(
+                season=season,
+                max_videos=30,
+                min_views=5000,
+                top_n=15
+            )
+            
+            if not keywords:
+                print(f"⚠️ {season} 계절 트렌드 키워드가 없어 AI 주제 생성을 건너뜁니다.")
+                return []
+            
+            # AI로 계절별 주제 생성
+            generated_topics = collector.generate_seasonal_topics(
+                season=season,
+                keywords=keywords,
+                content_type=content_type.value,
+                num_topics=10,
+                language=language
+            )
+            
+            # 품질 검증 및 필터링
+            validated_topics = []
+            existing_topics = self._get_all_existing_topics(content_type)
+            # 기존 계절별 주제도 포함
+            existing_seasonal_topics = self._get_seasonal_topics_for_season(season, content_type)
+            existing_topics.extend(existing_seasonal_topics)
+            
+            for topic in generated_topics:
+                validation = collector.validate_topic_quality(
+                    topic=topic,
+                    existing_topics=existing_topics
+                )
+                if validation['is_valid']:
+                    validated_topics.append(topic)
+                    print(f"   ✅ {season} 계절 주제 검증 통과: {topic[:50]}... (점수: {validation['score']})")
+                else:
+                    print(f"   ❌ {season} 계절 주제 검증 실패: {topic[:50]}... (점수: {validation['score']}, 이유: {', '.join(validation['reasons'])})")
+            
+            # 캐시 저장
+            if validated_topics:
+                os.makedirs(config.TEMP_DIR, exist_ok=True)
+                import json
+                import time
+                with open(cache_file, 'w', encoding='utf-8') as f:
+                    json.dump({
+                        'timestamp': time.time(),
+                        'topics': validated_topics
+                    }, f, ensure_ascii=False, indent=2)
+                print(f"✅ {season} 계절 AI 생성 주제 {len(validated_topics)}개 검증 완료 및 캐시 저장")
+            
+            return validated_topics
+            
+        except Exception as e:
+            print(f"⚠️ {season} 계절 AI 주제 생성 실패: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+    
+    def _get_seasonal_topics_for_season(
+        self,
+        season: str,
+        content_type: ContentType
+    ) -> List[str]:
+        """특정 계절의 기존 주제 가져오기 (중복 확인용)"""
+        # 하드코딩된 계절별 주제를 가져오는 로직
+        # _generate_topic에서 사용하는 seasonal_topics 딕셔너리 구조를 재현
+        seasonal_topics = {}
+        
+        if content_type == ContentType.HOOK:
+            seasonal_topics = {
+                'spring': [
+                    "Why new-year plans keep collapsing by March",
+                    "How people who reset each season look five years later",
+                    "Why your salary alone will never make you wealthy",
+                    "The simple rule people with tidy homes follow every day",
+                ],
+                'summer': [
+                    "Why summer spending ruins your fall budget",
+                    "The one habit that separates summer savers from summer spenders",
+                    "Why your vacation fund disappears by August",
+                ],
+                'autumn': [
+                    "Why people who plan in September retire earlier",
+                    "The October habit that changes your December",
+                    "Why your year-end bonus disappears by January",
+                ],
+                'winter': [
+                    "Why January goals fail by February",
+                    "The December decision that determines your March",
+                    "Why your holiday spending haunts your spring",
+                ]
+            }
+        elif content_type == ContentType.QUOTE:
+            seasonal_topics = {
+                'spring': [
+                    "When seasons change, your priorities must be reorganized too.",
+                    "Decluttering a room calms your mind, and a calm mind cuts anxiety.",
+                ],
+                'summer': [
+                    "Summer is not just a season; it's a financial opportunity.",
+                    "The best time to save for next summer is this summer.",
+                ],
+                'autumn': [
+                    "Fall is the season of preparation, not just celebration.",
+                    "Your September decisions shape your December outcomes.",
+                ],
+                'winter': [
+                    "Winter is the season of reflection, not just spending.",
+                    "Your December choices determine your January reality.",
+                ]
+            }
+        elif content_type == ContentType.STORY:
+            seasonal_topics = {
+                'spring': ["The messy closet that turned into a seasonal reset routine"],
+                'summer': ["How one family finally killed the summer mold problem"],
+                'autumn': ["The messy closet that turned into a seasonal reset routine"],
+                'winter': [
+                    "The winter their heating bill dropped in half",
+                    "How one December decision changed their entire year"
+                ]
+            }
+        elif content_type == ContentType.FACT:
+            seasonal_topics = {
+                'spring': [
+                    "Homes get dirtiest during seasonal transitions because humidity spikes",
+                    "Clothes discolor faster when your closet airflow is blocked",
+                ],
+                'summer': [
+                    "Summer spending increases by 30% on average",
+                    "Vacation costs rise 40% during peak summer months",
+                ],
+                'autumn': [
+                    "Holiday spending starts in September, not December",
+                    "Year-end bonuses are spent before they arrive",
+                ],
+                'winter': [
+                    "Heating costs can double during cold winters",
+                    "Holiday spending accounts for 20% of annual expenses",
+                ]
+            }
+        elif content_type == ContentType.SHORT_STORY:
+            seasonal_topics = {
+                'spring': [
+                    "Decluttering one closet erased my morning panic",
+                    "Controlling humidity removed that strange smell overnight",
+                ],
+                'summer': [
+                    "How a summer budget saved my fall",
+                    "The summer habit that changed everything",
+                ],
+                'autumn': [
+                    "The autumn decision that saved my year",
+                    "How September planning changed my December",
+                ],
+                'winter': [
+                    "The winter routine that transformed my spring",
+                    "How December choices shaped my January",
+                ]
+            }
+        elif content_type == ContentType.MEDITATION:
+            seasonal_topics = {
+                'spring': ["A seasonal refresh you can do right now"],
+                'summer': ["A seasonal refresh you can do right now"],
+                'autumn': ["A seasonal refresh you can do right now"],
+                'winter': ["A seasonal refresh you can do right now"]
+            }
+        elif content_type == ContentType.BREATHING:
+            seasonal_topics = {
+                'spring': ["A seasonal refresh you can do right now"],
+                'summer': ["A seasonal refresh you can do right now"],
+                'autumn': ["A seasonal refresh you can do right now"],
+                'winter': ["A seasonal refresh you can do right now"]
+            }
+        
+        return seasonal_topics.get(season.lower(), [])
+    
+    def _generate_ai_topics_from_trends(
+        self,
+        content_type: ContentType,
+        language: str = 'en'
+    ) -> List[str]:
+        """
+        트렌드 키워드를 기반으로 AI가 새로운 주제 생성
+        
+        Args:
+            content_type: 콘텐츠 타입
+            language: 언어 ('en' 또는 'ko')
+        
+        Returns:
+            생성된 주제 리스트
+        """
+        try:
+            from src.analytics.trend_collector import TrendCollector
+            
+            # 캐시 파일 경로
+            cache_file = os.path.join(
+                config.TEMP_DIR, 
+                f'ai_topics_cache_{content_type.value}_{language}.json'
+            )
+            cache_duration = 12 * 3600  # 12시간 캐시 (트렌드 주제보다 더 자주 업데이트)
+            
+            # 캐시 확인
+            if os.path.exists(cache_file):
+                import json
+                import time
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    cache_data = json.load(f)
+                    cache_time = cache_data.get('timestamp', 0)
+                    if time.time() - cache_time < cache_duration:
+                        topics = cache_data.get('topics', [])
+                        if topics:
+                            print(f"📊 캐시된 AI 생성 주제 {len(topics)}개 사용")
+                            return topics
+            
+            # 트렌드 키워드 수집
+            collector = TrendCollector()
+            keywords = collector.collect_trending_keywords(
+                max_videos=30,
+                min_views=5000,
+                top_n=15
+            )
+            
+            if not keywords:
+                print("⚠️ 트렌드 키워드가 없어 AI 주제 생성을 건너뜁니다.")
+                return []
+            
+            # AI로 주제 생성
+            generated_topics = collector.generate_topics_from_trends(
+                keywords=keywords,
+                content_type=content_type.value,
+                num_topics=10,
+                language=language
+            )
+            
+            # 품질 검증 및 필터링
+            validated_topics = []
+            existing_topics = self._get_all_existing_topics(content_type)
+            
+            for topic in generated_topics:
+                validation = collector.validate_topic_quality(
+                    topic=topic,
+                    existing_topics=existing_topics
+                )
+                if validation['is_valid']:
+                    validated_topics.append(topic)
+                    print(f"   ✅ 주제 검증 통과: {topic[:50]}... (점수: {validation['score']})")
+                else:
+                    print(f"   ❌ 주제 검증 실패: {topic[:50]}... (점수: {validation['score']}, 이유: {', '.join(validation['reasons'])})")
+            
+            # 캐시 저장
+            if validated_topics:
+                os.makedirs(config.TEMP_DIR, exist_ok=True)
+                import json
+                import time
+                with open(cache_file, 'w', encoding='utf-8') as f:
+                    json.dump({
+                        'timestamp': time.time(),
+                        'topics': validated_topics
+                    }, f, ensure_ascii=False, indent=2)
+                print(f"✅ AI 생성 주제 {len(validated_topics)}개 검증 완료 및 캐시 저장")
+            
+            return validated_topics
+            
+        except Exception as e:
+            print(f"⚠️ AI 주제 생성 실패: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+    
+    def _get_all_existing_topics(self, content_type: ContentType) -> List[str]:
+        """기존 주제 풀에서 모든 주제 가져오기 (중복 확인용)"""
+        all_topics = []
+        
+        # HIGH_PERFORMING_TOPICS에서 주제 가져오기
+        high_performing = self._get_high_performing_topics(content_type)
+        all_topics.extend(high_performing)
+        
+        # _generate_topic의 topics 리스트에서 주제 가져오기 (하드코딩된 주제들)
+        # 이 부분은 동적으로 가져올 수 없으므로, 주요 주제만 포함
+        # 실제로는 데이터베이스나 파일에서 관리하는 것이 좋지만, 현재는 이렇게 처리
+        
+        return all_topics
+    
     def _select_topic_with_strategy(
         self,
         global_topics: List[str],
         seasonal_topics: List[str],
-        performance_topics: List[str]
+        performance_topics: List[str],
+        youtube_trending_topics: List[str] = None
     ) -> Tuple[str, Optional[str]]:
         """TREND_MODE 여부에 따라 주제 선택 전략을 적용."""
         global_pool = [topic for topic in global_topics if topic]
         seasonal_pool = [topic for topic in seasonal_topics if topic]
         performance_pool = [topic for topic in performance_topics if topic]
+        trending_pool = [topic for topic in (youtube_trending_topics or []) if topic]
 
         if getattr(config, 'TREND_MODE', False):
             pools: List[Tuple[List[str], str]] = []
@@ -211,12 +584,19 @@ class AIVideoGenerator:
                     pools.append((pool, source))
                     weights.append(weight)
 
-            add_pool(global_pool, 'global_trend', self.TREND_WEIGHTS['global'])
+            # YouTube 트렌드가 있으면 글로벌 트렌드에 포함
+            if trending_pool:
+                # YouTube 트렌드와 글로벌 풀을 합침
+                combined_global = list(dict.fromkeys(global_pool + trending_pool))
+                add_pool(combined_global, 'youtube_trend', self.TREND_WEIGHTS['global'])
+            else:
+                add_pool(global_pool, 'global_trend', self.TREND_WEIGHTS['global'])
+            
             add_pool(seasonal_pool, 'seasonal', self.TREND_WEIGHTS['seasonal'])
             add_pool(performance_pool, 'performance', self.TREND_WEIGHTS['performance'])
 
             exploration_candidates = list(dict.fromkeys(
-                global_pool + seasonal_pool + performance_pool))
+                (trending_pool if trending_pool else global_pool) + seasonal_pool + performance_pool))
             exploration_pool = exploration_candidates or global_pool or seasonal_pool or performance_pool
             add_pool(exploration_pool, 'exploration', self.TREND_WEIGHTS['exploration'])
 
@@ -228,7 +608,7 @@ class AIVideoGenerator:
         if seasonal_pool and random.random() < 0.25:
             return random.choice(seasonal_pool), 'seasonal'
 
-        fallback_pool = global_pool or performance_pool or seasonal_pool
+        fallback_pool = trending_pool or global_pool or performance_pool or seasonal_pool
         if not fallback_pool:
             return "Momentum reset routine", 'global_trend'
         return random.choice(fallback_pool), 'global_trend'
@@ -425,11 +805,13 @@ class AIVideoGenerator:
             language: 언어 코드 ('ko' 또는 'en', 기본값: 'ko')
         
         Returns:
-            (생성된 영상 파일 경로, 스크립트 리스트, 주제) 튜플
+            (생성된 영상 파일 경로, 스크립트 리스트, 주제, 주제 출처) 튜플
         """
+        topic_source = None  # 주제 출처 초기화
+        
         # 주제가 없으면 AI로 새로운 주제 생성 (템플릿 사용 안 함)
         if not topic:
-            topic, content_type = self._generate_topic(
+            topic, topic_source = self._generate_topic(
                 content_type=content_type)
         else:
             # 주제가 주어진 경우 콘텐츠 타입 자동 감지
@@ -742,21 +1124,76 @@ class AIVideoGenerator:
 
         seasonal_list = seasonal_topics.get(current_season, [])
         performance_topics = self._get_high_performing_topics(content_type)
+        
+        # YouTube 트렌드 주제 가져오기 (TREND_MODE일 때만)
+        youtube_trending_topics = []
+        ai_generated_topics = []
+        ai_seasonal_topics = []
+        
+        if getattr(config, 'TREND_MODE', False):
+            try:
+                youtube_trending_topics = self._get_youtube_trending_topics()
+                
+                # AI 기반 주제 생성 (트렌드 키워드 기반)
+                try:
+                    language = 'en'  # 현재 영어 콘텐츠만 생성
+                    ai_generated_topics = self._generate_ai_topics_from_trends(
+                        content_type=content_type,
+                        language=language
+                    )
+                    
+                    # AI 생성 주제를 글로벌 주제 풀에 추가
+                    if ai_generated_topics:
+                        topics.extend(ai_generated_topics)
+                        print(f"📝 AI 생성 주제 {len(ai_generated_topics)}개를 주제 풀에 추가")
+                except Exception as e:
+                    print(f"⚠️ AI 주제 생성 실패: {e}")
+                
+                # 계절별 AI 주제 생성 (트렌드 키워드 기반)
+                try:
+                    ai_seasonal_topics = self._generate_seasonal_topics_from_trends(
+                        season=current_season,
+                        content_type=content_type,
+                        language=language
+                    )
+                    
+                    # AI 생성 계절별 주제를 계절별 주제 풀에 추가
+                    if ai_seasonal_topics:
+                        seasonal_list.extend(ai_seasonal_topics)
+                        print(f"🍂 {current_season} 계절 AI 생성 주제 {len(ai_seasonal_topics)}개를 계절별 주제 풀에 추가")
+                except Exception as e:
+                    print(f"⚠️ 계절별 AI 주제 생성 실패: {e}")
+                    
+            except Exception as e:
+                print(f"⚠️ YouTube 트렌드 주제 가져오기 실패: {e}")
 
         topic, source = self._select_topic_with_strategy(
             global_topics=topics,
             seasonal_topics=seasonal_list,
-            performance_topics=performance_topics
+            performance_topics=performance_topics,
+            youtube_trending_topics=youtube_trending_topics
         )
+        
+        # AI 생성 주제가 선택되었는지 확인
+        if topic in ai_generated_topics:
+            source = 'ai_generated'
+        elif topic in ai_seasonal_topics:
+            source = 'ai_seasonal'
 
         if source == 'seasonal':
             print(f"🍂 계절 주제 선택: {current_season} → '{topic}'")
+        elif source == 'ai_seasonal':
+            print(f"🤖🍂 AI 생성 계절 주제 선택: {current_season} → '{topic}'")
         elif source == 'performance':
             print(f"📈 성과 기반 주제 선택: '{topic}'")
         elif source == 'exploration':
             print(f"🎲 탐색 주제 선택: '{topic}'")
+        elif source == 'ai_generated':
+            print(f"🤖 AI 생성 주제 선택: '{topic}'")
+        elif source == 'youtube_trend' and getattr(config, 'TREND_MODE', False):
+            print(f"🌍 YouTube 트렌드 주제 선택: '{topic}'")
         elif source == 'global_trend' and getattr(config, 'TREND_MODE', False):
-            print(f"🌍 트렌드 주제 선택: '{topic}'")
+            print(f"🌍 글로벌 트렌드 주제 선택: '{topic}'")
 
         return topic, content_type
     
@@ -818,7 +1255,7 @@ class AIVideoGenerator:
 - Each sentence should be 3-4 seconds long, write 12-16 sentences total
 - **Strategy: Use the 'Mindset Flip' technique. State a common negative thought in the first sentence and immediately reframe it positively.**
 - **Structure: Ensure the last sentence flows naturally back into the first sentence to create a perfect loop.**
-- **Ending: End with a specific question to engage viewers (e.g., "What is your goal for 2025?") instead of a generic "Subscribe".**
+- **Ending: End with a specific question to engage viewers (e.g., "What is your goal for 2025?") AND a subtle subscription call-to-action (e.g., "Subscribe for daily tips like this" or "Hit subscribe to never miss these insights"). Make it natural and not pushy.**
 - Repeat or emphasize the Hook sentence and add detailed explanations"""
                     max_sentences = 16
                 elif content_type == ContentType.QUOTE:
@@ -829,7 +1266,7 @@ class AIVideoGenerator:
 - Target duration is about 55 seconds with sufficient explanations and practical applications
 - Each sentence should be 3-4 seconds long, write 12-16 sentences total
 - **Structure: Ensure the last sentence flows naturally back into the first sentence to create a perfect loop.**
-- **Ending: End with a specific question to engage viewers (e.g., "Which quote inspires you?") instead of a generic "Subscribe".**
+- **Ending: End with a specific question to engage viewers (e.g., "Which quote inspires you?") AND a subtle subscription call-to-action (e.g., "Subscribe for daily wisdom" or "Hit subscribe for more insights"). Make it natural and not pushy.**
 - Explain the quote in detail and provide practical applications and examples"""
                     max_sentences = 16
                 elif content_type == ContentType.STORY:
@@ -850,7 +1287,7 @@ class AIVideoGenerator:
 - Each sentence should be 3-4 seconds long, write 12-16 sentences total
 - **Strategy: Focus on shocking numbers or 'did you know' facts (e.g., compound interest, time saved).**
 - **Structure: Ensure the last sentence flows naturally back into the first sentence to create a perfect loop.**
-- **Ending: End with a specific question to engage viewers (e.g., "Did you know this?") instead of a generic "Subscribe".**
+- **Ending: End with a specific question to engage viewers (e.g., "Did you know this?") AND a subtle subscription call-to-action (e.g., "Subscribe for daily facts" or "Hit subscribe to learn something new every day"). Make it natural and not pushy.**
 - Explain the fact and include detailed background like why it's amazing, how it was discovered, etc."""
                     max_sentences = 16
                 elif content_type == ContentType.SHORT_STORY:
@@ -881,7 +1318,7 @@ class AIVideoGenerator:
 - 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
 - **전략: '마인드셋 플립(Mindset Flip)' 기법을 사용하세요. 첫 문장에서 흔한 부정적인 생각을 제시하고 즉시 긍정적으로 재해석하세요.**
 - **구조: 마지막 문장이 첫 문장과 자연스럽게 이어지도록 '루프(Loop)' 구조로 작성하세요.**
-- **엔딩: "구독하세요" 대신 구체적인 질문으로 끝맺어 댓글을 유도하세요 (예: "당신의 2025년 목표는 무엇인가요?").**
+- **엔딩: 구체적인 질문으로 끝맺어 댓글을 유도하고 (예: "당신의 2025년 목표는 무엇인가요?"), 자연스럽게 구독을 유도하세요 (예: "매일 이런 팁을 받으려면 구독해주세요" 또는 "더 많은 인사이트를 놓치지 않으려면 구독 버튼을 눌러주세요"). 강요하지 않고 자연스럽게.**
 - Hook 문장을 반복하거나 강조하고, 자세한 설명을 추가하세요"""
                     max_sentences = 16
                 elif content_type == ContentType.QUOTE:
@@ -892,7 +1329,7 @@ class AIVideoGenerator:
 - 목표는 약 55초 분량이며, 충분한 설명과 실생활 적용법을 포함하세요
 - 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
 - **구조: 마지막 문장이 첫 문장과 자연스럽게 이어지도록 '루프(Loop)' 구조로 작성하세요.**
-- **엔딩: "구독하세요" 대신 구체적인 질문으로 끝맺어 댓글을 유도하세요.**
+- **엔딩: 구체적인 질문으로 끝맺어 댓글을 유도하고, 자연스럽게 구독을 유도하세요 (예: "매일 이런 명언을 받으려면 구독해주세요"). 강요하지 않고 자연스럽게.**
 - 명언을 자세히 설명하고 실생활 적용법과 예시를 제시하세요"""
                     max_sentences = 16
                 elif content_type == ContentType.STORY:
@@ -913,7 +1350,7 @@ class AIVideoGenerator:
 - 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
 - **전략: 충격적인 숫자나 통계(복리 효과, 절약된 시간 등)에 집중하세요.**
 - **구조: 마지막 문장이 첫 문장과 자연스럽게 이어지도록 '루프(Loop)' 구조로 작성하세요.**
-- **엔딩: "구독하세요" 대신 구체적인 질문으로 끝맺어 댓글을 유도하세요.**
+- **엔딩: 구체적인 질문으로 끝맺어 댓글을 유도하고 (예: "이 사실을 알고 계셨나요?"), 자연스럽게 구독을 유도하세요 (예: "매일 새로운 팩트를 배우려면 구독해주세요"). 강요하지 않고 자연스럽게.**
 - 팩트를 설명하고 왜 놀라운지, 어떻게 발견되었는지 등 자세한 배경을 포함하세요"""
                     max_sentences = 16
                 elif content_type == ContentType.SHORT_STORY:
@@ -3059,7 +3496,7 @@ class AIVideoGenerator:
             config.THUMBNAIL_OUTPUT_DIR,
             f"thumb_{timestamp}.jpg")
 
-        # DALL-E 3로 썸네일 이미지 생성 시도
+        # DALL-E 3로 썸네일 이미지 생성 시도 (OpenAI API 사용)
         dalle_img = self._generate_thumbnail_with_dalle3(
             title, topic, script, language=language)
 
@@ -3135,7 +3572,7 @@ class AIVideoGenerator:
         
         draw = ImageDraw.Draw(img)
         
-        # 1. 상단에 "SHORTS" 배지 추가
+        # 1. 상단에 "SHORTS" 배지 추가 (왼쪽)
         badge_text = "SHORTS"
         badge_font = font_medium
         badge_bbox = draw.textbbox((0, 0), badge_text, font=badge_font)
@@ -3168,6 +3605,26 @@ class AIVideoGenerator:
         draw.text(
             (badge_x, badge_y), badge_text, fill=(
         255, 255, 255), font=badge_font)
+        
+        # 1-2. 상단에 "SUBSCRIBE" 배지 추가 (오른쪽) - 구독 유도
+        subscribe_text = "SUBSCRIBE" if language == 'en' else "구독하기"
+        subscribe_bbox = draw.textbbox((0, 0), subscribe_text, font=badge_font)
+        subscribe_width = subscribe_bbox[2] - subscribe_bbox[0]
+        subscribe_height = subscribe_bbox[3] - subscribe_bbox[1]
+        subscribe_x = 1080 - subscribe_width - badge_padding - 50  # 오른쪽 정렬
+        subscribe_y = 50
+        
+        # Subscribe 배지 배경 (빨간색, SHORTS와 동일한 스타일)
+        subscribe_bg = Image.new(
+            'RGBA',
+            (subscribe_width + badge_padding * 2, subscribe_height + badge_padding * 2),
+            (255, 0, 0, 230))
+        img.paste(
+            subscribe_bg,
+            (subscribe_x - badge_padding, subscribe_y - badge_padding),
+            subscribe_bg)
+        draw.text(
+            (subscribe_x, subscribe_y), subscribe_text, fill=(255, 255, 255), font=badge_font)
         
         # 2. 하단에 매력적인 텍스트 추가
         # attractive_texts는 (main_title, sub_title) 튜플 또는 (main_title,) 형태

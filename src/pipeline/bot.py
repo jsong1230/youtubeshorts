@@ -219,7 +219,7 @@ class ShortsBot:
             
             # 1. AI로 영상 생성 (길이 자동 조정, 성과 기반 프롬프트 포함, 템플릿 사용)
             print("📹 1단계: AI 영상 생성 중...")
-            video_path, script, generated_topic = self.video_generator.generate_video(
+            result = self.video_generator.generate_video(
                 topic=topic, 
                 duration=None,
                 performance_prompt=performance_prompt,
@@ -227,8 +227,19 @@ class ShortsBot:
                 language=language
             )
             
+            # 반환값 처리 (주제 출처 포함)
+            if len(result) == 4:
+                video_path, script, generated_topic, topic_source = result
+            else:
+                # 이전 버전 호환성
+                video_path, script, generated_topic = result
+                topic_source = None
+            
             # 실제 사용된 주제 (생성된 경우 generated_topic 사용)
             actual_topic = generated_topic if generated_topic else topic
+            
+            # 주제 출처 저장 (주제 데이터베이스 저장 시 사용)
+            self._last_topic_source = self._map_topic_source(topic_source)
             
             # 2. 제목 및 설명 생성
             if actual_topic:
@@ -263,34 +274,123 @@ class ShortsBot:
             else:
                 print("   ⚠️ 경고: 썸네일 생성 실패 (None 반환)")
             
-            description = f"{config.DEFAULT_DESCRIPTION}\n\n"
-            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            description += "📺 영상 정보\n"
-            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            description += f"📅 업로드 날짜: {datetime.now().strftime('%Y년 %m월 %d일')}\n"
-            if topic:
-                description += f"📌 영상 주제: {topic}\n"
-            description += f"⏱️ 영상 길이: 약 55초 (YouTube Shorts 최적화)\n\n"
+            # 채널 정보 가져오기 (구독 링크용)
+            channel_info = None
+            if hasattr(self.uploader, 'get_channel_info'):
+                try:
+                    channel_info = self.uploader.get_channel_info()
+                except Exception as e:
+                    print(f"⚠️ 채널 정보 가져오기 실패: {e}")
             
-            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            description += "💡 이 영상에 대해\n"
-            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            description += "이 영상은 최신 AI 기술을 활용하여 자동으로 생성되었습니다.\n"
-            description += "매일 새로운 주제로 유용한 정보와 실용적인 팁을 제공합니다.\n"
-            description += "생활에 도움이 되는 다양한 콘텐츠를 지속적으로 업로드할 예정입니다.\n\n"
+            # 최근 영상 목록 가져오기 (관련 영상 링크용)
+            recent_videos = []
+            if hasattr(self.uploader, 'get_recent_videos'):
+                try:
+                    recent_videos = self.uploader.get_recent_videos(max_results=3)
+                except Exception as e:
+                    print(f"⚠️ 최근 영상 목록 가져오기 실패: {e}")
             
-            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            description += "🙏 여러분의 참여를 기다립니다\n"
-            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            description += "👍 좋아요: 영상이 도움이 되셨다면 좋아요를 눌러주세요!\n"
-            description += "🔔 구독: 매일 새로운 영상을 받아보시려면 구독해주세요!\n"
-            description += "💬 댓글: 궁금한 점이나 원하시는 주제가 있으시면 댓글로 알려주세요!\n"
-            description += "📤 공유: 친구들과 함께 보시면 더욱 좋습니다!\n\n"
-            
-            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            description += "🏷️ 태그\n"
-            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            description += "#shorts #쇼츠 #ai #인공지능 #자동생성 #유용한정보 #팁 #라이프스타일 #일상 #정보 #꿀팁 #생활정보"
+            # 언어에 따라 설명란 생성
+            if language == 'en':
+                description = f"{config.DEFAULT_DESCRIPTION}\n\n"
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "📺 Video Information\n"
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += f"📅 Upload Date: {datetime.now().strftime('%B %d, %Y')}\n"
+                if topic:
+                    description += f"📌 Topic: {topic}\n"
+                description += f"⏱️ Duration: ~55 seconds (YouTube Shorts optimized)\n\n"
+                
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "💡 About This Video\n"
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "This video was automatically generated using the latest AI technology.\n"
+                description += "We provide useful information and practical tips on new topics every day.\n"
+                description += "We will continue to upload diverse content that helps improve your daily life.\n\n"
+                
+                # 구독 유도 섹션 강화
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "🔔 SUBSCRIBE NOW - Don't Miss Daily Content!\n"
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                if channel_info and channel_info.get('channel_url'):
+                    description += f"👉 Subscribe here: {channel_info['channel_url']}\n\n"
+                description += "Why subscribe?\n"
+                description += "✅ Daily new videos with practical tips\n"
+                description += "✅ Finance, productivity, and lifestyle content\n"
+                description += "✅ Short, actionable advice (under 1 minute)\n"
+                description += "✅ AI-powered insights you can use today\n\n"
+                
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "🙏 Your Engagement Matters\n"
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "👍 LIKE: If this video helped you, please hit the like button!\n"
+                description += "🔔 SUBSCRIBE: Get notified when we upload new videos daily!\n"
+                description += "💬 COMMENT: Share your thoughts or suggest topics you'd like to see!\n"
+                description += "📤 SHARE: Help others discover this content by sharing!\n\n"
+                
+                # 관련 영상 링크 추가
+                if recent_videos:
+                    description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    description += "📚 More Videos You Might Like\n"
+                    description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    for i, video in enumerate(recent_videos[:3], 1):
+                        description += f"{i}. {video['title']}\n"
+                        description += f"   👉 {video['url']}\n\n"
+                
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "🏷️ Tags\n"
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "#shorts #finance #productivity #lifestyle #tips #money #investing #selfimprovement #ai #automation"
+            else:
+                description = f"{config.DEFAULT_DESCRIPTION}\n\n"
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "📺 영상 정보\n"
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += f"📅 업로드 날짜: {datetime.now().strftime('%Y년 %m월 %d일')}\n"
+                if topic:
+                    description += f"📌 영상 주제: {topic}\n"
+                description += f"⏱️ 영상 길이: 약 55초 (YouTube Shorts 최적화)\n\n"
+                
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "💡 이 영상에 대해\n"
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "이 영상은 최신 AI 기술을 활용하여 자동으로 생성되었습니다.\n"
+                description += "매일 새로운 주제로 유용한 정보와 실용적인 팁을 제공합니다.\n"
+                description += "생활에 도움이 되는 다양한 콘텐츠를 지속적으로 업로드할 예정입니다.\n\n"
+                
+                # 구독 유도 섹션 강화
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "🔔 지금 구독하세요 - 매일 새로운 콘텐츠를 놓치지 마세요!\n"
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                if channel_info and channel_info.get('channel_url'):
+                    description += f"👉 구독하기: {channel_info['channel_url']}\n\n"
+                description += "구독하면 좋은 이유:\n"
+                description += "✅ 매일 새로운 실용적인 팁 영상\n"
+                description += "✅ 재태크, 생산성, 라이프스타일 콘텐츠\n"
+                description += "✅ 짧고 실행 가능한 조언 (1분 이내)\n"
+                description += "✅ 오늘 바로 써먹을 수 있는 AI 인사이트\n\n"
+                
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "🙏 여러분의 참여를 기다립니다\n"
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "👍 좋아요: 영상이 도움이 되셨다면 좋아요를 눌러주세요!\n"
+                description += "🔔 구독: 매일 새로운 영상을 받아보시려면 구독해주세요!\n"
+                description += "💬 댓글: 궁금한 점이나 원하시는 주제가 있으시면 댓글로 알려주세요!\n"
+                description += "📤 공유: 친구들과 함께 보시면 더욱 좋습니다!\n\n"
+                
+                # 관련 영상 링크 추가
+                if recent_videos:
+                    description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    description += "📚 더 많은 영상 보기\n"
+                    description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    for i, video in enumerate(recent_videos[:3], 1):
+                        description += f"{i}. {video['title']}\n"
+                        description += f"   👉 {video['url']}\n\n"
+                
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "🏷️ 태그\n"
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "#shorts #쇼츠 #ai #인공지능 #자동생성 #유용한정보 #팁 #라이프스타일 #일상 #정보 #꿀팁 #생활정보"
             
             # 4. 멀티 플랫폼 업로드 또는 YouTube 업로드
             print("\n📤 2단계: 플랫폼 업로드 중...")
@@ -329,6 +429,37 @@ class ShortsBot:
                 script=None  # 향후 추가 가능
             )
             
+            # 주제 데이터베이스에 주제 저장
+            try:
+                from src.pipeline.topic_database import TopicDatabase, TopicSource
+                topic_db = TopicDatabase()
+                
+                # 주제 출처 결정
+                source = TopicSource.MANUAL.value
+                if hasattr(self, '_last_topic_source'):
+                    source = self._last_topic_source
+                
+                # 주제 추가 (없으면 생성)
+                topic_id = topic_db.add_topic(
+                    topic=actual_topic,
+                    content_type=content_type.value if content_type else 'auto',
+                    source=source,
+                    season=self.video_generator._get_season() if hasattr(self.video_generator, '_get_season') else None
+                )
+                
+                # 주제-영상 연결 (초기 통계는 0)
+                if topic_id:
+                    topic_db.link_topic_to_video(
+                        topic=actual_topic,
+                        video_id=video_id,
+                        views=0,
+                        likes=0,
+                        comments=0
+                    )
+                    print(f"✅ 주제 데이터베이스에 저장 완료: {actual_topic[:50]}...")
+            except Exception as e:
+                print(f"⚠️ 주제 데이터베이스 저장 실패: {e}")
+            
             # 6. 동기화 상태 업데이트
             print("\n🔄 동기화 상태 업데이트 중...")
             self.sync_manager.record_upload(
@@ -355,6 +486,31 @@ class ShortsBot:
                 upload_date=datetime.now().isoformat()
             )
             
+            # 주제 출처를 TopicSource enum 값으로 매핑하는 헬퍼 메서드
+    def _map_topic_source(self, source: str) -> str:
+        """
+        주제 출처 문자열을 TopicSource enum 값으로 매핑
+        
+        Args:
+            source: 주제 출처 문자열 ('seasonal', 'performance', 'exploration', 'ai_generated', 'ai_seasonal', 'youtube_trend', 'global_trend' 등)
+        
+        Returns:
+            TopicSource enum 값
+        """
+        from src.pipeline.topic_database import TopicSource
+        
+        mapping = {
+            'seasonal': TopicSource.SEASONAL.value,
+            'ai_seasonal': TopicSource.SEASONAL_AI.value,
+            'ai_generated': TopicSource.AI_GENERATED.value,
+            'youtube_trend': TopicSource.TREND.value,
+            'global_trend': TopicSource.TREND.value,
+            'performance': TopicSource.PERFORMANCE.value,
+            'exploration': TopicSource.MANUAL.value,  # 탐색은 수동으로 간주
+        }
+        
+        return mapping.get(source, TopicSource.MANUAL.value)
+    
             # 7. 통계 업데이트
             stats = self.uploader.get_video_stats(video_id)
             if stats:
