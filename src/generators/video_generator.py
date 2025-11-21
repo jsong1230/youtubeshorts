@@ -1586,9 +1586,9 @@ class AIVideoGenerator:
                                 sentence, actual_audio_duration, language=language)
                             if subtitle_clip:
                                 # 자막 클립의 duration을 정확히 음성 길이로 설정
-                                subtitle_clip = subtitle_clip.set_duration(
-                                    actual_audio_duration)
-
+                                subtitle_clip = subtitle_clip.set_duration(actual_audio_duration)
+                                if getattr(subtitle_clip, "pos", None) is None:
+                                    subtitle_clip = subtitle_clip.set_position(('center', 'bottom'))
                                 # 자막 클립의 시작 시간을 명시적으로 0으로 설정 (동기화 보장)
                                 # 중요: CompositeVideoClip에 추가하기 전에 시작 시간을 0으로
                                 # 명시적으로 설정
@@ -3612,7 +3612,9 @@ Format: First line only or "First line / Second line"
             font_path = None
             # 전체 문장 모드일 때는 폰트 크기를 조금 줄임 (가독성 향상)
             font_size = 60 if subtitle_mode == 'full_sentence' else 80
-
+            # 모바일 UI에 가리지 않도록 추가 오프셋 (대략 3줄 간격)
+            extra_offset = getattr(config, "SUBTITLE_EXTRA_OFFSET", 90)
+            
             if language == 'en':
                 # 영어 폰트 경로 (macOS)
                 for path in [
@@ -3662,11 +3664,11 @@ Format: First line only or "First line / Second line"
                         try:
                             frame = txt_clip.get_frame(0)
                             clip_height = frame.shape[0]
-                            y_pos = 1920 - clip_height - 400
-                            txt_clip = txt_clip.set_position(('center', y_pos))
-                        except BaseException:
-                            txt_clip = txt_clip.set_position(
-                                ('center', 'bottom'))
+                            base_y = 1920 - clip_height - 100
+                            raised_y = max(50, base_y - clip_height - extra_offset)
+                            txt_clip = txt_clip.set_position(('center', raised_y))
+                        except:
+                            txt_clip = txt_clip.set_position(('center', 'bottom'))
                         # 시작 시간을 다시 한 번 명시적으로 0으로 설정 (동기화 보장)
                         txt_clip = txt_clip.set_start(0)
                         # duration 재확인 및 설정 (정확성 보장)
@@ -3808,8 +3810,8 @@ Format: First line only or "First line / Second line"
                 txt_clip = txt_clip.set_duration(duration)
                 # 하단 중앙 위치 (실제 높이 고려, 더 명확하게)
                 actual_height = subtitle_array.shape[0]
-                # 최소 100px, 하단에서 150px 위
-                y_pos = max(100, 1920 - actual_height - 450)
+                base_y = max(100, 1920 - actual_height - 150)
+                y_pos = max(50, base_y - actual_height - extra_offset)
                 txt_clip = txt_clip.set_position(('center', y_pos))
                 # 시작 시간을 다시 한 번 명시적으로 0으로 설정 (동기화 보장)
                 txt_clip = txt_clip.set_start(0)
