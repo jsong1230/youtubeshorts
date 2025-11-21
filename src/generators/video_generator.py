@@ -39,6 +39,8 @@ import config
 from enum import Enum
 from pathlib import Path
 from src.utils.retry_decorator import retry, retry_on_rate_limit
+from .script_generator import ScriptGenerator
+from .media_downloader import MediaDownloader
 
 # 프로젝트 루트 디렉토리
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -55,14 +57,63 @@ except ImportError:
     NEW_TTS_AVAILABLE = False
 
 
-class ContentType(Enum):
-    """콘텐츠 타입"""
-    HOOK = "hook"  # 한국어 속담/관용어 한 문장 학습 (짧고 강한 Hook)
-    QUOTE = "quote"  # AI·비즈니스·명언·지식 한 줄
-    STORY = "story"  # 스토리텔링 (심리/역사/부자습관)
-    FACT = "fact"  # 숏폼 팩트 기반 영상
-    SHORT_STORY = "short_story"  # AI 이미지 기반 짧은 스토리
-    AUTO = "auto"  # 자동 선택
+from .content_type import ContentType
+
+# 상수 정의
+class VideoConstants:
+    """영상 생성 관련 상수"""
+    # 해상도
+    VIDEO_WIDTH = 1080
+    VIDEO_HEIGHT = 1920
+    VIDEO_FPS = 30
+    
+    # 영상 길이
+    MIN_DURATION = 15  # 최소 길이 (초)
+    MAX_DURATION = 60  # 최대 길이 (초)
+    MAX_SAFE_DURATION = 58  # 안전 마진 (초)
+    TARGET_DURATION = 55  # 목표 길이 (초)
+    
+    # 페이드 효과
+    DEFAULT_FADE_DURATION = 0.5  # 기본 페이드 길이 (초)
+    FADE_RATIO = 0.1  # 페이드 비율 (duration의 10%)
+    
+    # 자막
+    SUBTITLE_BOTTOM_MARGIN = 150  # 하단 여백 (px)
+    SUBTITLE_PADDING = 40  # 자막 배경 패딩 (px)
+    SUBTITLE_MAX_WIDTH = 900  # 자막 최대 너비 (px)
+    SUBTITLE_BACKGROUND_ALPHA = 200  # 자막 배경 투명도
+    
+    # 폰트
+    BASE_FONT_SIZE = 100
+    FONT_SIZES = [90, 80, 70, 60]  # 폰트 크기 옵션
+    LINE_SPACING = 50  # 줄 간격 (px)
+    
+    # 배경 그룹
+    BACKGROUND_GROUP_SIZE = 2  # 배경 변경 주기 (문장 수)
+    
+    # 영상 품질
+    MIN_VIDEO_DURATION = 1.0  # 최소 영상 길이 (초)
+    MIN_VIDEO_HEIGHT = 480  # 최소 영상 높이 (px)
+    PREFERRED_VIDEO_HEIGHT = 1080  # 선호 영상 높이 (px)
+    
+    # 프레임 분석
+    FRAME_CHECK_THRESHOLD = 20  # 프레임 차이 임계값
+    MIN_BRIGHTNESS = 30  # 최소 밝기
+    MAX_BRIGHTNESS = 220  # 최대 밝기
+    MIN_CONTRAST = 20  # 최소 대비
+    
+    # 배경 음악
+    DEFAULT_MUSIC_VOLUME = 0.25  # 기본 음악 볼륨
+    MUSIC_FADE_RATIO = 0.1  # 음악 페이드 비율
+    
+    # 썸네일
+    THUMBNAIL_FRAME_RATIO = 0.35  # 썸네일 프레임 추출 비율 (30-40%)
+    THUMBNAIL_BLUR_RADIUS = 20  # 블러 반경
+    THUMBNAIL_BOTTOM_REGION = 0.7  # 하단 영역 비율
+    
+    # 확장 시간
+    EXTENSION_DURATION = 0.5  # 영상 확장 단위 (초)
+    FINAL_CLIP_EXTENSION = 0.5  # 마지막 클립 확장 (초)
 
 
 class AIVideoGenerator:
@@ -163,6 +214,20 @@ class AIVideoGenerator:
                 self.tts_engine = None
         else:
             self.tts_engine = None
+        
+        # 스크립트 생성기 초기화
+        self.script_generator = ScriptGenerator(
+            openai_client=self.openai_client,
+            claude_client=self.claude_client,
+            ai_provider=self.ai_provider
+        )
+        
+        # 미디어 다운로더 초기화
+        self.media_downloader = MediaDownloader(
+            openai_client=self.openai_client,
+            http_get_with_retry=self._http_get_with_retry,
+            api_call_with_retry=self._api_call_with_retry
+        )
         
         # 출력 디렉토리 생성
         os.makedirs(config.VIDEO_OUTPUT_DIR, exist_ok=True)
@@ -638,68 +703,8 @@ class AIVideoGenerator:
             return "Momentum reset routine", 'global_trend'
         return random.choice(fallback_pool), 'global_trend'
     
-    def _build_default_script(
-        self,
-        topic: str,
-        language: str = 'en',
-        target_sentences: int = 12) -> list:
-        """AI 생성 실패 시 주제 기반 기본 스크립트를 생성."""
-        topic = (topic or "").strip()
-        topic_placeholder = topic if topic else (
-            "success" if language == 'en' else "성공")
-        keywords = [
-            part.strip()
-            for part in re.split(r'[,/&]| and ', topic_placeholder)
-            if part.strip()
-        ]
-        focus = keywords[0] if keywords else topic_placeholder
-
-        if language == 'en':
-            base_lines = [
-                f"Let's break down {topic_placeholder} in a way you can apply today.",
-                f"This matters because {focus} only becomes real when you take daily action.",
-                f"Define what {topic_placeholder} means for your lifestyle and money goals.",
-                f"Track one metric tied to {focus} so you can see progress every day.",
-                f"Study a real example of {topic_placeholder} and copy the first three moves.",
-                f"Protect your time because {focus} rewards deep focus, not random effort.",
-                f"Invest in skills that multiply how fast you can execute {topic_placeholder}.",
-                f"Limit distractions so your brain connects directly with your {focus} target.",
-                f"Build a simple routine: research, decide, take one action about {topic_placeholder}.",
-                f"Review last week's choices and grade how each one supported {focus}.",
-                f"Share your plan with one ally so you stay accountable for {topic_placeholder}.",
-                f"Automate repetitive steps and save energy for creative {focus} decisions.",
-                f"Celebrate micro-wins tied to {topic_placeholder}; momentum keeps you consistent.",
-                f"Replace fear with data—track experiments related to {focus} and learn fast.",
-                f"Think bigger each week; ask how {topic_placeholder} can upgrade your future self.",
-                f"Take one bold action right now that proves you own {focus}.",
-                f"Visualize the lifestyle unlocked by {topic_placeholder} and let that guide today.",
-                f"Remember every master of {focus} started small but stayed in motion."]
-        else:
-            base_lines = [
-                f"오늘은 {topic_placeholder}를 생활 속에서 실천하는 방법을 이야기합니다.",
-                f"{focus}는 매일 행동할 때만 현실이 되므로 지금 이유를 분명히 하세요.",
-                f"{topic_placeholder}가 내 삶과 수입에서 무엇을 의미하는지 먼저 정의하세요.",
-                f"{focus}와 연결된 지표를 하나 정해 매일 변화를 숫자로 확인하세요.",
-                f"{topic_placeholder} 성공 사례를 찾아 처음 세 가지 동작을 그대로 따라 해보세요.",
-                f"집중력을 지키세요. {focus}는 우연이 아니라 깊은 집중에서 탄생합니다.",
-                f"{topic_placeholder}를 실행할 수 있는 역량에 투자해 복리를 만들어 주세요.",
-                f"잡음을 줄여 두뇌가 {focus} 목표와 직접 연결되도록 환경을 정리하세요.",
-                f"연구-결정-실행으로 이어지는 간단한 루틴을 만들어 {topic_placeholder}를 습관화하세요.",
-                f"지난주 선택을 되돌아보며 각각이 {focus}에 어떻게 기여했는지 적어보세요.",
-                f"주변 한 사람에게 계획을 공유하고 {topic_placeholder} 실천을 약속하세요.",
-                f"반복적인 일은 자동화해 {focus}와 관련된 창의적 판단에 에너지를 쓰세요.",
-                f"{topic_placeholder}와 연결된 작은 성과를 축하하고 꾸준함을 유지하세요.",
-                f"두려움 대신 데이터를 선택하고 {focus}와 관련된 실험을 추적하며 배우세요.",
-                f"매주 질문하세요. {topic_placeholder}가 내 미래를 어떻게 바꿀 수 있을까?",
-                f"지금 당장 {focus}를 증명할 과감한 행동을 하나 실행하며 마무리하세요.",
-                f"{topic_placeholder}가 열어줄 라이프스타일을 구체적으로 상상하고 오늘을 설계하세요.",
-                f"{focus}의 달인도 작은 걸음에서 시작했지만 멈추지 않았음을 기억하세요."
-            ]
-
-        if target_sentences <= 0:
-            return []
-        return base_lines[:target_sentences]
-
+    # _build_default_script 메서드는 script_generator.py로 이동됨
+    
     def _prepare_thumbnail_canvas(self,
                                   thumbnail_path: str,
                                   target_size: Tuple[int,
@@ -846,8 +851,9 @@ class AIVideoGenerator:
                 content_type = ContentType(content_type_str.lower())
             except ValueError:
                 content_type = ContentType.AUTO
+        content_type_str = content_type.value if content_type else 'auto'
         print(
-            f"📹 영상 생성 시작: '{topic}' (타입: {content_type.value}, 언어: {language})")
+            f"📹 영상 생성 시작: '{topic}' (타입: {content_type_str}, 언어: {language})")
 
         # 영상 스크립트 생성 (55초 목표, 매번 새로운 아이디어로 생성)
         script = self._generate_script(
@@ -876,8 +882,9 @@ class AIVideoGenerator:
                 print(
                     f"📝 스크립트가 짧아서 더 긴 내용 생성 필요 (현재: {calculated_duration:.1f}초, 목표: {target_duration}초)")
 
+            content_type_str_for_log = content_type.value if content_type else 'auto'
             print(
-                f"📏 스크립트 기반 자동 길이: {duration}초 ({len(script)}개 문장, 목표: {target_duration}초, 타입: {content_type.value})")
+                f"📏 스크립트 기반 자동 길이: {duration}초 ({len(script)}개 문장, 목표: {target_duration}초, 타입: {content_type_str_for_log})")
         
         # 영상 생성
         video_path = self._create_video_from_script(
@@ -1229,875 +1236,13 @@ class AIVideoGenerator:
         content_type: ContentType = None,
         language: str = 'ko') -> list:
         """AI로 영상 스크립트 생성 (콘텐츠 타입별 최적화)"""
-        # Claude API 사용
-        if self.ai_provider == 'claude' and self.claude_client:
-            return self._generate_script_with_claude(
-                topic, performance_prompt, content_type, language)
-        # OpenAI API 사용
-        elif self.openai_client:
-            return self._generate_script_with_openai(
-                topic, performance_prompt, content_type, language)
+        return self.script_generator.generate_script(
+            topic, performance_prompt, content_type, language
+        )
 
-        # AI 생성이 성공하지 못한 경우
-        if not self.openai_client and not self.claude_client:
-            print(f"⚠️ AI 클라이언트가 없어 기본 스크립트를 사용합니다.")
-            return self._build_default_script(topic, language=language)
+    # _generate_script_with_claude 메서드는 script_generator.py로 이동됨
 
-        # 이 코드는 실행되지 않아야 하지만 안전을 위해 추가
-        return self._build_default_script(topic, language=language)
-
-    def _generate_script_with_claude(
-        self,
-        topic: str,
-        performance_prompt: str = None,
-        content_type: ContentType = None,
-        language: str = 'ko') -> list:
-        """Claude API로 영상 스크립트 생성 (콘텐츠 타입별 최적화)"""
-        if not self.claude_client:
-            print(f"⚠️ Claude 클라이언트가 없습니다.")
-            return self._build_default_script(topic, language=language)
-
-        try:
-            # 콘텐츠 타입별 설정 (55초 목표로 충분한 내용 생성)
-            if content_type is None:
-                content_type_str = getattr(config, 'CONTENT_TYPE', 'auto')
-                try:
-                    content_type = ContentType(content_type_str.lower())
-                except ValueError:
-                    content_type = ContentType.AUTO
-
-            # 타입별 시스템 프롬프트 구성 (모두 55초 목표)
-            target_duration = config.SHORTS_TARGET_DURATION  # 55초
-
-            if language == 'en':
-                # 영어 프롬프트
-                if content_type == ContentType.HOOK:
-                    system_prompt = """You are an expert YouTube Shorts script writer for Hook videos specializing in finance, productivity, and self-improvement content.
-
-**HOOK CREATION (First 3 seconds - CRITICAL):**
-- Create a powerful, attention-grabbing Hook that triggers curiosity, fear of missing out, or emotional connection
-- Use one of these proven Hook patterns:
-  1. "Mindset Flip": State a common negative belief, then immediately reframe it positively (e.g., "You think saving money means sacrificing happiness. Here's why that's backwards.")
-  2. "Shocking Number": Lead with a surprising statistic (e.g., "Most people waste $1,500 every December without realizing it.")
-  3. "Contrarian Statement": Challenge conventional wisdom (e.g., "The richest people don't work harder. They work differently.")
-  4. "Personal Revelation": Share a transformative realization (e.g., "I thought I was broke until I tracked where my money actually went.")
-- The Hook must be specific, relatable, and create an immediate "I need to know more" feeling
-
-**CONTENT STRUCTURE (55 seconds total):**
-- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
-- Each sentence should be 3-4 seconds long, write 12-16 sentences total
-- **Opening (0-10 seconds)**: Hook + immediate context setting
-- **Body (10-45 seconds)**: 
-  * Explain the core concept with concrete examples
-  * Use specific numbers, percentages, or timeframes when possible
-  * Include relatable scenarios (e.g., "Imagine you save $5 a day...")
-  * Address common objections or misconceptions
-- **Closing (45-55 seconds)**:
-  * Reinforce the main message
-  * Provide one actionable takeaway
-  * End with a specific, engaging question (e.g., "What's one financial habit you want to change this year?")
-  * Include a natural subscription CTA (e.g., "Subscribe for daily money tips" or "Hit subscribe to never miss these insights")
-
-**WRITING STYLE:**
-- Use active voice and short, punchy sentences
-- Create emotional resonance through relatable scenarios
-- Use power words: "transform", "reveal", "discover", "unlock", "master"
-- Avoid generic phrases - be specific and concrete
-- Create a "loop" structure where the ending connects back to the opening Hook naturally
-
-**EXAMPLES OF STRONG HOOKS:**
-- "Why your salary alone will never make you wealthy" → Explain wealth-building systems
-- "The one habit that separates summer savers from summer spenders" → Reveal the specific habit
-- "Rich people refuse to make this one impulse purchase" → Explain what it is and why"""
-                    max_sentences = 16
-                elif content_type == ContentType.QUOTE:
-                    system_prompt = """You are an expert YouTube Shorts script writer for quote/knowledge videos specializing in finance, productivity, and self-improvement.
-
-**QUOTE PRESENTATION (First 3 seconds - CRITICAL):**
-- Lead with a powerful, memorable quote or insight that resonates emotionally
-- Choose quotes that are:
-  * Actionable (not just inspirational)
-  * Counter-intuitive or thought-provoking
-  * Specific to finance, productivity, or personal growth
-- Examples of strong opening quotes:
-  * "Wealth is built by structure, not random savings."
-  * "Time in the market beats timing the market."
-  * "The moment you track spending, new options appear."
-
-**CONTENT STRUCTURE (55 seconds total):**
-- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
-- Each sentence should be 3-4 seconds long, write 12-16 sentences total
-- **Opening (0-8 seconds)**: Present the quote with emphasis
-- **Body (8-48 seconds)**:
-  * Break down the quote's meaning in simple terms
-  * Explain why it matters (the "so what" factor)
-  * Provide 2-3 concrete, real-world examples
-  * Show how to apply it practically (actionable steps)
-  * Address common misconceptions about the concept
-- **Closing (48-55 seconds)**:
-  * Reinforce the core message
-  * End with a reflective question (e.g., "Which financial principle changed your perspective?")
-  * Include a natural subscription CTA (e.g., "Subscribe for daily wisdom" or "Hit subscribe for more insights")
-
-**WRITING STYLE:**
-- Make abstract concepts concrete through examples
-- Use analogies to explain complex ideas
-- Connect the quote to daily life situations
-- Show the transformation or outcome of applying the quote
-- Create a "loop" structure where the ending connects back to the opening quote"""
-                    max_sentences = 16
-                elif content_type == ContentType.STORY:
-                    system_prompt = """You are an expert YouTube Shorts script writer for storytelling videos specializing in finance, productivity, and self-improvement.
-
-**STORY STRUCTURE (55 seconds total - 3-Act Format):**
-- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
-- Each sentence should be 3-4 seconds long, write 12-16 sentences total
-
-**ACT 1: HOOK & SETUP (0-12 seconds)**
-- Start with a powerful, specific opening that creates intrigue
-- Introduce a relatable character or situation
-- Establish the problem or challenge
-- Examples:
-  * "She tracked spending for 60 days and freed $300 every month."
-  * "The employee who grew $250K of assets on a $40K salary."
-  * "A 30-day expense log rebuilt her bank balance."
-
-**ACT 2: DEVELOPMENT & CONFLICT (12-42 seconds)**
-- Show the journey: what they tried, what worked, what didn't
-- Include specific details: numbers, timeframes, methods
-- Create emotional connection through relatable struggles
-- Build tension or show the transformation process
-- Use vivid, concrete details (not vague descriptions)
-
-**ACT 3: RESOLUTION & LESSON (42-55 seconds)**
-- Reveal the outcome or transformation
-- Extract the universal lesson or principle
-- Connect the story to the viewer's life
-- End with a reflective question (e.g., "What's one financial habit you want to change?")
-- Include a natural subscription CTA
-
-**STORYTELLING TECHNIQUES:**
-- Use specific numbers and timeframes (not "a lot" or "some time")
-- Show, don't tell (describe actions and results, not just feelings)
-- Create emotional stakes (what was at risk? what changed?)
-- Make the character relatable (their situation should mirror viewers')
-- End with a clear, actionable takeaway"""
-                    max_sentences = 16
-                elif content_type == ContentType.FACT:
-                    system_prompt = """You are an expert YouTube Shorts script writer for fact-based videos specializing in finance, productivity, and lifestyle.
-
-**FACT PRESENTATION (First 3 seconds - CRITICAL):**
-- Lead with a shocking, specific number or statistic that challenges assumptions
-- Make it relatable and immediately relevant to viewers' lives
-- Examples of strong fact openings:
-  * "Tracking spend for 30 days cuts impulse buys by 15%."
-  * "Decluttered desks raise focus by 25%."
-  * "Skipping a winter oil check can cost an engine replacement."
-  * "AI batching saves at least 30 minutes per day."
-
-**CONTENT STRUCTURE (55 seconds total):**
-- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
-- Each sentence should be 3-4 seconds long, write 12-16 sentences total
-- **Opening (0-8 seconds)**: Present the shocking fact with emphasis
-- **Body (8-48 seconds)**:
-  * Explain why this fact matters (the "so what" factor)
-  * Break down the numbers or statistics in relatable terms
-  * Provide context: how was this discovered? what research supports it?
-  * Show real-world implications with concrete examples
-  * Address common misconceptions or counter-arguments
-  * Explain the underlying mechanism or principle
-- **Closing (48-55 seconds)**:
-  * Reinforce the key takeaway
-  * End with a thought-provoking question (e.g., "Did you know this? What surprised you most?")
-  * Include a natural subscription CTA (e.g., "Subscribe for daily facts" or "Hit subscribe to learn something new every day")
-
-**WRITING STYLE:**
-- Use specific numbers, percentages, and timeframes
-- Make abstract statistics concrete through comparisons (e.g., "That's like saving $500 a year")
-- Create "wow" moments through surprising revelations
-- Connect facts to actionable insights
-- Create a "loop" structure where the ending connects back to the opening fact"""
-                    max_sentences = 16
-                elif content_type == ContentType.SHORT_STORY:
-                    system_prompt = """You are an expert YouTube Shorts script writer for short story videos specializing in finance, productivity, and self-improvement.
-
-**STORY STRUCTURE (55 seconds total - Personal Narrative Format):**
-- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
-- Each sentence should be 3-4 seconds long, write 12-16 sentences total
-
-**OPENING (0-10 seconds)**
-- Start with a powerful, personal Hook that creates immediate connection
-- Use first-person perspective ("I", "My") for authenticity
-- Examples:
-  * "Logging expenses for 30 days changed my bank balance."
-  * "Ten minutes of routine completely rerouted my life."
-  * "I automated emails with AI and finally slept."
-
-**DEVELOPMENT (10-45 seconds)**
-- Tell the personal journey: what you did, what happened, what you learned
-- Include specific details: exact numbers, timeframes, methods used
-- Show the transformation: before vs. after
-- Create emotional connection through relatable struggles and victories
-- Use vivid, concrete details (not vague descriptions)
-
-**CLOSING (45-55 seconds)**
-- Reveal the outcome or transformation
-- Extract the universal lesson that viewers can apply
-- Connect your story to the viewer's potential transformation
-- End with an inspiring question (e.g., "What's one small change you'll make today?")
-- Include a natural subscription CTA
-
-**STORYTELLING TECHNIQUES:**
-- Use first-person perspective for authenticity and relatability
-- Be specific: use exact numbers, dates, and timeframes
-- Show the emotional journey: frustration → action → results
-- Make it relatable: your situation should mirror viewers' challenges
-- End with a clear, actionable takeaway that viewers can implement"""
-                    max_sentences = 16
-                else:
-                    system_prompt = """You are an expert YouTube Shorts script writer specializing in finance, productivity, and self-improvement content.
-- Write in sufficient detail with clear explanations
-- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
-- Target duration is about 55 seconds, each sentence should be 3-4 seconds long
-- YouTube Shorts has a maximum of 60 seconds, so write within 55 seconds
-- Write 12-16 sentences total to include sufficient content
-- Create engaging, actionable content that viewers can apply immediately"""
-                    max_sentences = 16
-            else:
-                # 한국어 프롬프트 (기존)
-                if content_type == ContentType.HOOK:
-                    system_prompt = """당신은 YouTube Shorts용 Hook 영상 스크립트 작성 전문가입니다.
-- 첫 3초 안에 강력한 Hook 문장으로 시청자의 관심을 끌어야 합니다
-- 한국어 속담, 관용어, 명언 등에 집중하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 충분한 설명과 예시를 포함하세요
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
-- **전략: '마인드셋 플립(Mindset Flip)' 기법을 사용하세요. 첫 문장에서 흔한 부정적인 생각을 제시하고 즉시 긍정적으로 재해석하세요.**
-- **구조: 마지막 문장이 첫 문장과 자연스럽게 이어지도록 '루프(Loop)' 구조로 작성하세요.**
-- **엔딩: 구체적인 질문으로 끝맺어 댓글을 유도하고 (예: "당신의 2025년 목표는 무엇인가요?"), 자연스럽게 구독을 유도하세요 (예: "매일 이런 팁을 받으려면 구독해주세요" 또는 "더 많은 인사이트를 놓치지 않으려면 구독 버튼을 눌러주세요"). 강요하지 않고 자연스럽게.**
-- Hook 문장을 반복하거나 강조하고, 자세한 설명을 추가하세요"""
-                    max_sentences = 16
-                elif content_type == ContentType.QUOTE:
-                    system_prompt = """당신은 YouTube Shorts용 명언/지식 한 줄 영상 스크립트 작성 전문가입니다.
-- 첫 문장에 강력한 명언이나 인사이트를 배치하세요
-- AI, 비즈니스, 자기계발, 투자 등 지식 한 줄에 집중하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 충분한 설명과 실생활 적용법을 포함하세요
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
-- **구조: 마지막 문장이 첫 문장과 자연스럽게 이어지도록 '루프(Loop)' 구조로 작성하세요.**
-- **엔딩: 구체적인 질문으로 끝맺어 댓글을 유도하고, 자연스럽게 구독을 유도하세요 (예: "매일 이런 명언을 받으려면 구독해주세요"). 강요하지 않고 자연스럽게.**
-- 명언을 자세히 설명하고 실생활 적용법과 예시를 제시하세요"""
-                    max_sentences = 16
-                elif content_type == ContentType.STORY:
-                    system_prompt = """당신은 YouTube Shorts용 스토리텔링 영상 스크립트 작성 전문가입니다.
-- 첫 문장에 강력한 Hook으로 시작하세요
-- 심리, 역사, 부자습관 등 스토리를 통해 교훈을 전달하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 스토리를 자세히 전개하세요
-- 스토리 구조: Hook → 전개 → 세부 설명 → 교훈 → 마무리
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요"""
-                    max_sentences = 16
-                elif content_type == ContentType.FACT:
-                    system_prompt = """당신은 YouTube Shorts용 팩트 기반 영상 스크립트 작성 전문가입니다.
-- 첫 문장에 놀라운 팩트를 배치하여 Hook을 만드세요
-- 과학, 역사, 인체, 우주 등 놀라운 사실을 전달하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 팩트를 자세히 설명하세요
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
-- **전략: 충격적인 숫자나 통계(복리 효과, 절약된 시간 등)에 집중하세요.**
-- **구조: 마지막 문장이 첫 문장과 자연스럽게 이어지도록 '루프(Loop)' 구조로 작성하세요.**
-- **엔딩: 구체적인 질문으로 끝맺어 댓글을 유도하고 (예: "이 사실을 알고 계셨나요?"), 자연스럽게 구독을 유도하세요 (예: "매일 새로운 팩트를 배우려면 구독해주세요"). 강요하지 않고 자연스럽게.**
-- 팩트를 설명하고 왜 놀라운지, 어떻게 발견되었는지 등 자세한 배경을 포함하세요"""
-                    max_sentences = 16
-                elif content_type == ContentType.SHORT_STORY:
-                    system_prompt = """당신은 YouTube Shorts용 짧은 스토리 영상 스크립트 작성 전문가입니다.
-- 첫 문장에 강력한 Hook으로 시작하세요
-- 인생 교훈, 영감, 성공 스토리 등을 자세히 전달하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 스토리를 충분히 전개하세요
-- 스토리 구조: Hook → 사건 전개 → 세부 설명 → 교훈 → 마무리
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요"""
-                    max_sentences = 16
-                else:
-                    system_prompt = """당신은 YouTube Shorts용 영상 스크립트 작성 전문가입니다.
-- 설명이 충분하도록 자세하게 작성하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 각 문장은 3-4초 분량입니다
-- YouTube Shorts는 최대 60초이므로 55초 이내로 작성해야 합니다
-- 총 12-16개 문장으로 작성하여 충분한 내용을 담으세요"""
-                    max_sentences = 16
-
-            # 성과 기반 프롬프트 추가
-            if performance_prompt:
-                system_prompt += "\n\n" + performance_prompt
-
-            # 사용자 프롬프트 구성
-            if language == 'en':
-                user_prompt = f"Write a YouTube Shorts script for '{topic}'. Each sentence should be 3-4 seconds long, write {max_sentences} sentences total to make it about {target_duration} seconds (maximum 60 seconds). **Important: Write all sentences in English only. Do not include any Korean sentences or words.** Important: Write only pure dialogue or explanations, never include production instructions like 'background music', 'subtitles', 'start', etc. The first sentence must be a powerful Hook, and develop the content sufficiently so viewers can understand it in detail."
-            else:
-                user_prompt = f"'{topic}'에 대한 YouTube Shorts 영상 스크립트를 작성해주세요. 각 문장은 3-4초 분량이며, 총 {max_sentences}개 문장으로 작성하여 약 {target_duration}초 분량이 되도록 충분히 자세하게 작성해주세요 (최대 60초 제한). **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요.** 중요한 점: 순수한 대사나 설명만 작성하고, '배경음악', '자막', '시작' 같은 제작 지시사항은 절대 포함하지 마세요. 첫 문장은 반드시 강력한 Hook이어야 하며, 내용을 충분히 전개하여 시청자가 이해할 수 있도록 자세히 설명하세요."
-
-            # Claude API 호출
-            # 최우선 모델에서 404가 지속 발생하여 안정적인 모델을 먼저 시도하도록 순서를 조정
-            models_to_try = [
-                "claude-3-opus-20240229",
-                "claude-3-sonnet-20240229",
-                "claude-3-5-sonnet-20241022",
-            ]
-            response = None
-            last_error = None
-
-            for model in models_to_try:
-                try:
-                    response = self.claude_client.messages.create(
-                        model=model,
-                        max_tokens=800,  # 55초 분량을 위해 토큰 증가
-                        system=system_prompt,
-                        messages=[
-                            {
-                                "role": "user",
-                                "content": user_prompt
-                            }
-                        ]
-                    )
-                    script_text = response.content[0].text
-
-                    # 문장별로 분리 (줄바꿈과 마침표 모두 고려)
-                    sentences = []
-                    # 줄바꿈으로 분리
-                    for line in script_text.split('\n'):
-                        line = line.strip()
-                        if not line:
-                            continue
-                        # 마침표로도 분리 (긴 문장을 여러 문장으로 나눔)
-                        for sent in re.split(r'[.!?。！？]\s+', line):
-                            sent = sent.strip()
-                            if sent:
-                                sentences.append(sent)
-
-                    # 불필요한 텍스트 필터링
-                    filter_keywords = [
-                        '배경음악', '음악', 'BGM', 'bgm', '배경', '시작', '종료',
-                        '자막', '타이틀', '제목', '인트로', '아웃트로',
-                        '참고', '주의', '설명', '참고사항'
-                    ]
-
-                    filtered_sentences = []
-                    for s in sentences:
-                        # 숫자나 불필요한 기호로 시작하는 것 제거
-                        if s.startswith(
-                            ('1.',
-     '2.',
-     '3.',
-     '4.',
-     '5.',
-     '6.',
-     '7.',
-     '8.',
-     '9.',
-     '10.',
-     '11.',
-     '12.',
-     '13.',
-     '14.',
-     '15.',
-     '16.',
-     '-',
-     '*',
-     '•')):
-                            # 숫자 제거 후 문장만 추출
-                            s = re.sub(r'^\d+\.\s*', '', s).strip()
-                        # 너무 짧은 문장 제거 (최소 10자 이상)
-                        if len(s) < 10:
-                            continue
-                        # 필터 키워드가 포함된 문장 제거
-                        if any(keyword in s for keyword in filter_keywords):
-                            continue
-                        # 스크립트 안내 문장 제거 (예: "Here's a YouTube Shorts
-                        # script...")
-                        lower_s = s.lower()
-                        if "youtube shorts script" in lower_s or (
-                            "script" in lower_s and (
-        "youtube" in lower_s or "shorts" in lower_s)):
-                            continue
-                        # 괄호 안의 설명 제거 (예: "텍스트 (참고사항)" -> "텍스트")
-                        s = re.sub(r'\([^)]*\)', '', s).strip()
-                        s = re.sub(r'\[[^\]]*\]', '', s).strip()
-                        if s and len(s) >= 10:
-                            filtered_sentences.append(s)
-
-                    # 최소 문장 수 확인 (55초 목표를 위해 최소 12개 이상 필요)
-                    if len(filtered_sentences) < 12:
-                        print(
-                            f"⚠️ 생성된 문장이 부족합니다 ({len(filtered_sentences)}개). 원본 스크립트를 다시 확인합니다.")
-                        # 원본 텍스트에서 더 많은 문장 추출 시도
-                        all_sentences = re.split(r'[.!?。！？]\s+', script_text)
-                        for sent in all_sentences:
-                            sent = sent.strip()
-                            if len(sent) >= 10 and sent not in filtered_sentences:
-                                # 필터링 다시 적용
-                                if not any(
-                                    keyword in sent for keyword in filter_keywords):
-                                    filtered_sentences.append(sent)
-                                    if len(filtered_sentences) >= max_sentences:
-                                        break
-
-                    print(
-                        f"📝 Claude API로 생성된 문장 수: {len(filtered_sentences)}개 (목표: {max_sentences}개)")
-                    # 최대 문장 수 (약 55초)
-                    return filtered_sentences[:max_sentences]
-                except Exception as e:
-                    last_error = e
-                    print(f"⚠️ Claude 모델 {model} 실패: {e}")
-                    import traceback
-                    print(f"   상세 오류:")
-                    traceback.print_exc()
-                    continue  # 다음 모델 시도
-
-            # 모든 모델 실패 시
-            if not response:
-                error_to_raise = last_error if last_error else Exception(
-                    "모든 Claude 모델 접근 실패")
-                print(f"⚠️ 모든 Claude 모델 실패, 마지막 오류: {error_to_raise}")
-                raise error_to_raise
-
-        except Exception as e:
-            error_msg = str(e)
-            print(f"⚠️ Claude API 스크립트 생성 실패: {e}")
-            import traceback
-            print(f"   상세 오류:")
-            traceback.print_exc()
-
-            # Claude API 실패 시 OpenAI로 폴백 (가능한 경우)
-            if self.openai_client:
-                print(f"⚠️ Claude API 실패, OpenAI로 폴백합니다.")
-                return self._generate_script_with_openai(
-                    topic, performance_prompt, content_type, language)
-
-            # AI 생성 실패 시 기본 스크립트 반환
-            print(f"⚠️ AI 스크립트 생성 실패로 기본 스크립트를 사용합니다.")
-            return self._build_default_script(topic, language=language)
-
-    def _generate_script_with_openai(
-        self,
-        topic: str,
-        performance_prompt: str = None,
-        content_type: ContentType = None,
-        language: str = 'ko') -> list:
-        """OpenAI API로 영상 스크립트 생성 (기존 로직을 별도 메서드로 분리)"""
-        if not self.openai_client:
-            return self._build_default_script(topic, language=language)
-
-        try:
-            # 콘텐츠 타입별 설정 (55초 목표로 충분한 내용 생성)
-            prefer_short = False  # 55초 목표이므로 짧은 영상 비활성화
-
-            if content_type is None:
-                content_type_str = getattr(config, 'CONTENT_TYPE', 'auto')
-                try:
-                    content_type = ContentType(content_type_str.lower())
-                except ValueError:
-                    content_type = ContentType.AUTO
-                
-            # 타입별 시스템 프롬프트 구성 (모두 55초 목표)
-            target_duration = config.SHORTS_TARGET_DURATION  # 55초
-
-            # gpt-4o-mini 또는 gpt-4o 사용 시도 (더 접근 가능)
-            models_to_try = ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"]
-            response = None
-            last_error = None
-
-            if language == 'en':
-                # 영어 프롬프트 (Claude와 동일한 개선된 프롬프트 사용)
-                if content_type == ContentType.HOOK:
-                    system_prompt = """You are an expert YouTube Shorts script writer for Hook videos specializing in finance, productivity, and self-improvement content.
-
-**HOOK CREATION (First 3 seconds - CRITICAL):**
-- Create a powerful, attention-grabbing Hook that triggers curiosity, fear of missing out, or emotional connection
-- Use one of these proven Hook patterns:
-  1. "Mindset Flip": State a common negative belief, then immediately reframe it positively (e.g., "You think saving money means sacrificing happiness. Here's why that's backwards.")
-  2. "Shocking Number": Lead with a surprising statistic (e.g., "Most people waste $1,500 every December without realizing it.")
-  3. "Contrarian Statement": Challenge conventional wisdom (e.g., "The richest people don't work harder. They work differently.")
-  4. "Personal Revelation": Share a transformative realization (e.g., "I thought I was broke until I tracked where my money actually went.")
-- The Hook must be specific, relatable, and create an immediate "I need to know more" feeling
-
-**CONTENT STRUCTURE (55 seconds total):**
-- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
-- Each sentence should be 3-4 seconds long, write 12-16 sentences total
-- **Opening (0-10 seconds)**: Hook + immediate context setting
-- **Body (10-45 seconds)**: 
-  * Explain the core concept with concrete examples
-  * Use specific numbers, percentages, or timeframes when possible
-  * Include relatable scenarios (e.g., "Imagine you save $5 a day...")
-  * Address common objections or misconceptions
-- **Closing (45-55 seconds)**:
-  * Reinforce the main message
-  * Provide one actionable takeaway
-  * End with a specific, engaging question (e.g., "What's one financial habit you want to change this year?")
-  * Include a natural subscription CTA (e.g., "Subscribe for daily money tips" or "Hit subscribe to never miss these insights")
-
-**WRITING STYLE:**
-- Use active voice and short, punchy sentences
-- Create emotional resonance through relatable scenarios
-- Use power words: "transform", "reveal", "discover", "unlock", "master"
-- Avoid generic phrases - be specific and concrete
-- Create a "loop" structure where the ending connects back to the opening Hook naturally
-
-**EXAMPLES OF STRONG HOOKS:**
-- "Why your salary alone will never make you wealthy" → Explain wealth-building systems
-- "The one habit that separates summer savers from summer spenders" → Reveal the specific habit
-- "Rich people refuse to make this one impulse purchase" → Explain what it is and why"""
-                    max_sentences = 16
-                elif content_type == ContentType.QUOTE:
-                    system_prompt = """You are an expert YouTube Shorts script writer for quote/knowledge videos specializing in finance, productivity, and self-improvement.
-
-**QUOTE PRESENTATION (First 3 seconds - CRITICAL):**
-- Lead with a powerful, memorable quote or insight that resonates emotionally
-- Choose quotes that are:
-  * Actionable (not just inspirational)
-  * Counter-intuitive or thought-provoking
-  * Specific to finance, productivity, or personal growth
-- Examples of strong opening quotes:
-  * "Wealth is built by structure, not random savings."
-  * "Time in the market beats timing the market."
-  * "The moment you track spending, new options appear."
-
-**CONTENT STRUCTURE (55 seconds total):**
-- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
-- Each sentence should be 3-4 seconds long, write 12-16 sentences total
-- **Opening (0-8 seconds)**: Present the quote with emphasis
-- **Body (8-48 seconds)**:
-  * Break down the quote's meaning in simple terms
-  * Explain why it matters (the "so what" factor)
-  * Provide 2-3 concrete, real-world examples
-  * Show how to apply it practically (actionable steps)
-  * Address common misconceptions about the concept
-- **Closing (48-55 seconds)**:
-  * Reinforce the core message
-  * End with a reflective question (e.g., "Which financial principle changed your perspective?")
-  * Include a natural subscription CTA (e.g., "Subscribe for daily wisdom" or "Hit subscribe for more insights")
-
-**WRITING STYLE:**
-- Make abstract concepts concrete through examples
-- Use analogies to explain complex ideas
-- Connect the quote to daily life situations
-- Show the transformation or outcome of applying the quote
-- Create a "loop" structure where the ending connects back to the opening quote"""
-                    max_sentences = 16
-                elif content_type == ContentType.STORY:
-                    system_prompt = """You are an expert YouTube Shorts script writer for storytelling videos specializing in finance, productivity, and self-improvement.
-
-**STORY STRUCTURE (55 seconds total - 3-Act Format):**
-- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
-- Each sentence should be 3-4 seconds long, write 12-16 sentences total
-
-**ACT 1: HOOK & SETUP (0-12 seconds)**
-- Start with a powerful, specific opening that creates intrigue
-- Introduce a relatable character or situation
-- Establish the problem or challenge
-- Examples:
-  * "She tracked spending for 60 days and freed $300 every month."
-  * "The employee who grew $250K of assets on a $40K salary."
-  * "A 30-day expense log rebuilt her bank balance."
-
-**ACT 2: DEVELOPMENT & CONFLICT (12-42 seconds)**
-- Show the journey: what they tried, what worked, what didn't
-- Include specific details: numbers, timeframes, methods
-- Create emotional connection through relatable struggles
-- Build tension or show the transformation process
-- Use vivid, concrete details (not vague descriptions)
-
-**ACT 3: RESOLUTION & LESSON (42-55 seconds)**
-- Reveal the outcome or transformation
-- Extract the universal lesson or principle
-- Connect the story to the viewer's life
-- End with a reflective question (e.g., "What's one financial habit you want to change?")
-- Include a natural subscription CTA
-
-**STORYTELLING TECHNIQUES:**
-- Use specific numbers and timeframes (not "a lot" or "some time")
-- Show, don't tell (describe actions and results, not just feelings)
-- Create emotional stakes (what was at risk? what changed?)
-- Make the character relatable (their situation should mirror viewers')
-- End with a clear, actionable takeaway"""
-                    max_sentences = 16
-                elif content_type == ContentType.FACT:
-                    system_prompt = """You are an expert YouTube Shorts script writer for fact-based videos specializing in finance, productivity, and lifestyle.
-
-**FACT PRESENTATION (First 3 seconds - CRITICAL):**
-- Lead with a shocking, specific number or statistic that challenges assumptions
-- Make it relatable and immediately relevant to viewers' lives
-- Examples of strong fact openings:
-  * "Tracking spend for 30 days cuts impulse buys by 15%."
-  * "Decluttered desks raise focus by 25%."
-  * "Skipping a winter oil check can cost an engine replacement."
-  * "AI batching saves at least 30 minutes per day."
-
-**CONTENT STRUCTURE (55 seconds total):**
-- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
-- Each sentence should be 3-4 seconds long, write 12-16 sentences total
-- **Opening (0-8 seconds)**: Present the shocking fact with emphasis
-- **Body (8-48 seconds)**:
-  * Explain why this fact matters (the "so what" factor)
-  * Break down the numbers or statistics in relatable terms
-  * Provide context: how was this discovered? what research supports it?
-  * Show real-world implications with concrete examples
-  * Address common misconceptions or counter-arguments
-  * Explain the underlying mechanism or principle
-- **Closing (48-55 seconds)**:
-  * Reinforce the key takeaway
-  * End with a thought-provoking question (e.g., "Did you know this? What surprised you most?")
-  * Include a natural subscription CTA (e.g., "Subscribe for daily facts" or "Hit subscribe to learn something new every day")
-
-**WRITING STYLE:**
-- Use specific numbers, percentages, and timeframes
-- Make abstract statistics concrete through comparisons (e.g., "That's like saving $500 a year")
-- Create "wow" moments through surprising revelations
-- Connect facts to actionable insights
-- Create a "loop" structure where the ending connects back to the opening fact"""
-                    max_sentences = 16
-                elif content_type == ContentType.SHORT_STORY:
-                    system_prompt = """You are an expert YouTube Shorts script writer for short story videos specializing in finance, productivity, and self-improvement.
-
-**STORY STRUCTURE (55 seconds total - Personal Narrative Format):**
-- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
-- Each sentence should be 3-4 seconds long, write 12-16 sentences total
-
-**OPENING (0-10 seconds)**
-- Start with a powerful, personal Hook that creates immediate connection
-- Use first-person perspective ("I", "My") for authenticity
-- Examples:
-  * "Logging expenses for 30 days changed my bank balance."
-  * "Ten minutes of routine completely rerouted my life."
-  * "I automated emails with AI and finally slept."
-
-**DEVELOPMENT (10-45 seconds)**
-- Tell the personal journey: what you did, what happened, what you learned
-- Include specific details: exact numbers, timeframes, methods used
-- Show the transformation: before vs. after
-- Create emotional connection through relatable struggles and victories
-- Use vivid, concrete details (not vague descriptions)
-
-**CLOSING (45-55 seconds)**
-- Reveal the outcome or transformation
-- Extract the universal lesson that viewers can apply
-- Connect your story to the viewer's potential transformation
-- End with an inspiring question (e.g., "What's one small change you'll make today?")
-- Include a natural subscription CTA
-
-**STORYTELLING TECHNIQUES:**
-- Use first-person perspective for authenticity and relatability
-- Be specific: use exact numbers, dates, and timeframes
-- Show the emotional journey: frustration → action → results
-- Make it relatable: your situation should mirror viewers' challenges
-- End with a clear, actionable takeaway that viewers can implement"""
-                    max_sentences = 16
-                else:
-                    system_prompt = """You are an expert YouTube Shorts script writer specializing in finance, productivity, and self-improvement content.
-- Write in sufficient detail with clear explanations
-- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
-- Target duration is about 55 seconds, each sentence should be 3-4 seconds long
-- YouTube Shorts has a maximum of 60 seconds, so write within 55 seconds
-- Write 12-16 sentences total to include sufficient content
-- Create engaging, actionable content that viewers can apply immediately"""
-                    max_sentences = 16
-            else:
-                # 한국어 프롬프트 (기존)
-                if content_type == ContentType.HOOK:
-                    system_prompt = """당신은 YouTube Shorts용 Hook 영상 스크립트 작성 전문가입니다.
-- 첫 3초 안에 강력한 Hook 문장으로 시청자의 관심을 끌어야 합니다
-- 한국어 속담, 관용어, 명언 등에 집중하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 충분한 설명과 예시를 포함하세요
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
-- Hook 문장을 반복하거나 강조하고, 자세한 설명을 추가하세요"""
-                    max_sentences = 16
-                elif content_type == ContentType.QUOTE:
-                    system_prompt = """당신은 YouTube Shorts용 명언/지식 한 줄 영상 스크립트 작성 전문가입니다.
-- 첫 문장에 강력한 명언이나 인사이트를 배치하세요
-- AI, 비즈니스, 자기계발, 투자 등 지식 한 줄에 집중하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 충분한 설명과 실생활 적용법을 포함하세요
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
-- 명언을 자세히 설명하고 실생활 적용법과 예시를 제시하세요"""
-                    max_sentences = 16
-                elif content_type == ContentType.STORY:
-                    system_prompt = """당신은 YouTube Shorts용 스토리텔링 영상 스크립트 작성 전문가입니다.
-- 첫 문장에 강력한 Hook으로 시작하세요
-- 심리, 역사, 부자습관 등 스토리를 통해 교훈을 전달하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 스토리를 자세히 전개하세요
-- 스토리 구조: Hook → 전개 → 세부 설명 → 교훈 → 마무리
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요"""
-                    max_sentences = 16
-                elif content_type == ContentType.FACT:
-                    system_prompt = """당신은 YouTube Shorts용 팩트 기반 영상 스크립트 작성 전문가입니다.
-- 첫 문장에 놀라운 팩트를 배치하여 Hook을 만드세요
-- 과학, 역사, 인체, 우주 등 놀라운 사실을 전달하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 팩트를 자세히 설명하세요
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
-- 팩트를 설명하고 왜 놀라운지, 어떻게 발견되었는지 등 자세한 배경을 포함하세요"""
-                    max_sentences = 16
-                elif content_type == ContentType.SHORT_STORY:
-                    system_prompt = """당신은 YouTube Shorts용 짧은 스토리 영상 스크립트 작성 전문가입니다.
-- 첫 문장에 강력한 Hook으로 시작하세요
-- 인생 교훈, 영감, 성공 스토리 등을 자세히 전달하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 스토리를 충분히 전개하세요
-- 스토리 구조: Hook → 사건 전개 → 세부 설명 → 교훈 → 마무리
-- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요"""
-                    max_sentences = 16
-                else:
-                    system_prompt = """당신은 YouTube Shorts용 영상 스크립트 작성 전문가입니다.
-- 설명이 충분하도록 자세하게 작성하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-- 목표는 약 55초 분량이며, 각 문장은 3-4초 분량입니다
-- YouTube Shorts는 최대 60초이므로 55초 이내로 작성해야 합니다
-- 총 12-16개 문장으로 작성하여 충분한 내용을 담으세요"""
-                    max_sentences = 16
-                
-                # 성과 기반 프롬프트 추가
-                if performance_prompt:
-                    system_prompt += "\n\n" + performance_prompt
-                
-                # 사용자 프롬프트 구성
-                if language == 'en':
-                    user_prompt = f"Write a YouTube Shorts script for '{topic}'. Each sentence should be 3-4 seconds long, write {max_sentences} sentences total to make it about {target_duration} seconds (maximum 60 seconds). **Important: Write all sentences in English only. Do not include any Korean sentences or words.** Important: Write only pure dialogue or explanations, never include production instructions like 'background music', 'subtitles', 'start', etc. The first sentence must be a powerful Hook, and develop the content sufficiently so viewers can understand it in detail."
-                else:
-                    user_prompt = f"'{topic}'에 대한 YouTube Shorts 영상 스크립트를 작성해주세요. 각 문장은 3-4초 분량이며, 총 {max_sentences}개 문장으로 작성하여 약 {target_duration}초 분량이 되도록 충분히 자세하게 작성해주세요 (최대 60초 제한). **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요.** 중요한 점: 순수한 대사나 설명만 작성하고, '배경음악', '자막', '시작' 같은 제작 지시사항은 절대 포함하지 마세요. 첫 문장은 반드시 강력한 Hook이어야 하며, 내용을 충분히 전개하여 시청자가 이해할 수 있도록 자세히 설명하세요."
-                
-                for model in models_to_try:
-                    try:
-                        response = self.openai_client.chat.completions.create(
-                            model=model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": system_prompt
-                        },
-                        {
-                            "role": "user",
-                            "content": user_prompt
-                        }
-                    ],
-                            max_tokens=800,  # 55초 분량을 위해 토큰 증가
-                            temperature=0.7
-                        )
-                        script_text = response.choices[0].message.content
-
-                        # 문장별로 분리 (줄바꿈과 마침표 모두 고려)
-                        sentences = []
-                        # 줄바꿈으로 분리
-                        for line in script_text.split('\n'):
-                            line = line.strip()
-                            if not line:
-                                continue
-                            # 마침표로도 분리 (긴 문장을 여러 문장으로 나눔)
-                            for sent in re.split(r'[.!?。！？]\s+', line):
-                                sent = sent.strip()
-                                if sent:
-                                    sentences.append(sent)
-                        
-                        # 불필요한 텍스트 필터링
-                        filter_keywords = [
-                            '배경음악', '음악', 'BGM', 'bgm', '배경', '시작', '종료',
-                            '자막', '타이틀', '제목', '인트로', '아웃트로',
-                            '참고', '주의', '설명', '참고사항'
-                        ]
-                        
-                        filtered_sentences = []
-                        for s in sentences:
-                            # 숫자나 불필요한 기호로 시작하는 것 제거
-                            if s.startswith(
-                                ('1.',
-     '2.',
-     '3.',
-     '4.',
-     '5.',
-     '6.',
-     '7.',
-     '8.',
-     '9.',
-     '10.',
-     '11.',
-     '12.',
-     '13.',
-     '14.',
-     '15.',
-     '16.',
-     '-',
-     '*',
-     '•')):
-                                # 숫자 제거 후 문장만 추출
-                                s = re.sub(r'^\d+\.\s*', '', s).strip()
-                            # 너무 짧은 문장 제거 (최소 10자 이상)
-                            if len(s) < 10:
-                                continue
-                            # 필터 키워드가 포함된 문장 제거
-                            if any(
-                                keyword in s for keyword in filter_keywords):
-                                continue
-                            # 스크립트 안내 문장 제거 (예: "Here's a YouTube Shorts
-                            # script...")
-                            lower_s = s.lower()
-                            if "youtube shorts script" in lower_s or (
-                                "script" in lower_s and ("youtube" in lower_s or "shorts" in lower_s)
-                            ):
-                                continue
-                            # 괄호 안의 설명 제거 (예: "텍스트 (참고사항)" -> "텍스트")
-                            s = re.sub(r'\([^)]*\)', '', s).strip()
-                            s = re.sub(r'\[[^\]]*\]', '', s).strip()
-                            if s and len(s) >= 10:
-                                filtered_sentences.append(s)
-                        
-                        # 최소 문장 수 확인 (55초 목표를 위해 최소 12개 이상 필요)
-                        if len(filtered_sentences) < 12:
-                            print(
-                                f"⚠️ 생성된 문장이 부족합니다 ({len(filtered_sentences)}개). 원본 스크립트를 다시 확인합니다.")
-                            # 원본 텍스트에서 더 많은 문장 추출 시도
-                            all_sentences = re.split(
-                                r'[.!?。！？]\s+', script_text)
-                            for sent in all_sentences:
-                                sent = sent.strip()
-                                if len(
-                                        sent) >= 10 and sent not in filtered_sentences:
-                                    # 필터링 다시 적용
-                                    if not any(
-                                        keyword in sent for keyword in filter_keywords):
-                                        filtered_sentences.append(sent)
-                                        if len(
-                                                filtered_sentences) >= max_sentences:
-                                            break
-
-                        print(
-                            f"📝 OpenAI API로 생성된 문장 수: {len(filtered_sentences)}개 (목표: {max_sentences}개)")
-                        # 최대 문장 수 (약 55초)
-                        return filtered_sentences[:max_sentences]
-                    except Exception as e:
-                        last_error = e
-                        print(f"⚠️ OpenAI 모델 {model} 실패: {e}")
-                        continue  # 다음 모델 시도
-                
-                # 모든 모델 실패 시
-                if not response:
-                    raise last_error if last_error else Exception(
-                        "모든 모델 접근 실패")
-                    
-        except Exception as e:
-            error_msg = str(e)
-            print(f"⚠️ OpenAI API 스크립트 생성 실패: {e}")
-            import traceback
-            print(f"   상세 오류:")
-            traceback.print_exc()
-
-            if "does not have access" in error_msg or "model_not_found" in error_msg:
-                print(f"⚠️ OpenAI API 키가 모델에 접근할 수 없습니다.")
-                print(f"   OpenAI Platform에서 모델 접근 권한을 확인하세요.")
-
-        # AI 생성 실패 시 기본 스크립트 반환 (55초 목표를 위해 12-16개 문장)
-        print(f"⚠️ AI 스크립트 생성 실패로 기본 스크립트를 사용합니다.")
-        return self._build_default_script(topic, language=language)
+    # _generate_script_with_openai 메서드는 script_generator.py로 이동됨
     
     def _create_video_from_script(
         self,
@@ -2197,7 +1342,7 @@ class AIVideoGenerator:
 
         # 배경 미디어 그룹핑: 2-3개 문장마다 배경 변경 (관련 문장들은 같은 배경 사용)
         background_groups = []
-        group_size = 2  # 2개 문장마다 배경 변경 (더 많은 배경 영상 다운로드를 위해)
+        group_size = VideoConstants.BACKGROUND_GROUP_SIZE
         use_background_video = getattr(config, 'USE_BACKGROUND_VIDEO', True)
 
         # 각 그룹에서 사용할 배경 영상의 시작 시간을 추적 (순차 재생용)
@@ -2295,7 +1440,7 @@ class AIVideoGenerator:
                         source_duration = source_video.duration
                         print(f"   원본 영상 길이: {source_duration:.2f}초")
                         # 전체 영상을 로드 (자르지 않음)
-                        current_bg_video_clip = source_video.resize((1080, 1920))
+                        current_bg_video_clip = source_video.resize((VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
                         current_bg_video_start_time = 0.0
                         current_bg_video_used_duration = 0.0
                     start_time = current_bg_video_start_time
@@ -2330,7 +1475,7 @@ class AIVideoGenerator:
                             source_duration = source_video.duration
                             print(f"   원본 영상 길이: {source_duration:.2f}초")
                             current_bg_video_clip = source_video.resize(
-                                (1080, 1920))
+                                (VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
                             current_bg_video_start_time = 0.0
                             start_time = 0.0
                         else:
@@ -2390,7 +1535,7 @@ class AIVideoGenerator:
                         # 전환 효과 개선: 첫 클립 fade in, 마지막 클립 fade out, 중간 클립은 양쪽 fade
                         is_last_sentence = (i == len(script) - 1)
                         is_first_sentence = (i == 0)
-                        fade_duration = min(0.5, actual_audio_duration * 0.1)  # 최대 0.5초, 또는 duration의 10%
+                        fade_duration = min(VideoConstants.DEFAULT_FADE_DURATION, actual_audio_duration * VideoConstants.FADE_RATIO)
                         
                         if is_first_sentence:
                             # 첫 클립: fade in만
@@ -2472,17 +1617,17 @@ class AIVideoGenerator:
             img_clip = ImageClip(bg_path).set_duration(actual_audio_duration)
             
             # 해상도 명시적 설정
-            img_clip = img_clip.resize((1080, 1920))
+            img_clip = img_clip.resize((VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
             
             # 페이드 효과 (duration 유지)
             if i == 0:
                 # 첫 클립만 페이드 인
-                img_clip = img_clip.fx(fadein, 0.5)
+                img_clip = img_clip.fx(fadein, VideoConstants.DEFAULT_FADE_DURATION)
                 img_clip = img_clip.set_duration(
                     actual_audio_duration)  # 페이드 후 duration 재설정
             elif i == len(script) - 1:
                 # 마지막 클립만 페이드 아웃
-                img_clip = img_clip.fx(fadeout, 0.5)
+                img_clip = img_clip.fx(fadeout, VideoConstants.DEFAULT_FADE_DURATION)
                 img_clip = img_clip.set_duration(
                     actual_audio_duration)  # 페이드 후 duration 재설정
             # 중간 클립들은 페이드 효과 없음 (부드러운 전환)
@@ -2544,11 +1689,11 @@ class AIVideoGenerator:
                 else:
                     print(f"   클립 {idx+1}: {clip.duration:.2f}초 (음성 길이와 일치)")
             
-            # 마지막 클립에 0.5초 여유 추가 (음성이 뚝 끊기는 느낌 방지)
+            # 마지막 클립에 여유 추가 (음성이 뚝 끊기는 느낌 방지)
             if idx == len(clips) - 1:
-                print(f"   🎬 마지막 클립에 0.5초 여유 추가 (자연스러운 마무리)")
-                # 마지막 클립의 duration을 0.5초 늘림 (영상은 정지 화면으로 유지됨)
-                clips[idx] = clips[idx].set_duration(clips[idx].duration + 0.5)
+                print(f"   🎬 마지막 클립에 {VideoConstants.FINAL_CLIP_EXTENSION}초 여유 추가 (자연스러운 마무리)")
+                # 마지막 클립의 duration을 늘림 (영상은 정지 화면으로 유지됨)
+                clips[idx] = clips[idx].set_duration(clips[idx].duration + VideoConstants.FINAL_CLIP_EXTENSION)
 
         # 클립 연결 전에 각 클립의 duration 확인
         print(f"📊 연결 전 클립 duration 확인:")
@@ -2656,8 +1801,8 @@ class AIVideoGenerator:
 
         # 연결된 영상의 실제 프레임 수 확인
         if final_video.duration > 0:
-            expected_frames = int(target_duration * 30)  # 30fps 기준
-            actual_frames = int(final_video.duration * 30)
+            expected_frames = int(target_duration * VideoConstants.VIDEO_FPS)
+            actual_frames = int(final_video.duration * VideoConstants.VIDEO_FPS)
             print(f"📊 예상 프레임 수: {expected_frames}, 실제 프레임 수: {actual_frames}")
 
             # 프레임 수가 예상보다 많으면 강제로 정확한 길이로 자르기 (반복 감지)
@@ -2698,15 +1843,15 @@ class AIVideoGenerator:
                         # 영상이 더 짧으면 마지막 프레임 반복하여 확장 (같은 영상 반복 방지)
                         extension_needed = actual_audio_duration - actual_video_duration
                         print(f"   영상 확장 필요: {extension_needed:.2f}초")
-                        # 마지막 0.5초를 반복
+                        # 마지막 부분을 반복
                         extension_source = final_video.subclip(
-                            max(0, actual_video_duration - 0.5), actual_video_duration)
+                            max(0, actual_video_duration - VideoConstants.EXTENSION_DURATION), actual_video_duration)
                         extension_clips = []
                         remaining = extension_needed
                         while remaining > 0.01:
-                            ext_dur = min(0.5, remaining)
+                            ext_dur = min(VideoConstants.EXTENSION_DURATION, remaining)
                             ext_clip = extension_source.subclip(
-                                0, 0.5).set_duration(ext_dur)
+                                0, VideoConstants.EXTENSION_DURATION).set_duration(ext_dur)
                             extension_clips.append(ext_clip)
                             remaining -= ext_dur
                         if extension_clips:
@@ -2718,8 +1863,8 @@ class AIVideoGenerator:
                         actual_audio_duration)
                     actual_video_duration = actual_audio_duration
                 
-                # 최종 길이 확인 및 60초 초과 방지
-                max_safe_duration = 60  # YouTube Shorts 최대 길이
+                # 최종 길이 확인 및 최대 길이 초과 방지
+                max_safe_duration = VideoConstants.MAX_DURATION
                 if actual_video_duration > max_safe_duration:
                     print(
                         f"⚠️ 최종 영상 길이가 {max_safe_duration}초를 초과합니다. {max_safe_duration}초로 제한합니다.")
@@ -2760,12 +1905,12 @@ class AIVideoGenerator:
                                 # 음악이 길면 자르기
                                 bg_music = bg_music.subclip(0, actual_audio_duration)
                             
-                            # 배경 음악 볼륨 조정 (기본 25%)
-                            music_volume = getattr(config, 'BACKGROUND_MUSIC_VOLUME', 0.25)
+                            # 배경 음악 볼륨 조정
+                            music_volume = getattr(config, 'BACKGROUND_MUSIC_VOLUME', VideoConstants.DEFAULT_MUSIC_VOLUME)
                             bg_music = bg_music.volumex(music_volume)
                             
                             # 페이드 인/아웃 효과 (부드러운 시작/종료)
-                            fade_duration = min(1.0, actual_audio_duration * 0.1)  # 최대 1초 또는 duration의 10%
+                            fade_duration = min(1.0, actual_audio_duration * VideoConstants.MUSIC_FADE_RATIO)
                             bg_music = bg_music.fx(fadein, fade_duration).fx(fadeout, fade_duration)
                             bg_music = bg_music.set_duration(actual_audio_duration)
                             
@@ -2792,12 +1937,12 @@ class AIVideoGenerator:
                 import traceback
                 traceback.print_exc()
         
-        # FPS 설정 (YouTube Shorts 권장: 30fps)
-        final_video = final_video.set_fps(30)
+        # FPS 설정
+        final_video = final_video.set_fps(VideoConstants.VIDEO_FPS)
         
-        # 해상도 확인 및 설정 (1080x1920 - YouTube Shorts 세로형)
-        if final_video.size[0] != 1080 or final_video.size[1] != 1920:
-            final_video = final_video.resize((1080, 1920))
+        # 해상도 확인 및 설정
+        if final_video.size[0] != VideoConstants.VIDEO_WIDTH or final_video.size[1] != VideoConstants.VIDEO_HEIGHT:
+            final_video = final_video.resize((VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
         
         # 영상 저장 전 최종 duration 확인 및 강제 조정 (음성 길이와 정확히 일치)
         if audio_clips and 'final_audio' in locals():
@@ -2897,7 +2042,7 @@ class AIVideoGenerator:
         language: str = 'ko') -> Image.Image:
         """이미지에 텍스트 그리기 (한글/영어 폰트 지원, 여러 줄 자동 분할)"""
         # 폰트 시도 (초기 크기)
-        base_font_size = 100
+        base_font_size = VideoConstants.BASE_FONT_SIZE
         font = None
         font_path_used = None
         
@@ -2952,13 +2097,13 @@ class AIVideoGenerator:
             image = image.convert('RGB')
         
         # 텍스트를 여러 줄로 분할 (최대 너비 고려)
-        max_width = 900  # 좌우 여백 90px
+        max_width = VideoConstants.SUBTITLE_MAX_WIDTH
         lines = self._wrap_text(text, font, max_width, base_font_size)
         
         # 폰트 크기 자동 조정 (텍스트가 너무 길면)
         if len(lines) > 3 and font_path_used:
             # 텍스트가 너무 많으면 폰트 크기 줄이기
-            for size in [90, 80, 70, 60]:
+            for size in VideoConstants.FONT_SIZES:
                 try:
                     font = ImageFont.truetype(font_path_used, size)
                     lines = self._wrap_text(text, font, max_width, size)
@@ -2967,7 +2112,7 @@ class AIVideoGenerator:
                 except BaseException:
                     continue
         
-        line_spacing = 50  # 줄 간격 (30 → 50으로 증가하여 간섭 방지 및 가독성 향상)
+        line_spacing = VideoConstants.LINE_SPACING
         # 텍스트 크기 계산
         draw = ImageDraw.Draw(image)
         line_heights = []
@@ -2983,27 +2128,14 @@ class AIVideoGenerator:
         max_line_width = max(line_widths) if line_widths else 0
         
         # 텍스트 위치 (중앙, 아래쪽)
-        x = (1080 - max_line_width) // 2
-        y = 1920 - total_height - 150  # 하단에서 150px 위
+        x = (VideoConstants.VIDEO_WIDTH - max_line_width) // 2
+        y = VideoConstants.VIDEO_HEIGHT - total_height - VideoConstants.SUBTITLE_BOTTOM_MARGIN
         
-        # 텍스트 배경 (반투명 검은색) - RGBA 모드로 작업
-        padding = 40
-        overlay = Image.new('RGBA', image.size, (0, 0, 0, 0))
-        overlay_draw = ImageDraw.Draw(overlay)
-        overlay_draw.rectangle(
-            [
-                x - padding,
-                y - padding,
-                x + max_line_width + padding,
-                y + total_height + padding
-            ],
-            fill=(0, 0, 0, 200)  # 더 진한 배경
-        )
-        
-        # 배경과 오버레이 합성
-        image_rgba = image.convert('RGBA')
-        image_rgba = Image.alpha_composite(image_rgba, overlay)
-        image = image_rgba.convert('RGB')
+        # 텍스트 배경 박스 제거 (사용자 요청: 배경 박스가 눈에 보이지 않도록)
+        # 배경 박스 없이 그림자 효과만 사용하여 가독성 유지
+        # 이미지를 RGB 모드로 유지 (배경 박스 없음)
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
         draw = ImageDraw.Draw(image)
         
         # 여러 줄 텍스트 그리기
@@ -3014,7 +2146,7 @@ class AIVideoGenerator:
                 
             line_bbox = draw.textbbox((0, 0), line, font=font)
             line_width = line_bbox[2] - line_bbox[0]
-            line_x = (1080 - line_width) // 2  # 각 줄도 중앙 정렬
+            line_x = (VideoConstants.VIDEO_WIDTH - line_width) // 2  # 각 줄도 중앙 정렬
             
             # 텍스트 그림자 효과 (가독성 향상) - 더 진하게
             draw.text((line_x + 4, current_y + 4),
@@ -3042,7 +2174,7 @@ class AIVideoGenerator:
         current_line = []
         
         # 폰트로 텍스트 크기 측정
-        temp_image = Image.new('RGB', (1080, 1920))
+        temp_image = Image.new('RGB', (VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
         temp_draw = ImageDraw.Draw(temp_image)
         
         for word in words:
@@ -3068,7 +2200,7 @@ class AIVideoGenerator:
     def _create_gradient_background(
         self, index: int, total: int) -> Image.Image:
         """그라데이션 배경 이미지 생성 + 시각적 요소 추가"""
-        width, height = 1080, 1920
+        width, height = VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT
         
         # 색상 팔레트
         colors = [
@@ -3150,11 +2282,11 @@ class AIVideoGenerator:
         """주제에 맞는 이미지 다운로드"""
         try:
             # 주제에서 키워드 추출
-            keywords = self._extract_keywords(topic)
+            keywords = self.media_downloader.extract_keywords(topic)
             keyword = keywords[0] if keywords else "nature"
             
             # 영어 키워드로 변환
-            english_keyword = self._translate_keyword_to_english(keyword)
+            english_keyword = self.media_downloader.translate_keyword_to_english(keyword)
             
             print(f"🖼️  주제 이미지 다운로드 시도: {topic} -> {english_keyword}")
             
@@ -3175,8 +2307,8 @@ class AIVideoGenerator:
             if img.mode != 'RGB':
                 img = img.convert('RGB')
             
-            # 1080x1920으로 리사이즈 및 크롭
-            img = self._resize_and_crop(img, 1080, 1920)
+            # 해상도에 맞게 리사이즈 및 크롭
+            img = self.media_downloader.resize_and_crop(img, VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT)
             
             print(f"✅ 주제 이미지 다운로드 성공: {english_keyword}")
             return img
@@ -3195,32 +2327,32 @@ class AIVideoGenerator:
             # 주제에서 키워드 추출 (우선 사용)
             topic_keyword = None
             if topic:
-                topic_keywords = self._extract_keywords(topic)
+                topic_keywords = self.media_downloader.extract_keywords(topic)
                 if topic_keywords:
                     topic_keyword = topic_keywords[0]
-                    topic_english = self._translate_keyword_to_english(
+                    topic_english = self.media_downloader.translate_keyword_to_english(
                         topic_keyword)
                     print(
                         f"🎯 주제 키워드 우선 사용: {topic} -> {topic_keyword} -> {topic_english}")
 
             # 문장에서 키워드 추출 (보조 사용, 주제와 관련된 경우만)
-            sentence_keywords = self._extract_keywords(sentence)
+            sentence_keywords = self.media_downloader.extract_keywords(sentence)
             sentence_keyword = sentence_keywords[0] if sentence_keywords else None
 
             # 주제 키워드를 우선 사용, 없으면 문장 키워드 사용
             if topic_keyword:
                 keyword = topic_keyword
-                english_keyword = self._translate_keyword_to_english(
+                english_keyword = self.media_downloader.translate_keyword_to_english(
                     topic_keyword)
             elif sentence_keyword:
                 keyword = sentence_keyword
-                english_keyword = self._translate_keyword_to_english(
+                english_keyword = self.media_downloader.translate_keyword_to_english(
                     sentence_keyword)
             else:
                 # 키워드가 없으면 주제를 직접 사용
                 if topic:
                     keyword = topic
-                    english_keyword = self._translate_keyword_to_english(topic)
+                    english_keyword = self.media_downloader.translate_keyword_to_english(topic)
                 else:
                     keyword = "nature"
                     english_keyword = "nature"
@@ -3242,30 +2374,30 @@ class AIVideoGenerator:
             if has_pexels and has_unsplash:
                 if use_pexels_first:
                     # Pexels 먼저 시도
-                    img = self._try_pexels_api(english_keyword, headers)
+                    img = self.media_downloader.try_pexels_api(english_keyword, headers)
                     if img:
                                 return img
                     # 실패하면 Unsplash 시도
-                    img = self._try_unsplash_api(english_keyword, headers)
+                    img = self.media_downloader.try_unsplash_api(english_keyword, headers)
                     if img:
                         return img
                 else:
                     # Unsplash 먼저 시도
-                    img = self._try_unsplash_api(english_keyword, headers)
+                    img = self.media_downloader.try_unsplash_api(english_keyword, headers)
                     if img:
                         return img
                     # 실패하면 Pexels 시도
-                    img = self._try_pexels_api(english_keyword, headers)
+                    img = self.media_downloader.try_pexels_api(english_keyword, headers)
                     if img:
                         return img
             elif has_pexels:
                 # Pexels만 사용
-                img = self._try_pexels_api(english_keyword, headers)
+                img = self.media_downloader.try_pexels_api(english_keyword, headers)
                 if img:
                     return img
             elif has_unsplash:
                 # Unsplash만 사용
-                img = self._try_unsplash_api(english_keyword, headers)
+                img = self.media_downloader.try_unsplash_api(english_keyword, headers)
                 if img:
                     return img
 
@@ -3289,7 +2421,7 @@ class AIVideoGenerator:
                             img = Image.open(BytesIO(img_response.content))
                             if img.mode != 'RGB':
                                 img = img.convert('RGB')
-                            img = self._resize_and_crop(img, 1080, 1920)
+                            img = self.media_downloader.resize_and_crop(img, VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT)
                             print(f"✅ Pixabay 이미지 다운로드 성공: {english_keyword}")
                             return img
             except Exception as e:
@@ -3310,7 +2442,7 @@ class AIVideoGenerator:
                         img = Image.open(BytesIO(response.content))
                         if img.mode != 'RGB':
                             img = img.convert('RGB')
-                        img = self._resize_and_crop(img, 1080, 1920)
+                        img = self.media_downloader.resize_and_crop(img, VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT)
                         print(f"✅ Unsplash 이미지 다운로드 성공: {english_keyword}")
                         return img
             except Exception as e:
@@ -3326,7 +2458,7 @@ class AIVideoGenerator:
             img = Image.open(BytesIO(response.content))
             if img.mode != 'RGB':
                 img = img.convert('RGB')
-            img = self._resize_and_crop(img, 1080, 1920)
+            img = self.media_downloader.resize_and_crop(img, VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT)
             
             print(f"⚠️  랜덤 이미지 사용 (키워드: {english_keyword})")
             return img
@@ -3335,151 +2467,8 @@ class AIVideoGenerator:
             print(f"⚠️  이미지 다운로드 실패 ({sentence[:20]}...): {e}")
             return None
     
-    def _resize_and_crop(
-        self,
-        img: Image.Image,
-        target_width: int,
-        target_height: int) -> Image.Image:
-        """이미지를 목표 크기에 맞게 리사이즈 및 크롭"""
-        img_width, img_height = img.size
-        target_ratio = target_width / target_height
-        img_ratio = img_width / img_height
-        
-        if img_ratio > target_ratio:
-            # 이미지가 더 넓음 - 높이에 맞춰서 리사이즈 후 좌우 크롭
-            new_height = target_height
-            new_width = int(new_height * img_ratio)
-            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            left = (new_width - target_width) // 2
-            img = img.crop((left, 0, left + target_width, target_height))
-        else:
-            # 이미지가 더 높음 - 너비에 맞춰서 리사이즈 후 상하 크롭
-            new_width = target_width
-            new_height = int(new_width / img_ratio)
-            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            top = (new_height - target_height) // 2
-            img = img.crop((0, top, target_width, top + target_height))
-        
-        return img
-    
-    def _extract_keywords(self, sentence: str) -> list:
-        """문장에서 이미지 키워드 추출 (AI 사용)"""
-        # AI를 사용해서 더 정확한 키워드 추출 시도
-        if self.openai_client:
-            try:
-                # Wrap OpenAI API call with retry logic
-                response = self._api_call_with_retry(
-                    self.openai_client.chat.completions.create,
-                    model="gpt-4o-mini",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "당신은 이미지/비디오 검색 키워드 추출 전문가입니다. 주어진 문장에서 배경 영상 검색에 적합한 시각적이고 구체적인 영어 키워드 1-3개를 추출하세요. 추상적인 문장이라면 'abstract', 'cinematic', 'moody' 같은 분위기 키워드를 포함하세요."
-                        },
-                        {
-                            "role": "user",
-                            "content": f"다음 문장에서 배경 영상 검색에 적합한 영어 키워드를 추출하세요 (쉼표로 구분, 최대 3개):\n\n{sentence}"
-                        }
-                    ],
-                    max_tokens=50,
-                    temperature=0.3
-                )
-                keywords_text = response.choices[0].message.content.strip()
-                # 쉼표나 줄바꿈으로 분리
-                keywords = [
-                    k.strip().lower() for k in re.split(
-        r'[,，\n]', keywords_text) if k.strip()]
-                # 영어가 아닌 것 제거
-                keywords = [k for k in keywords if k.isascii() and len(k) > 2]
-                if keywords:
-                    print(f"   AI 키워드 추출: {keywords}")
-                    return keywords[:3]
-            except Exception as e:
-                print(f"   AI 키워드 추출 실패, 기본 방법 사용: {e}")
-        
-        # AI 실패 시 기본 키워드 매핑 사용
-        keywords = []
-        
-        # 확장된 키워드 패턴
-        keyword_patterns = {
-            '건강': 'health', '건강한': 'healthy',
-            '운동': 'fitness', '운동하다': 'exercise',
-            '요리': 'cooking', '요리하다': 'cooking',
-            '음식': 'food', '먹다': 'eating',
-            '여행': 'travel', '여행하다': 'traveling',
-            '자기계발': 'self-improvement', '개발': 'development',
-            '습관': 'habit', '습관을': 'habit',
-            '아침': 'morning', '아침에': 'morning',
-            '루틴': 'routine', '일상': 'daily',
-            '공부': 'study', '학습': 'learning', '공부하다': 'studying',
-            '성공': 'success', '성공하다': 'success',
-            '동기부여': 'motivation', '동기': 'motivation',
-            '영감': 'inspiration', '영감을': 'inspiration',
-            '자연': 'nature', '자연의': 'nature',
-            '풍경': 'landscape', '경치': 'scenery',
-            '도시': 'city', '도시의': 'urban',
-            '사람': 'people', '사람들': 'people',
-            '행복': 'happiness', '행복한': 'happy',
-            '평화': 'peace', '평화로운': 'peaceful',
-            '물': 'water', '물을': 'water',
-            '스트레칭': 'stretching', '스트레칭하다': 'stretching',
-            '명상': 'meditation', '명상하다': 'meditation',
-            '목표': 'goal', '목표를': 'goal',
-            '과일': 'fruit', '과일을': 'fruit',
-            '오트밀': 'oatmeal', '시리얼': 'cereal',
-        }
-        
-        # 문장에서 키워드 찾기 (더 정확한 매칭)
-        sentence_lower = sentence.lower()
-        for korean, english in keyword_patterns.items():
-            if korean in sentence_lower:
-                keywords.append(english)
-        
-        # 키워드가 없으면 문장의 주요 단어 추출 시도
-        if not keywords:
-            # 한글 단어 추출 (간단한 방법)
-            words = re.findall(r'[가-힣]+', sentence)
-            if words:
-                # 가장 긴 단어를 키워드로 사용
-                longest_word = max(words, key=len)
-                # 기본 키워드 매핑에 없으면 'nature' 사용
-                keywords = ['nature', 'inspiration']
-            else:
-                keywords = ['nature', 'inspiration', 'motivation']
-        
-        return keywords[:3]  # 최대 3개
-    
-    def _translate_keyword_to_english(self, keyword: str) -> str:
-        """키워드를 영어로 변환 (간단한 매핑)"""
-        # 이미 영어면 그대로 반환
-        if keyword.isascii():
-            return keyword
-        
-        # 한글-영어 매핑
-        mapping = {
-            '건강': 'health',
-            '운동': 'fitness',
-            '요리': 'cooking',
-            '음식': 'food',
-            '여행': 'travel',
-            '자기계발': 'self-improvement',
-            '습관': 'habit',
-            '아침': 'morning',
-            '루틴': 'routine',
-            '공부': 'study',
-            '학습': 'learning',
-            '성공': 'success',
-            '동기부여': 'motivation',
-            '영감': 'inspiration',
-            '자연': 'nature',
-            '풍경': 'landscape',
-            '도시': 'city',
-            '사람': 'people',
-            '행복': 'happiness',
-            '평화': 'peace',
-        }
-        
-        return mapping.get(keyword, 'nature')
+    # _resize_and_crop, _extract_keywords, _translate_keyword_to_english 메서드는 
+    # MediaDownloader 클래스로 이동되었으므로 제거됨
     
     def _download_video_for_sentence(
         self,
@@ -3506,16 +2495,16 @@ class AIVideoGenerator:
             # 주제에서 키워드 추출 (우선 사용)
             topic_keyword = None
             if topic:
-                topic_keywords = self._extract_keywords(topic)
+                topic_keywords = self.media_downloader.extract_keywords(topic)
                 if topic_keywords:
                     topic_keyword = topic_keywords[0]
-                    topic_english = self._translate_keyword_to_english(
+                    topic_english = self.media_downloader.translate_keyword_to_english(
                         topic_keyword)
                     print(
                         f"🎯 주제 키워드 우선 사용: {topic} -> {topic_keyword} -> {topic_english}")
 
             # 문장에서 키워드 추출 (보조 사용, 주제와 관련된 경우만)
-            sentence_keywords = self._extract_keywords(sentence)
+            sentence_keywords = self.media_downloader.extract_keywords(sentence)
             sentence_keyword = sentence_keywords[0] if sentence_keywords else None
 
             # 우선순위 변경: 문장 키워드 > 주제 키워드
@@ -3523,16 +2512,16 @@ class AIVideoGenerator:
             
             if sentence_keyword:
                 keyword = sentence_keyword
-                english_keyword = self._translate_keyword_to_english(sentence_keyword)
+                english_keyword = self.media_downloader.translate_keyword_to_english(sentence_keyword)
                 print(f"🎯 문장 키워드 우선 사용: {sentence} -> {keyword} -> {english_keyword}")
             elif topic_keyword:
                 keyword = topic_keyword
-                english_keyword = self._translate_keyword_to_english(topic_keyword)
+                english_keyword = self.media_downloader.translate_keyword_to_english(topic_keyword)
                 print(f"⚠️ 문장 키워드 없음, 주제 키워드 사용: {topic} -> {keyword}")
             else:
                 if topic:
                     keyword = topic
-                    english_keyword = self._translate_keyword_to_english(topic)
+                    english_keyword = self.media_downloader.translate_keyword_to_english(topic)
                 else:
                     keyword = "nature"
                     english_keyword = "nature"
@@ -3637,12 +2626,12 @@ class AIVideoGenerator:
                                 file_size = vf.get('file_type', '')  # 파일 타입으로 품질 추정
                                 
                                 # 세로형 영상만 선택 (height >= width)
-                                if height >= width and height >= 480:
+                                if height >= width and height >= VideoConstants.MIN_VIDEO_HEIGHT:
                                     # 해상도 점수 계산 (width * height)
                                     quality_score = width * height
                                     
-                                    # 1080p 이상 우선 선택
-                                    if height >= 1080 and quality_score > best_quality:
+                                    # 선호 해상도 이상 우선 선택
+                                    if height >= VideoConstants.PREFERRED_VIDEO_HEIGHT and quality_score > best_quality:
                                         video_url = vf.get('link')
                                         best_quality = quality_score
                                     # 1080p가 없으면 720p 선택
@@ -3723,7 +2712,7 @@ class AIVideoGenerator:
 
                                                 print(
                                                     f"   시작-중간 차이: {start_mid_diff}, 시작-끝 차이: {start_end_diff}")
-                                                if start_mid_diff < 20 or start_end_diff < 20:
+                                                if start_mid_diff < VideoConstants.FRAME_CHECK_THRESHOLD or start_end_diff < VideoConstants.FRAME_CHECK_THRESHOLD:
                                                     print(
                                                         f"   ⚠️ 원본 영상이 반복되어 있을 가능성이 있습니다!")
                                                 
@@ -3743,13 +2732,13 @@ class AIVideoGenerator:
                                                     print(f"   📊 영상 품질 분석: 밝기={avg_brightness:.1f}/255, 대비={contrast:.1f}, 채도={color_saturation:.1f}")
                                                     
                                                     # 너무 어둡거나 밝은 영상 경고 (자막 가독성 고려)
-                                                    if avg_brightness < 30:
+                                                    if avg_brightness < VideoConstants.MIN_BRIGHTNESS:
                                                         print(f"   ⚠️ 영상이 너무 어둡습니다 (밝기: {avg_brightness:.1f}), 자막 가독성에 영향 가능")
-                                                    elif avg_brightness > 220:
+                                                    elif avg_brightness > VideoConstants.MAX_BRIGHTNESS:
                                                         print(f"   ⚠️ 영상이 너무 밝습니다 (밝기: {avg_brightness:.1f}), 자막 가독성에 영향 가능")
                                                     
                                                     # 대비가 낮으면 경고 (자막 가독성 저하)
-                                                    if contrast < 20:
+                                                    if contrast < VideoConstants.MIN_CONTRAST:
                                                         print(f"   ⚠️ 영상 대비가 낮습니다 (대비: {contrast:.1f}), 자막 가독성에 영향 가능")
                                             except Exception as frame_check_error:
                                                 # 프레임 확인 실패해도 영상은 사용 (오류 무시)
@@ -3759,8 +2748,8 @@ class AIVideoGenerator:
                                         video_clip.close()
                                         
                                         # 원본 영상만 저장 (루프 처리는 _create_video_from_script에서 수행)
-                                        # 영상이 너무 짧으면 (1초 미만) 다른 영상 시도하거나 이미지 사용
-                                        if video_duration < 1.0:
+                                        # 영상이 너무 짧으면 다른 영상 시도하거나 이미지 사용
+                                        if video_duration < VideoConstants.MIN_VIDEO_DURATION:
                                             print(
                                                 f"   영상이 너무 짧음 ({video_duration:.1f}초), 이미지로 대체")
                                             if os.path.exists(video_path):
@@ -3777,7 +2766,7 @@ class AIVideoGenerator:
                                         try:
                                             video_clip_check = VideoFileClip(
                                                 video_path)
-                                            if video_clip_check.duration < 1.0:
+                                            if video_clip_check.duration < VideoConstants.MIN_VIDEO_DURATION:
                                                 video_clip_check.close()
                                                 if os.path.exists(video_path):
                                                     os.remove(video_path)
@@ -4041,8 +3030,8 @@ class AIVideoGenerator:
             # 자막이 없는 원본 배경을 사용하기 위해 영상에서 프레임 추출 후 자막 영역 제거
         video = VideoFileClip(video_path)
         duration = video.duration
-        # 영상의 30-40% 지점에서 프레임 추출 (일반적으로 가장 매력적인 부분)
-        frame_time = duration * 0.35
+        # 영상의 중간 지점에서 프레임 추출 (일반적으로 가장 매력적인 부분)
+        frame_time = duration * VideoConstants.THUMBNAIL_FRAME_RATIO
         frame = video.get_frame(frame_time)
         video.close()
         
@@ -4053,15 +3042,15 @@ class AIVideoGenerator:
         # 자막은 보통 하단 중앙에 위치하므로, 해당 영역을 블러 처리하여 제거
         from PIL import ImageFilter
         width, height = img.size
-        # 하단 30% 영역을 블러 처리 (자막 제거)
-        bottom_region = img.crop((0, int(height * 0.7), width, height))
+        # 하단 영역을 블러 처리 (자막 제거)
+        bottom_region = img.crop((0, int(height * VideoConstants.THUMBNAIL_BOTTOM_REGION), width, height))
         blurred_bottom = bottom_region.filter(
-            ImageFilter.GaussianBlur(radius=20))
-        img.paste(blurred_bottom, (0, int(height * 0.7)))
+            ImageFilter.GaussianBlur(radius=VideoConstants.THUMBNAIL_BLUR_RADIUS))
+        img.paste(blurred_bottom, (0, int(height * VideoConstants.THUMBNAIL_BOTTOM_REGION)))
         
-        # 이미지 크기 확인 및 조정 (1080x1920)
-        if img.size != (1080, 1920):
-            img = img.resize((1080, 1920), Image.Resampling.LANCZOS)
+        # 이미지 크기 확인 및 조정
+        if img.size != (VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT):
+            img = img.resize((VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT), Image.Resampling.LANCZOS)
         
         # 매력적인 제목/내용 생성 (AI 활용)
         attractive_texts = self._generate_attractive_thumbnail_text(
@@ -4142,7 +3131,7 @@ class AIVideoGenerator:
         subscribe_bbox = draw.textbbox((0, 0), subscribe_text, font=badge_font)
         subscribe_width = subscribe_bbox[2] - subscribe_bbox[0]
         subscribe_height = subscribe_bbox[3] - subscribe_bbox[1]
-        subscribe_x = 1080 - subscribe_width - badge_padding - 50  # 오른쪽 정렬
+        subscribe_x = VideoConstants.VIDEO_WIDTH - subscribe_width - badge_padding - 50  # 오른쪽 정렬
         subscribe_y = 50
         
         # Subscribe 배지 배경 (빨간색, SHORTS와 동일한 스타일)
@@ -4530,7 +3519,7 @@ Format: First line only or "First line / Second line"
                         img = Image.open(BytesIO(img_response.content))
                         if img.mode != 'RGB':
                             img = img.convert('RGB')
-                        img = self._resize_and_crop(img, 1080, 1920)
+                        img = self.media_downloader.resize_and_crop(img, VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT)
                         print(f"✅ Pexels 이미지 다운로드 성공: {english_keyword}")
                         return img
         except Exception as e:
@@ -4579,7 +3568,7 @@ Format: First line only or "First line / Second line"
                         img = Image.open(BytesIO(img_response.content))
                         if img.mode != 'RGB':
                             img = img.convert('RGB')
-                        img = self._resize_and_crop(img, 1080, 1920)
+                        img = self.media_downloader.resize_and_crop(img, VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT)
                         print(f"✅ Unsplash 이미지 다운로드 성공: {english_keyword}")
                         return img
         except Exception as e:
@@ -4816,39 +3805,8 @@ Format: First line only or "First line / Second line"
                         text_height = bbox[3] - bbox[1]
                         x_pos = (1080 - text_width) // 2
 
-                        # 배경 박스 (그라데이션 배경 - 더 현대적인 스타일)
-                        padding = 15
-                        box_x1 = x_pos - padding
-                        box_y1 = y_offset - padding
-                        box_x2 = x_pos + text_width + padding
-                        box_y2 = y_offset + text_height + padding
-                        
-                        # 그라데이션 배경 생성 (검은색에서 약간 밝은 검은색으로)
-                        overlay = Image.new(
-                            'RGBA', (1080, subtitle_height), (0, 0, 0, 0))
-                        overlay_draw = ImageDraw.Draw(overlay)
-                        
-                        # 그라데이션 배경 (위에서 아래로)
-                        for y in range(box_y1, box_y2):
-                            if y < subtitle_height:
-                                # 알파 값: 위쪽 200, 아래쪽 220 (더 진한 배경)
-                                alpha = int(200 + (y - box_y1) * 20 / (box_y2 - box_y1))
-                                alpha = min(255, max(180, alpha))
-                                overlay_draw.rectangle(
-                                    [box_x1, y, box_x2, y + 1],
-                                    fill=(0, 0, 0, alpha)
-                                )
-                        
-                        # 둥근 모서리 효과 (선택적, 성능 고려)
-                        # 배경 박스에 약간의 테두리 추가 (더 명확한 구분)
-                        overlay_draw.rectangle(
-                            [box_x1, box_y1, box_x2, box_y2],
-                            outline=(255, 255, 255, 60),
-                            width=2
-                        )
-                        
-                        subtitle_img = Image.alpha_composite(
-                            subtitle_img, overlay)
+                        # 배경 박스 제거 (사용자 요청: 배경 박스가 눈에 보이지 않도록)
+                        # 그림자 효과만 사용하여 가독성 유지
                         draw = ImageDraw.Draw(subtitle_img)
 
                         # 더 강한 그림자 효과 (가독성 향상)

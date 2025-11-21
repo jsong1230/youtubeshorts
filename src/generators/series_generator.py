@@ -7,7 +7,8 @@ from typing import List, Dict, Optional
 from datetime import datetime
 from enum import Enum
 import config
-from src.generators.video_generator import AIVideoGenerator, ContentType
+from src.generators.video_generator import AIVideoGenerator
+from src.generators.content_type import ContentType
 from src.pipeline.topic_database import TopicDatabase, TopicSource
 
 

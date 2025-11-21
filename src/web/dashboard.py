@@ -303,7 +303,7 @@ def generate_series():
             series_type_enum = SeriesType.SEQUENTIAL
         
         # ContentType 변환
-        from src.generators.video_generator import ContentType
+        from src.generators.content_type import ContentType
         try:
             content_type_enum = ContentType(content_type.lower())
         except ValueError:

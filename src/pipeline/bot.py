@@ -13,7 +13,8 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.generators.video_generator import AIVideoGenerator, ContentType
+from src.generators.video_generator import AIVideoGenerator
+from src.generators.content_type import ContentType
 from src.uploaders.youtube_uploader import YouTubeUploader
 from src.uploaders.multi_platform_uploader import MultiPlatformUploader
 from src.analytics.monetization import MonetizationTracker
