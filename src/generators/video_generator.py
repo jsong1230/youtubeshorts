@@ -182,14 +182,35 @@ class AIVideoGenerator:
     
     def _get_high_performing_topics(self, content_type: ContentType) -> List[str]:
         """콘텐츠 타입별 성과가 좋았던 주제 풀을 반환."""
+        topics = []
+        
+        # 주제 데이터베이스에서 성과가 좋은 주제 가져오기
+        try:
+            from src.pipeline.topic_database import TopicDatabase, TopicStatus
+            topic_db = TopicDatabase()
+            
+            db_topics = topic_db.get_high_performing_topics(
+                content_type=content_type.value if content_type != ContentType.AUTO else None,
+                days=30,
+                min_views=100,
+                min_engagement_rate=1.0,
+                limit=10
+            )
+            topics.extend(db_topics)
+        except Exception as e:
+            print(f"⚠️ 주제 데이터베이스에서 성과 주제 가져오기 실패: {e}")
+        
+        # 하드코딩된 성과 주제 추가 (폴백)
         if content_type == ContentType.AUTO:
-            topics: List[str] = []
             for key, values in self.HIGH_PERFORMING_TOPICS.items():
                 if key == ContentType.AUTO:
                     continue
                 topics.extend(values)
-            return topics
-        return self.HIGH_PERFORMING_TOPICS.get(content_type, [])
+        else:
+            topics.extend(self.HIGH_PERFORMING_TOPICS.get(content_type, []))
+        
+        # 중복 제거
+        return list(dict.fromkeys(topics))  # 순서 유지하면서 중복 제거
 
     def _get_youtube_trending_topics(self) -> List[str]:
         """YouTube 트렌드 주제 가져오기 (캐싱 사용)"""

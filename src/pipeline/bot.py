@@ -521,6 +521,21 @@ class ShortsBot:
                     comments=stats.get('comments', 0)
                 )
                 self.monetization.update_video_stats(video_id)
+                
+                # 주제 데이터베이스 통계도 업데이트
+                try:
+                    from src.pipeline.topic_database import TopicDatabase
+                    topic_db = TopicDatabase()
+                    topic_db.link_topic_to_video(
+                        topic=actual_topic,
+                        video_id=video_id,
+                        views=stats.get('views', 0),
+                        likes=stats.get('likes', 0),
+                        comments=stats.get('comments', 0)
+                    )
+                    print(f"✅ 주제 데이터베이스 통계 업데이트 완료")
+                except Exception as e:
+                    print(f"⚠️ 주제 데이터베이스 통계 업데이트 실패: {e}")
             
             print(f"\n✅ 완료! 영상 ID: {video_id}")
             print(f"🔗 https://www.youtube.com/watch?v={video_id}\n")
@@ -629,16 +644,48 @@ class ShortsBot:
         print("📊 모든 영상 통계 업데이트 중...")
         self.monetization.update_all_videos()
         
+        # 주제 데이터베이스 초기화
+        from src.pipeline.topic_database import TopicDatabase
+        topic_db = TopicDatabase()
+        
         # 데이터베이스 통계도 업데이트
         for video in self.monetization.data.get('videos', []):
-            stats = self.uploader.get_video_stats(video['video_id'])
+            video_id = video['video_id']
+            stats = self.uploader.get_video_stats(video_id)
             if stats:
                 self.database.update_video_stats(
-                    video_id=video['video_id'],
+                    video_id=video_id,
                     views=stats.get('views', 0),
                     likes=stats.get('likes', 0),
                     comments=stats.get('comments', 0)
                 )
+                
+                # 주제 데이터베이스 통계도 업데이트
+                topic = video.get('title')  # 제목을 주제로 사용 (실제로는 topic 필드가 있으면 그것을 사용)
+                # videos 테이블에서 topic 가져오기
+                video_data = self.database.get_video_by_id(video_id)
+                if video_data and video_data.get('topic'):
+                    topic = video_data['topic']
+                    try:
+                        topic_db.link_topic_to_video(
+                            topic=topic,
+                            video_id=video_id,
+                            views=stats.get('views', 0),
+                            likes=stats.get('likes', 0),
+                            comments=stats.get('comments', 0)
+                        )
+                    except Exception as e:
+                        print(f"⚠️ 주제 데이터베이스 통계 업데이트 실패 ({video_id}): {e}")
+        
+        # 성과가 낮은 주제 자동 필터링
+        print("\n🔽 성과가 낮은 주제 자동 필터링 중...")
+        filtered_count = topic_db.filter_low_performing_topics(
+            days=30,
+            max_engagement_rate=0.5,
+            min_use_count=1
+        )
+        if filtered_count > 0:
+            print(f"✅ {filtered_count}개 주제 필터링 완료")
         
         self.monetization.print_report()
 

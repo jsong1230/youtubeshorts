@@ -27,6 +27,14 @@
   - **video_generator.py 통합**: `_generate_seasonal_topics_from_trends()` 메서드로 AI 생성 계절별 주제를 계절별 주제 풀에 자동 추가
   - **7일 캐싱**: 계절별 주제는 7일 캐시로 API 호출 최소화 (계절별 주제는 더 오래 유효)
   - **품질 검증**: 기존 계절별 주제와 중복 방지, 품질 점수 50점 이상인 주제만 사용
+- **주제 데이터베이스 관리 시스템 완성**: 주제의 생명주기 관리 및 성과 추적 시스템 구축
+  - **TopicDatabase 클래스 완성**: 주제 추가/삭제/업데이트, 성과 추적, 자동 필터링 기능 구현
+  - **주제 데이터베이스 스키마**: topics 테이블 (주제 정보) 및 topic_videos 테이블 (주제-영상 연결) 설계
+  - **자동 통계 업데이트**: 영상 업로드 시 주제 데이터베이스에 자동 저장, 통계 업데이트 시 주제 통계도 함께 업데이트
+  - **성과 기반 주제 선택**: `_get_high_performing_topics()` 메서드가 주제 데이터베이스에서 성과가 좋은 주제를 자동으로 가져옴
+  - **자동 필터링**: `update_all_stats()` 실행 시 성과가 낮은 주제(참여율 0.5% 이하)를 자동으로 필터링
+  - **주제 출처 추적**: 주제 출처(manual, ai_generated, seasonal_ai, trend, seasonal, performance)를 추적하여 분석 가능
+  - **data 폴더 Git 포함**: data 폴더의 JSON 파일을 Git에 포함하여 다른 머신에서도 히스토리 추적 가능
 - **API 사용 정책 명확화**: ChatGPT API와 Claude API만 유료로 사용, DALL-E 3와 OpenAI TTS는 OpenAI API로 함께 사용
   - **DALL-E 3 썸네일 생성**: OpenAI API로 사용 (기존대로 유지)
   - **OpenAI TTS 자동 선택**: OpenAI API 키가 있으면 자동으로 OpenAI TTS 사용 (기존대로 유지)
