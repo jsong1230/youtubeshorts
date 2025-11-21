@@ -15,6 +15,10 @@
 - **자막 위치 조정**: 아이폰 UI 가림 방지를 위해 하단 여백을 대폭 확대 (약 300px 상향 조정)
 - **버그 수정**: 자막 위치가 강제로 하단으로 초기화되던 문제 수정 (Composite 단계 오버라이드 제거)
 - **영상 생성 테스트**: 자막 위치 조정 후 테스트 영상 생성 (`output/videos/shorts_20251121_151418.mp4`, 42초)
+- **콘텐츠 최적화 가이드 2025 업데이트**: `docs/CONTENT_OPTIMIZATION.md`, README, .cursorrules에 트렌드/계절/루틴 기반 전략과 영어 전용 정책을 반영
+- **TREND_MODE 도입**: `TREND_MODE=true` 시 글로벌 트렌드(40%)·계절(25%)·채널 성과(20%)·탐색(15%) 가중치로 주제 선택, 성과형 주제 풀과 로그 출력 추가
+- **영어 메타데이터 정비**: `.env` 예시의 기본 설명/태그를 영어로 통일하고 YouTube 업로드 설명/태그도 영어 기준으로 업데이트
+- **영상 생성 테스트**: `output/videos/shorts_20251121_150056.mp4` (약 54초, 주제: *Logging expenses for 30 days changed my bank balance*), 썸네일 `output/thumbnails/thumb_20251121_150222.jpg` (DALL·E 3로 생성)
 
 **이전 업데이트 (2025-11-19)**:
 - 영어 콘텐츠 생성 지원 (스크립트, 자막, 썸네일)
@@ -103,6 +107,13 @@
   5. `shorts_20251121_005239.mp4` → `neKDpoaoWoQ` → *Micro-Morning Routine for High-Energy Productivity*
   6. `shorts_20251121_005623.mp4` → `LEoAEnnYpGw` → *Recession-Proof Skill Stack: Combine Storytelling + Data*
 - 각 영상은 썸네일까지 정상 업로드 되었으며, `token.json` 기반 인증이 안정적으로 재사용됨
+
+### 2025-11-21: 트렌드 가중치 기반 주제 선택 + 2025 콘텐츠 가이드
+- `docs/CONTENT_OPTIMIZATION.md`를 2025 트렌드 버전으로 전면 교체하고, README/.env 예시/.cursorrules에도 영어 전용 정책과 `TREND_MODE` 옵션을 반영
+- `config.py`에 `TREND_MODE` 환경 변수를 추가하고, `AIVideoGenerator`에 글로벌/계절/성과/탐색 가중치(40/25/20/15) 기반 주제 선택 헬퍼를 도입
+- 콘텐츠 타입별 기본 주제 목록을 2025 확장 주제팩(심플 라이프, AI 자동화, 금융 한 줄, 심리 팩트, 변화 스토리)으로 보강하고, 성과형 주제 풀과 출처 로그(🌍/🍂/📈/🎲)를 출력
+- README `.env` 예시의 기본 설명/태그를 영어로 통일하고, YouTube 자동 업로드 섹션도 영어 기본 설명/태그로 교체
+- 테스트: `python main.py test` 실행으로 `output/videos/shorts_20251121_150056.mp4` (약 54초, 타입: `short_story`, 주제: *Logging expenses for 30 days changed my bank balance*) 생성, 썸네일 `output/thumbnails/thumb_20251121_150222.jpg`는 DALL·E 3로 자동 생성 및 영상 첫 프레임 삽입
 
 ### 2025-11-19: Instagram 연결 테스트 명령 추가
 - `InstagramUploader`가 Instagram Graph API(`v21.0`) 계정 정보를 직접 조회해 자격 증명을 검증하도록 개선

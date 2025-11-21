@@ -15,6 +15,7 @@
 - **자막 가독성**: 전체 문장 자막의 줄 간격을 30px로 확대하여 읽기 쉬움 ✅
 - **Claude 모델 우선순위**: 404가 나는 `claude-3-5-sonnet-20241022`는 마지막으로, 안정 모델을 먼저 시도하도록 조정 ✅
 - **자막 위치 조정**: 아이폰 UI 가림 방지를 위해 하단 여백을 300px 추가 상향 (ImageMagick: 400px, PIL: 450px) ✅
+- **TREND_MODE 가중치**: `TREND_MODE=true` 시 글로벌 트렌드(40%)·계절(25%)·성과(20%)·탐색(15%) 비율로 주제 선택, 성과형 주제 풀과 로그 출력 추가 ✅ (2025-11-21)
 - **상태**: 주요 개선 사항 완료, 지속적인 테스트 및 최적화 필요
 
 ## 🧪 최근 테스트 로그
@@ -35,6 +36,7 @@
   - `shorts_20251121_004859.mp4` → `q3uI1v923X8` (*Credit Score Glow-Up: 30-Day Plan for Millennials*)
   - `shorts_20251121_005239.mp4` → `neKDpoaoWoQ` (*Micro-Morning Routine for High-Energy Productivity*)
   - `shorts_20251121_005623.mp4` → `LEoAEnnYpGw` (*Recession-Proof Skill Stack: Combine Storytelling + Data*)
+- **2025-11-21**: 트렌드 가중치 로직 테스트 (`output/videos/shorts_20251121_150056.mp4`, 53.5s, 타입: `short_story`, 주제: *Logging expenses for 30 days changed my bank balance*, 썸네일 `output/thumbnails/thumb_20251121_150222.jpg`)
 
 ## 🚀 단기 목표 (우선순위 높음)
 

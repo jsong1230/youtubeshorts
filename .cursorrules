@@ -102,6 +102,7 @@ youtubeshorts/
 
 ### 4. 주제 선택 로직
 - 계절별 주제 선택: 현재 날짜 기반으로 계절 판단 (`_get_season()`)
+- `TREND_MODE=true`일 때는 글로벌 트렌드(40%) + 계절(25%) + 채널 성과(20%) + 탐색(15%) 가중치로 주제를 선택
 - 주제 카테고리:
   - 🌤 **계절**: 봄/여름/가을/겨울에 맞는 실용적인 주제
   - 🏠 **생활**: 집 정리, 냉장고 관리, 옷장 정리 등
@@ -133,6 +134,7 @@ youtubeshorts/
 - `SHORTS_TARGET_DURATION`: 55초 (목표)
 - `SHORTS_MAX_DURATION`: 60초 (최대)
 - `AI_API_PROVIDER`: `openai` 또는 `claude` (기본값: `openai`)
+- `TREND_MODE`: `true` 시 2025 트렌드 가중치 시스템 활성 (글로벌 40% / 계절 25% / 성과 20% / 탐색 15%)
 - `ENABLE_TIKTOK_UPLOAD`: `false` (기본값, YouTube만 사용)
 - `ENABLE_INSTAGRAM_UPLOAD`: `false` (기본값, YouTube만 사용)
 

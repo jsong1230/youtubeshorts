@@ -10,7 +10,7 @@ from moviepy.editor import (
     VideoFileClip, ImageClip, TextClip,
     concatenate_videoclips, AudioFileClip, CompositeVideoClip
 )
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 from moviepy.video.fx.all import fadein, fadeout
 from PIL import Image, ImageDraw, ImageFont
 try:
@@ -62,6 +62,48 @@ class ContentType(Enum):
 
 class AIVideoGenerator:
     """AI를 활용한 15초 YouTube Shorts 영상 생성 클래스"""
+    
+    TREND_WEIGHTS = {
+        "global": 0.40,
+        "seasonal": 0.25,
+        "performance": 0.20,
+        "exploration": 0.15,
+    }
+
+    HIGH_PERFORMING_TOPICS = {
+        ContentType.HOOK: [
+            "Money vanishes in patterns, not accidents.",
+            "Structure builds wealth faster than motivation ever could.",
+            "AI automation frees the 30 minutes you keep losing.",
+            "Routines decide your life long before you do.",
+            "Tiny routines create massive peace.",
+        ],
+        ContentType.QUOTE: [
+            "Tiny routines create massive peace.",
+            "Money is measurement; direction is wealth.",
+            "Consistency outruns talent every single time.",
+            "Decluttering a room calms your mind, and a calm mind cuts anxiety.",
+        ],
+        ContentType.STORY: [
+            "He cleared one closet and reset his entire routine.",
+            "A 30-day expense log rebuilt her bank balance.",
+            "A five-minute evening review saved a burned-out manager.",
+            "An AI micro-routine gave him back an hour every morning.",
+        ],
+        ContentType.FACT: [
+            "Tracking spend for 30 days cuts impulse buys by 15%.",
+            "Decluttered desks raise focus by 25%.",
+            "Skipping a winter oil check can cost an engine replacement.",
+            "AI batching saves at least 30 minutes per day.",
+        ],
+        ContentType.SHORT_STORY: [
+            "Logging expenses for 30 days changed my bank balance.",
+            "Ten minutes of routine completely rerouted her life.",
+            "Preparing for winter once cut our heating bill in half.",
+            "I automated emails with AI and finally slept.",
+        ],
+        ContentType.AUTO: [],
+    }
     
     def __init__(self, tts_provider=None):
         # OpenAI 클라이언트 초기화
@@ -121,6 +163,59 @@ class AIVideoGenerator:
         os.makedirs(config.VIDEO_OUTPUT_DIR, exist_ok=True)
         os.makedirs(config.TEMP_DIR, exist_ok=True)
         os.makedirs(config.THUMBNAIL_OUTPUT_DIR, exist_ok=True)
+    
+    def _get_high_performing_topics(self, content_type: ContentType) -> List[str]:
+        """콘텐츠 타입별 성과가 좋았던 주제 풀을 반환."""
+        if content_type == ContentType.AUTO:
+            topics: List[str] = []
+            for key, values in self.HIGH_PERFORMING_TOPICS.items():
+                if key == ContentType.AUTO:
+                    continue
+                topics.extend(values)
+            return topics
+        return self.HIGH_PERFORMING_TOPICS.get(content_type, [])
+
+    def _select_topic_with_strategy(
+        self,
+        global_topics: List[str],
+        seasonal_topics: List[str],
+        performance_topics: List[str]
+    ) -> Tuple[str, Optional[str]]:
+        """TREND_MODE 여부에 따라 주제 선택 전략을 적용."""
+        global_pool = [topic for topic in global_topics if topic]
+        seasonal_pool = [topic for topic in seasonal_topics if topic]
+        performance_pool = [topic for topic in performance_topics if topic]
+
+        if getattr(config, 'TREND_MODE', False):
+            pools: List[Tuple[List[str], str]] = []
+            weights: List[float] = []
+
+            def add_pool(pool: List[str], source: str, weight: float) -> None:
+                if pool and weight > 0:
+                    pools.append((pool, source))
+                    weights.append(weight)
+
+            add_pool(global_pool, 'global_trend', self.TREND_WEIGHTS['global'])
+            add_pool(seasonal_pool, 'seasonal', self.TREND_WEIGHTS['seasonal'])
+            add_pool(performance_pool, 'performance', self.TREND_WEIGHTS['performance'])
+
+            exploration_candidates = list(dict.fromkeys(
+                global_pool + seasonal_pool + performance_pool))
+            exploration_pool = exploration_candidates or global_pool or seasonal_pool or performance_pool
+            add_pool(exploration_pool, 'exploration', self.TREND_WEIGHTS['exploration'])
+
+            if pools:
+                idx = random.choices(range(len(pools)), weights=weights, k=1)[0]
+                selected_pool, source = pools[idx]
+                return random.choice(selected_pool), source
+
+        if seasonal_pool and random.random() < 0.25:
+            return random.choice(seasonal_pool), 'seasonal'
+
+        fallback_pool = global_pool or performance_pool or seasonal_pool
+        if not fallback_pool:
+            return "Momentum reset routine", 'global_trend'
+        return random.choice(fallback_pool), 'global_trend'
     
     def _build_default_script(
         self,
@@ -423,21 +518,30 @@ class AIVideoGenerator:
                 "Disciplined savers always do this first on payday",
                 "How some people grow assets faster than their paycheck",
                 "The most realistic investing path for busy professionals",
+                "Money vanishes in patterns, not accidents.",
+                "Structure builds wealth faster than motivation ever could.",
                 # 🧠 Self-improvement / Routine Hooks
                 "Ten minutes of routine that completely reroutes your life",
                 "The morning behaviors high performers never skip",
                 "The exact moment weak follow-through collapses",
                 "Why top performers rely on systems, not motivation",
                 "Why late-night work rarely turns into real results",
+                "Routines decide your life long before you do.",
+                "Tiny routines create massive peace.",
                 # 🏠 Lifestyle / Declutter Hooks
                 "The simple rule people with tidy homes follow every day",
                 "Why you keep buying clothes but feel you have nothing to wear",
                 "A chaotic fridge usually signals chaotic money habits",
                 "Declutter one room and watch your stress plummet",
+                "Only 20% of your closet actually leaves the house.",
                 # 🚨 Risk / Downside Protection Hooks
                 "One accident that can erase years of savings overnight",
                 "Why insurance alone can’t keep you from bankruptcy",
                 "How some people turn crises into opportunities while others crumble",
+                "Skipping winter maintenance is the most expensive gamble.",
+                # 🤖 AI / Automation Hooks
+                "AI automation frees the 30 minutes you keep losing.",
+                "Treat your calendar like code and it stops breaking.",
             ]
             # 계절별 우선 주제
             seasonal_topics = {
@@ -473,16 +577,19 @@ class AIVideoGenerator:
                 "A clean home is a shortcut to a rested mind.",
                 "Tiny routines create massive peace.",
                 "Preparing for winter is really about removing future discomfort.",
+                "Simplicity is the cheat code for focus.",
                 # 💸 Money / Investing Quotes
                 "Wealth is built by structure, not random savings.",
                 "Time in the market beats timing the market.",
                 "The moment you track spending, new options appear.",
                 "Managers of money become rich; earners alone rarely do.",
                 "Wealth gaps come from repeated choices, not single wins.",
+                "Money is measurement; direction is wealth.",
                 # 🧠 Self-development Quotes
                 "Routines become habits, and habits build your life.",
                 "Improve by one percent today and you become someone else in a year.",
                 "Consistency outruns talent every single time.",
+                "Automation is focus insurance.",
             ]
             seasonal_topics = {
                 'spring': [
@@ -509,14 +616,18 @@ class AIVideoGenerator:
                 "The winter their heating bill dropped in half",
                 "The messy closet that turned into a seasonal reset routine",
                 "A driver who almost paid thousands because they skipped one inspection",
+                "He cleared one closet and reset his entire routine.",
                 # 💸 Money / Investing Stories
                 "The employee who grew $250K of assets on a $40K salary",
                 "A simple auto-invest rule that changed an average worker’s life",
                 "She tracked spending for 60 days and freed $300 every month",
                 "The notebook that documented the road to financial independence",
+                "A 30-day expense log rebuilt her bank balance.",
                 # 🧠 Self-development Stories
                 "Ten-minute routines that rescued someone’s burnout",
                 "How a chronic planner finally became an action-taker",
+                "A five-minute evening review saved a burned-out manager.",
+                "An AI micro-routine gave him back an hour every morning.",
             ]
             seasonal_topics = {
                 'spring': ["The messy closet that turned into a seasonal reset routine"],
@@ -534,6 +645,7 @@ class AIVideoGenerator:
                 "The physics behind why some homes pay half the heating cost",
                 "Clothes discolor faster when your closet airflow is blocked",
                 "Fridge odor usually means you’re throwing away 20% of groceries",
+                "Decluttered desks raise focus by 25%.",
                 # 🚗 Car Facts
                 "Skipping one winter oil check can cost a full engine replacement",
                 "Worn tires raise stopping distance by up to 40%",
@@ -542,9 +654,11 @@ class AIVideoGenerator:
                 "Wealthy people track spending to see direction, not guilt",
                 "Compound interest is a patience game, not a math trick",
                 "Broad-market ETFs are the safest on-ramp for new investors",
+                "Tracking spend for 30 days cuts impulse buys by 15%.",
                 # 🧠 Self-development Facts
                 "Morning routines increase decision-making speed by 23%",
                 "Small habits change your default choices—not just your mood",
+                "AI batching saves at least 30 minutes per day.",
             ]
             seasonal_topics = {
                 'spring': [
@@ -571,12 +685,15 @@ class AIVideoGenerator:
                 "Preparing for winter once cut our heating bill in half",
                 "Labeling fridge zones stopped us from throwing away food",
                 "Controlling humidity removed that strange smell overnight",
+                "Ten minutes of routine completely rerouted her life.",
                 # 💸 Money Short Stories
                 "Switching from savings to auto-investing finally left money in my account",
                 "Logging expenses for 30 days changed my bank balance",
+                "Automating tiny bills finally calmed my bank account.",
                 # 🧠 Self-development Short Stories
                 "A five-minute evening review saved my burnout",
                 "Choosing one tiny action daily created a huge pivot",
+                "I automated emails with AI and finally slept.",
             ]
             seasonal_topics = {
                 'spring': [
@@ -607,16 +724,24 @@ class AIVideoGenerator:
                 'winter': ["A seasonal refresh you can do right now"]
             }
 
-        # 계절에 맞는 주제를 우선적으로 선택 (25% 확률)
-        if random.random() < 0.25 and current_season in seasonal_topics:
-            seasonal_list = seasonal_topics[current_season]
-            if seasonal_list:
-                topic = random.choice(seasonal_list)
-                print(f"🍂 계절 주제 선택: {current_season} → '{topic}'")
-                return topic, content_type
+        seasonal_list = seasonal_topics.get(current_season, [])
+        performance_topics = self._get_high_performing_topics(content_type)
 
-        # 일반 주제 선택
-        topic = random.choice(topics)
+        topic, source = self._select_topic_with_strategy(
+            global_topics=topics,
+            seasonal_topics=seasonal_list,
+            performance_topics=performance_topics
+        )
+
+        if source == 'seasonal':
+            print(f"🍂 계절 주제 선택: {current_season} → '{topic}'")
+        elif source == 'performance':
+            print(f"📈 성과 기반 주제 선택: '{topic}'")
+        elif source == 'exploration':
+            print(f"🎲 탐색 주제 선택: '{topic}'")
+        elif source == 'global_trend' and getattr(config, 'TREND_MODE', False):
+            print(f"🌍 트렌드 주제 선택: '{topic}'")
+
         return topic, content_type
     
     def _generate_script(
@@ -796,7 +921,7 @@ class AIVideoGenerator:
             ]
             response = None
             last_error = None
-                
+
             for model in models_to_try:
                 try:
                     response = self.claude_client.messages.create(
@@ -941,7 +1066,7 @@ class AIVideoGenerator:
         try:
             # 콘텐츠 타입별 설정 (55초 목표로 충분한 내용 생성)
             prefer_short = False  # 55초 목표이므로 짧은 영상 비활성화
-                
+
             if content_type is None:
                 content_type_str = getattr(config, 'CONTENT_TYPE', 'auto')
                 try:
@@ -1205,6 +1330,7 @@ class AIVideoGenerator:
             if "does not have access" in error_msg or "model_not_found" in error_msg:
                 print(f"⚠️ OpenAI API 키가 모델에 접근할 수 없습니다.")
                 print(f"   OpenAI Platform에서 모델 접근 권한을 확인하세요.")
+
         # AI 생성 실패 시 기본 스크립트 반환 (55초 목표를 위해 12-16개 문장)
         print(f"⚠️ AI 스크립트 생성 실패로 기본 스크립트를 사용합니다.")
         return self._build_default_script(topic, language=language)
@@ -1389,7 +1515,6 @@ class AIVideoGenerator:
                     # 배경 영상을 처음 로드하거나 새로운 배경 영상이면 전체 영상 로드
                     if current_bg_video_clip is None:
                         print(f"   📹 배경 영상 로드: {bg_video_path}")
-                        print(f"   📹 배경 영상 로드: {bg_video_path}")
                         source_video = VideoFileClip(bg_video_path)
                         source_duration = source_video.duration
                         print(f"   원본 영상 길이: {source_duration:.2f}초")
@@ -1397,7 +1522,6 @@ class AIVideoGenerator:
                         current_bg_video_clip = source_video.resize((1080, 1920))
                         current_bg_video_start_time = 0.0
                         current_bg_video_used_duration = 0.0
-                        source_duration = current_bg_video_clip.duration
                     start_time = current_bg_video_start_time
                     source_duration = current_bg_video_clip.duration
 
@@ -1496,11 +1620,10 @@ class AIVideoGenerator:
                                 actual_audio_duration)  # duration 유지
 
                         # 첫 문장만 fade in
-                        # 첫 문장만 fade in
-                        # 첫 문장만 fade in
                         if i == 0:
                             video_clip = video_clip.fx(fadein, 0.5)
-                            video_clip = video_clip.set_duration(actual_audio_duration)  # duration 유지
+                            video_clip = video_clip.set_duration(
+                                actual_audio_duration)  # duration 유지
 
                         print(
                             f"   ✅ 문장 {i+1} 클립 추가: {video_clip.duration:.2f}초 (음성 길이와 일치: {actual_audio_duration:.2f}초)")
@@ -2277,7 +2400,7 @@ class AIVideoGenerator:
                     # Pexels 먼저 시도
                     img = self._try_pexels_api(english_keyword, headers)
                     if img:
-                        return img
+                                return img
                     # 실패하면 Unsplash 시도
                     img = self._try_unsplash_api(english_keyword, headers)
                     if img:
@@ -3212,7 +3335,7 @@ Format: First line only or "First line / Second line"
 - "영어 한 문장" / "실생활 필수 표현"
 
 형식: 첫 번째 줄만 또는 "첫 번째 줄 / 두 번째 줄"
-"""
+                    """
                     system_prompt = "당신은 YouTube 썸네일 텍스트 작성 전문가입니다. 사람들의 호기심을 끄는 강력하고 간결한 문구를 작성하세요."
                 
                 response = self.openai_client.chat.completions.create(
@@ -3241,26 +3364,22 @@ Format: First line only or "First line / Second line"
                         print(f"   ⚠️ AI가 한글로 응답했습니다. 기본 변환 로직 사용: {result}")
                         # 기본 변환 로직으로 넘어감
                         result = None
-                    else:
-                        # "/" 또는 줄바꿈으로 분리
-                        if "/" in result:
-                            parts = [p.strip() for p in result.split("/")]
-                            if len(parts) >= 2:
-                                return (parts[0], parts[1])
-                            else:
-                                return (parts[0], None)
-                        elif "\n" in result:
-                            parts = [p.strip()
-                                     for p in result.split("\n") if p.strip()]
-                            if len(parts) >= 2:
-                                return (parts[0], parts[1])
-                            else:
-                                return (parts[0], None)
+                    elif "/" in result:
+                        parts = [p.strip() for p in result.split("/")]
+                        if len(parts) >= 2:
+                            return (parts[0], parts[1])
                         else:
-                            return (result, None)
+                            return (parts[0], None)
+                    elif "\n" in result:
+                        parts = [p.strip() for p in result.split("\n") if p.strip()]
+                        if len(parts) >= 2:
+                            return (parts[0], parts[1])
+                        else:
+                            return (parts[0], None)
+                    else:
+                        return (result, None)
                 else:
                     # 한국어인 경우 기존 로직
-                    # "/" 또는 줄바꿈으로 분리
                     if "/" in result:
                         parts = [p.strip() for p in result.split("/")]
                         if len(parts) >= 2:
@@ -3268,8 +3387,7 @@ Format: First line only or "First line / Second line"
                         else:
                             return (parts[0], None)
                     elif "\n" in result:
-                        parts = [p.strip()
-                                 for p in result.split("\n") if p.strip()]
+                        parts = [p.strip() for p in result.split("\n") if p.strip()]
                         if len(parts) >= 2:
                             return (parts[0], parts[1])
                         else:
@@ -3307,16 +3425,16 @@ Format: First line only or "First line / Second line"
             numbers = re.findall(r'\d+', title)
             if numbers:
                 attractive_title = f"{numbers[0]}가지 {title.replace(numbers[0], '').strip()}" if numbers else title
-            
-            # 질문 형태로 변환 (선택적)
-            if "한 문장" in title or "한 줄" in title:
-                attractive_title = f"이거 모르면 손해! {title}"
-            elif "팁" in title or "방법" in title:
-                attractive_title = f"꿀팁 공개! {title}"
-            elif "명언" in title or "지식" in title:
-                attractive_title = f"부자들의 비밀 {title}"
-            elif "팩트" in title or "사실" in title:
-                attractive_title = f"놀라운 사실! {title}"
+        
+        # 질문 형태로 변환 (선택적)
+        if "한 문장" in title or "한 줄" in title:
+            attractive_title = f"이거 모르면 손해! {title}"
+        elif "팁" in title or "방법" in title:
+            attractive_title = f"꿀팁 공개! {title}"
+        elif "명언" in title or "지식" in title:
+            attractive_title = f"부자들의 비밀 {title}"
+        elif "팩트" in title or "사실" in title:
+            attractive_title = f"놀라운 사실! {title}"
         
         return (attractive_title, None)
 

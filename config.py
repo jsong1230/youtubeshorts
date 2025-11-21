@@ -36,6 +36,7 @@ USE_BACKGROUND_VIDEO = os.getenv('USE_BACKGROUND_VIDEO', 'true').lower() == 'tru
 
 # 콘텐츠 타입 설정
 CONTENT_TYPE = os.getenv('CONTENT_TYPE', 'auto')  # 'hook', 'quote', 'story', 'fact', 'short_story', 'auto'
+TREND_MODE = os.getenv('TREND_MODE', 'false').lower() == 'true'  # 2025 트렌드 가중치 시스템
 PREFER_SHORT_VIDEOS = os.getenv('PREFER_SHORT_VIDEOS', 'true').lower() == 'true'  # 짧은 영상 선호 (15-30초, 기본: true)
 
 # 업로드 스케줄 설정
