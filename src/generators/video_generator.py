@@ -1464,8 +1464,7 @@ class AIVideoGenerator:
                                 # 자막 클립의 duration을 정확히 음성 길이로 설정
                                 subtitle_clip = subtitle_clip.set_duration(
                                     actual_audio_duration)
-                                subtitle_clip = subtitle_clip.set_position(
-                                    ('center', 'bottom'))
+
                                 # 자막 클립의 시작 시간을 명시적으로 0으로 설정 (동기화 보장)
                                 # 중요: CompositeVideoClip에 추가하기 전에 시작 시간을 0으로
                                 # 명시적으로 설정
@@ -3545,7 +3544,7 @@ Format: First line only or "First line / Second line"
                         try:
                             frame = txt_clip.get_frame(0)
                             clip_height = frame.shape[0]
-                            y_pos = 1920 - clip_height - 100
+                            y_pos = 1920 - clip_height - 400
                             txt_clip = txt_clip.set_position(('center', y_pos))
                         except BaseException:
                             txt_clip = txt_clip.set_position(
@@ -3692,7 +3691,7 @@ Format: First line only or "First line / Second line"
                 # 하단 중앙 위치 (실제 높이 고려, 더 명확하게)
                 actual_height = subtitle_array.shape[0]
                 # 최소 100px, 하단에서 150px 위
-                y_pos = max(100, 1920 - actual_height - 150)
+                y_pos = max(100, 1920 - actual_height - 450)
                 txt_clip = txt_clip.set_position(('center', y_pos))
                 # 시작 시간을 다시 한 번 명시적으로 0으로 설정 (동기화 보장)
                 txt_clip = txt_clip.set_start(0)
