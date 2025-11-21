@@ -7,6 +7,27 @@
 **YouTube Shorts 자동 업로드 봇**: AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하고 수익화를 추적하는 봇
 
 **최근 업데이트 (2025-11-22)**:
+- **콘텐츠 관련 기능 구현**: 시리즈 콘텐츠 생성, 사용자 요청 주제 반영, 댓글 기반 주제 제안
+  - **시리즈 콘텐츠 생성 시스템**: `SeriesGenerator` 클래스 구현
+    - 4가지 시리즈 타입 지원: 순차적(SEQUENTIAL), 주제별(THEMATIC), 튜토리얼(TUTORIAL), 챌린지(CHALLENGE)
+    - AI 기반 시리즈 주제 자동 생성 (에피소드별 주제 생성)
+    - 대시보드 API: `/api/content/series/generate` 엔드포인트 추가
+  - **사용자 요청 주제 반영 시스템**: `UserRequestHandler` 클래스 구현
+    - 요청 상태 관리 (대기, 승인, 진행 중, 완료, 거부)
+    - 우선순위 기반 요청 처리 (1-10점 척도)
+    - `bot.py`에 통합: 주제가 없을 때 사용자 요청 주제를 우선적으로 사용
+    - 영상 업로드 완료 시 자동으로 요청 상태를 완료로 변경
+    - 대시보드 API: `/api/content/user-requests` (GET/POST), `/api/content/user-requests/<id>/approve` 엔드포인트 추가
+  - **댓글 기반 다음 주제 제안 시스템**: `CommentAnalyzer` 클래스 구현
+    - YouTube 댓글에서 주제 제안 자동 추출 (키워드 패턴 매칭)
+    - 좋아요 수 기반 우선순위 부여 (좋아요 10개당 +1점)
+    - 자동으로 사용자 요청 시스템에 추가
+    - 특정 영상 또는 최근 영상들의 댓글 일괄 분석 지원
+    - 대시보드 API: `/api/content/comments/analyze` 엔드포인트 추가
+  - **대시보드 영상 목록 개선**: 모든 영상 표시 (필터 제거)
+    - `VideoDatabase.get_all_videos()` 메서드 추가: 필터 없이 모든 영상 조회
+    - 대시보드 API 수정: `get_top_performing_videos` 대신 `get_all_videos` 사용
+    - HTML 수정: `days`와 `limit` 파라미터 제거하여 모든 영상 조회
 - **사용자 경험 개선**: 웹 대시보드, 실시간 통계 API, 알림 시스템, 설정 UI
   - **웹 대시보드 개발**: Flask 기반 실시간 통계 대시보드 구현
     - **dashboard.py**: RESTful API 서버 및 대시보드 엔드포인트 구현
@@ -576,6 +597,71 @@ youtubeshorts/
 - 통계 분석 기능 강화
 - 자동 A/B 테스트 기능
 - TikTok 및 Instagram 업로드는 현재 보류 (API 복잡도 및 앱 리뷰 과정 고려)
+
+### 2025-11-22: 콘텐츠 관련 기능 구현
+
+#### 시리즈 콘텐츠 생성 시스템
+- **목적**: 연속된 주제로 여러 영상을 생성하여 시리즈 콘텐츠 제작
+- **구현 내용**:
+  - `src/generators/series_generator.py` 생성
+  - `SeriesGenerator` 클래스 구현
+  - 4가지 시리즈 타입 지원:
+    - `SEQUENTIAL`: 순차적 시리즈 (1부, 2부, 3부...)
+    - `THEMATIC`: 주제별 시리즈 (같은 주제, 다른 관점)
+    - `TUTORIAL`: 튜토리얼 시리즈 (단계별 가이드)
+    - `CHALLENGE`: 챌린지 시리즈 (30일 챌린지 등)
+  - AI 기반 시리즈 주제 자동 생성 (OpenAI/Claude API 사용)
+  - 각 시리즈 타입별 맞춤 프롬프트 사용
+- **대시보드 통합**:
+  - `/api/content/series/generate` API 엔드포인트 추가
+  - POST 요청으로 시리즈 주제 생성 가능
+
+#### 사용자 요청 주제 반영 시스템
+- **목적**: 사용자가 요청한 주제를 우선적으로 사용하여 영상 생성
+- **구현 내용**:
+  - `src/generators/user_request_handler.py` 생성
+  - `UserRequestHandler` 클래스 구현
+  - SQLite 데이터베이스 (`data/user_requests.db`) 사용
+  - 요청 상태 관리:
+    - `PENDING`: 대기 중
+    - `APPROVED`: 승인됨
+    - `IN_PROGRESS`: 진행 중
+    - `COMPLETED`: 완료됨
+    - `REJECTED`: 거부됨
+  - 우선순위 기반 요청 처리 (1-10점 척도)
+  - 요청 출처 추적 (comment, email, dashboard, manual 등)
+- **bot.py 통합**:
+  - `create_and_upload` 메서드에서 주제가 없을 때 사용자 요청 주제 우선 사용
+  - 영상 업로드 완료 시 자동으로 요청 상태를 완료로 변경
+- **대시보드 통합**:
+  - `GET /api/content/user-requests`: 요청 목록 조회
+  - `POST /api/content/user-requests`: 새 요청 추가
+  - `POST /api/content/user-requests/<id>/approve`: 요청 승인
+
+#### 댓글 기반 다음 주제 제안 시스템
+- **목적**: YouTube 댓글에서 주제 제안을 자동으로 추출하여 다음 영상 주제로 활용
+- **구현 내용**:
+  - `src/analytics/comment_analyzer.py` 생성
+  - `CommentAnalyzer` 클래스 구현
+  - YouTube Data API v3를 사용하여 댓글 가져오기
+  - 키워드 패턴 매칭으로 주제 제안 추출:
+    - "can you make", "please make", "would love to see", "next video", "suggest" 등
+  - 좋아요 수 기반 우선순위 부여 (좋아요 10개당 +1점, 최대 10점)
+  - 자동으로 사용자 요청 시스템에 추가
+  - 특정 영상 또는 최근 영상들의 댓글 일괄 분석 지원
+- **대시보드 통합**:
+  - `POST /api/content/comments/analyze` API 엔드포인트 추가
+  - 특정 영상 ID 또는 최근 영상 수를 지정하여 분석 가능
+
+#### 대시보드 영상 목록 개선
+- **문제**: 대시보드에서 모든 영상이 표시되지 않음 (필터 제한)
+- **해결**:
+  - `VideoDatabase.get_all_videos()` 메서드 추가
+    - 필터 없이 모든 영상 조회
+    - `limit`, `days`, `order_by` 파라미터 지원
+  - 대시보드 API 수정: `get_top_performing_videos` 대신 `get_all_videos` 사용
+  - HTML 수정: `days`와 `limit` 파라미터 제거하여 모든 영상 조회
+- **결과**: 데이터베이스의 모든 영상(35개)이 대시보드에 표시됨
 
 ### 2025-11-22: 구독자 수 증가 전략 연구 및 적용
 
