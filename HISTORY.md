@@ -35,6 +35,13 @@
   - **자동 필터링**: `update_all_stats()` 실행 시 성과가 낮은 주제(참여율 0.5% 이하)를 자동으로 필터링
   - **주제 출처 추적**: 주제 출처(manual, ai_generated, seasonal_ai, trend, seasonal, performance)를 추적하여 분석 가능
   - **data 폴더 Git 포함**: data 폴더의 JSON 파일을 Git에 포함하여 다른 머신에서도 히스토리 추적 가능
+- **콘텐츠 품질 개선**: AI 스크립트 생성 프롬프트 전면 개선으로 더 매력적이고 효과적인 콘텐츠 생성
+  - **Hook 프롬프트 개선**: 4가지 Hook 패턴 (Mindset Flip, Shocking Number, Contrarian Statement, Personal Revelation) 추가, 구체적인 예시와 전략 포함
+  - **Quote 프롬프트 개선**: 실행 가능한 명언 선택, 구체적인 예시 제공, 실생활 적용법 강조
+  - **Story 프롬프트 개선**: 3막 구조 (Hook & Setup → Development & Conflict → Resolution & Lesson) 적용, 감정적 여정과 구체적 세부사항 강조
+  - **Fact 프롬프트 개선**: 충격적인 숫자/통계 중심, 구체적인 비교와 예시, "so what" 요소 강조
+  - **Short Story 프롬프트 개선**: 1인칭 서술 형식, 구체적인 숫자와 시간대, 감정적 여정 (frustration → action → results) 포함
+  - **정보 전달 방식 최적화**: 구체적인 예시, 단계별 설명, 시각적 비유, 실행 가능한 인사이트 제공
 - **API 사용 정책 명확화**: ChatGPT API와 Claude API만 유료로 사용, DALL-E 3와 OpenAI TTS는 OpenAI API로 함께 사용
   - **DALL-E 3 썸네일 생성**: OpenAI API로 사용 (기존대로 유지)
   - **OpenAI TTS 자동 선택**: OpenAI API 키가 있으면 자동으로 OpenAI TTS 사용 (기존대로 유지)
