@@ -37,6 +37,7 @@ import json
 import config
 from enum import Enum
 from pathlib import Path
+from src.utils.retry_decorator import retry, retry_on_rate_limit
 
 # 새로운 TTS 엔진 사용 (선택적)
 try:
@@ -163,6 +164,21 @@ class AIVideoGenerator:
         os.makedirs(config.VIDEO_OUTPUT_DIR, exist_ok=True)
         os.makedirs(config.TEMP_DIR, exist_ok=True)
         os.makedirs(config.THUMBNAIL_OUTPUT_DIR, exist_ok=True)
+    
+    # ===== Retry-wrapped Helper Methods =====
+    
+    @retry(max_retries=3, base_delay=1, exceptions=(requests.RequestException, ConnectionError, TimeoutError))
+    def _http_get_with_retry(self, url: str, **kwargs) -> requests.Response:
+        """HTTP GET request with automatic retry on transient failures."""
+        timeout = kwargs.pop('timeout', 10)
+        response = requests.get(url, timeout=timeout, **kwargs)
+        response.raise_for_status()
+        return response
+    
+    @retry_on_rate_limit(max_retries=5, base_delay=2)
+    def _api_call_with_retry(self, api_func, *args, **kwargs):
+        """Generic API call wrapper with retry logic for rate limits."""
+        return api_func(*args, **kwargs)
     
     def _get_high_performing_topics(self, content_type: ContentType) -> List[str]:
         """콘텐츠 타입별 성과가 좋았던 주제 풀을 반환."""
@@ -800,6 +816,9 @@ class AIVideoGenerator:
 - **Important: Write all sentences in English only. Do not include any Korean sentences or words**
 - Target duration is about 55 seconds with sufficient explanations and examples
 - Each sentence should be 3-4 seconds long, write 12-16 sentences total
+- **Strategy: Use the 'Mindset Flip' technique. State a common negative thought in the first sentence and immediately reframe it positively.**
+- **Structure: Ensure the last sentence flows naturally back into the first sentence to create a perfect loop.**
+- **Ending: End with a specific question to engage viewers (e.g., "What is your goal for 2025?") instead of a generic "Subscribe".**
 - Repeat or emphasize the Hook sentence and add detailed explanations"""
                     max_sentences = 16
                 elif content_type == ContentType.QUOTE:
@@ -809,6 +828,8 @@ class AIVideoGenerator:
 - **Important: Write all sentences in English only. Do not include any Korean sentences or words**
 - Target duration is about 55 seconds with sufficient explanations and practical applications
 - Each sentence should be 3-4 seconds long, write 12-16 sentences total
+- **Structure: Ensure the last sentence flows naturally back into the first sentence to create a perfect loop.**
+- **Ending: End with a specific question to engage viewers (e.g., "Which quote inspires you?") instead of a generic "Subscribe".**
 - Explain the quote in detail and provide practical applications and examples"""
                     max_sentences = 16
                 elif content_type == ContentType.STORY:
@@ -827,6 +848,9 @@ class AIVideoGenerator:
 - **Important: Write all sentences in English only. Do not include any Korean sentences or words**
 - Target duration is about 55 seconds, explain the fact in detail
 - Each sentence should be 3-4 seconds long, write 12-16 sentences total
+- **Strategy: Focus on shocking numbers or 'did you know' facts (e.g., compound interest, time saved).**
+- **Structure: Ensure the last sentence flows naturally back into the first sentence to create a perfect loop.**
+- **Ending: End with a specific question to engage viewers (e.g., "Did you know this?") instead of a generic "Subscribe".**
 - Explain the fact and include detailed background like why it's amazing, how it was discovered, etc."""
                     max_sentences = 16
                 elif content_type == ContentType.SHORT_STORY:
@@ -855,6 +879,9 @@ class AIVideoGenerator:
 - **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
 - 목표는 약 55초 분량이며, 충분한 설명과 예시를 포함하세요
 - 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
+- **전략: '마인드셋 플립(Mindset Flip)' 기법을 사용하세요. 첫 문장에서 흔한 부정적인 생각을 제시하고 즉시 긍정적으로 재해석하세요.**
+- **구조: 마지막 문장이 첫 문장과 자연스럽게 이어지도록 '루프(Loop)' 구조로 작성하세요.**
+- **엔딩: "구독하세요" 대신 구체적인 질문으로 끝맺어 댓글을 유도하세요 (예: "당신의 2025년 목표는 무엇인가요?").**
 - Hook 문장을 반복하거나 강조하고, 자세한 설명을 추가하세요"""
                     max_sentences = 16
                 elif content_type == ContentType.QUOTE:
@@ -864,6 +891,8 @@ class AIVideoGenerator:
 - **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
 - 목표는 약 55초 분량이며, 충분한 설명과 실생활 적용법을 포함하세요
 - 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
+- **구조: 마지막 문장이 첫 문장과 자연스럽게 이어지도록 '루프(Loop)' 구조로 작성하세요.**
+- **엔딩: "구독하세요" 대신 구체적인 질문으로 끝맺어 댓글을 유도하세요.**
 - 명언을 자세히 설명하고 실생활 적용법과 예시를 제시하세요"""
                     max_sentences = 16
                 elif content_type == ContentType.STORY:
@@ -882,6 +911,9 @@ class AIVideoGenerator:
 - **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
 - 목표는 약 55초 분량이며, 팩트를 자세히 설명하세요
 - 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
+- **전략: 충격적인 숫자나 통계(복리 효과, 절약된 시간 등)에 집중하세요.**
+- **구조: 마지막 문장이 첫 문장과 자연스럽게 이어지도록 '루프(Loop)' 구조로 작성하세요.**
+- **엔딩: "구독하세요" 대신 구체적인 질문으로 끝맺어 댓글을 유도하세요.**
 - 팩트를 설명하고 왜 놀라운지, 어떻게 발견되었는지 등 자세한 배경을 포함하세요"""
                     max_sentences = 16
                 elif content_type == ContentType.SHORT_STORY:
@@ -1760,6 +1792,12 @@ class AIVideoGenerator:
                     clips[idx] = clip.set_duration(expected_duration)
                 else:
                     print(f"   클립 {idx+1}: {clip.duration:.2f}초 (음성 길이와 일치)")
+            
+            # 마지막 클립에 0.5초 여유 추가 (음성이 뚝 끊기는 느낌 방지)
+            if idx == len(clips) - 1:
+                print(f"   🎬 마지막 클립에 0.5초 여유 추가 (자연스러운 마무리)")
+                # 마지막 클립의 duration을 0.5초 늘림 (영상은 정지 화면으로 유지됨)
+                clips[idx] = clips[idx].set_duration(clips[idx].duration + 0.5)
 
         # 클립 연결 전에 각 클립의 duration 확인
         print(f"📊 연결 전 클립 duration 확인:")
@@ -2123,7 +2161,7 @@ class AIVideoGenerator:
                 except BaseException:
                     continue
         
-        line_spacing = 30
+        line_spacing = 50  # 줄 간격 (30 → 50으로 증가하여 간섭 방지 및 가독성 향상)
         # 텍스트 크기 계산
         draw = ImageDraw.Draw(image)
         line_heights = []
@@ -2523,16 +2561,18 @@ class AIVideoGenerator:
         # AI를 사용해서 더 정확한 키워드 추출 시도
         if self.openai_client:
             try:
-                response = self.openai_client.chat.completions.create(
+                # Wrap OpenAI API call with retry logic
+                response = self._api_call_with_retry(
+                    self.openai_client.chat.completions.create,
                     model="gpt-4o-mini",
                     messages=[
                         {
                             "role": "system",
-                            "content": "당신은 이미지 검색 키워드 추출 전문가입니다. 주어진 문장에서 이미지 검색에 적합한 영어 키워드 1-3개를 추출하세요. 키워드는 명사 위주로, 구체적이고 시각적인 단어를 선택하세요."
+                            "content": "당신은 이미지/비디오 검색 키워드 추출 전문가입니다. 주어진 문장에서 배경 영상 검색에 적합한 시각적이고 구체적인 영어 키워드 1-3개를 추출하세요. 추상적인 문장이라면 'abstract', 'cinematic', 'moody' 같은 분위기 키워드를 포함하세요."
                         },
                         {
                             "role": "user",
-                            "content": f"다음 문장에서 이미지 검색에 적합한 영어 키워드를 추출하세요 (쉼표로 구분, 최대 3개):\n\n{sentence}"
+                            "content": f"다음 문장에서 배경 영상 검색에 적합한 영어 키워드를 추출하세요 (쉼표로 구분, 최대 3개):\n\n{sentence}"
                         }
                     ],
                     max_tokens=50,
@@ -2672,17 +2712,18 @@ class AIVideoGenerator:
             sentence_keywords = self._extract_keywords(sentence)
             sentence_keyword = sentence_keywords[0] if sentence_keywords else None
 
-            # 주제 키워드를 우선 사용, 없으면 문장 키워드 사용
-            if topic_keyword:
-                keyword = topic_keyword
-                english_keyword = self._translate_keyword_to_english(
-                    topic_keyword)
-            elif sentence_keyword:
+            # 우선순위 변경: 문장 키워드 > 주제 키워드
+            # 문장별로 다양한 배경을 보여주기 위함
+            
+            if sentence_keyword:
                 keyword = sentence_keyword
-                english_keyword = self._translate_keyword_to_english(
-                    sentence_keyword)
+                english_keyword = self._translate_keyword_to_english(sentence_keyword)
+                print(f"🎯 문장 키워드 우선 사용: {sentence} -> {keyword} -> {english_keyword}")
+            elif topic_keyword:
+                keyword = topic_keyword
+                english_keyword = self._translate_keyword_to_english(topic_keyword)
+                print(f"⚠️ 문장 키워드 없음, 주제 키워드 사용: {topic} -> {keyword}")
             else:
-                # 키워드가 없으면 주제를 직접 사용
                 if topic:
                     keyword = topic
                     english_keyword = self._translate_keyword_to_english(topic)
@@ -2705,8 +2746,9 @@ class AIVideoGenerator:
                         'Authorization': config.PEXELS_API_KEY
                     }
                     
-                    response = requests.get(
-                        pexels_video_url, timeout=10, headers=pexels_headers)
+                    # Use retry-wrapped HTTP GET
+                    response = self._http_get_with_retry(
+                        pexels_video_url, headers=pexels_headers)
                     if response.status_code == 200:
                         data = response.json()
                         if data.get('videos') and len(data['videos']) > 0:
@@ -2799,9 +2841,9 @@ class AIVideoGenerator:
                                 # 영상 ID 가져오기 (중복 방지용)
                                 video_id = video_data.get('id', index)
 
-                                # 영상 다운로드
-                                video_response = requests.get(
-                                    video_url, timeout=30, headers=headers, stream=True)
+                                # 영상 다운로드 (with retry)
+                                video_response = self._http_get_with_retry(
+                                    video_url, headers=headers, stream=True)
                                 if video_response.status_code == 200:
                                     video_path = os.path.join(
                                         config.TEMP_DIR, f"bg_video_{index}_{video_id}.mp4")
@@ -2923,26 +2965,43 @@ class AIVideoGenerator:
 
         try:
             # 주제 기반 프롬프트 생성
-            if language == 'en':
-                prompt = f"A captivating YouTube Shorts thumbnail image for: {title}"
-                if topic:
-                    prompt += f" about {topic}"
-                if script and len(script) > 0:
-                    prompt += f". The video is about: {script[0][:100]}"
-                prompt += ". Style: modern, vibrant, eye-catching, vertical format (9:16), suitable for YouTube Shorts thumbnail. No text in the image."
+            # 주제 및 제목 분석하여 스타일 결정
+            style_prompt = ""
+            lower_topic = (topic or "").lower()
+            lower_title = title.lower()
+            
+            if any(k in lower_topic or k in lower_title for k in ['money', 'finance', 'rich', 'wealth', 'invest', '돈', '부자', '투자', '금융']):
+                style_prompt = "Style: Hyper-realistic 3D render, luxury aesthetic, gold and neon green accents, rising graphs, high contrast, dramatic lighting. Visuals of wealth, success, currency, or gold."
+            elif any(k in lower_topic or k in lower_title for k in ['motivation', 'mindset', 'life', 'success', 'dream', '동기부여', '성공', '인생', '꿈']):
+                style_prompt = "Style: Cinematic lighting, dramatic silhouette against a sunrise or sunset, emotional atmosphere, epic scale, looking up at a mountain or city, inspiring and powerful."
+            elif any(k in lower_topic or k in lower_title for k in ['productivity', 'habit', 'study', 'focus', 'time', '생산성', '습관', '공부', '시간']):
+                style_prompt = "Style: Clean minimalist setup, futuristic blue and white lighting, glowing brain or clock elements, organized workspace, sharp focus, high-tech feel."
             else:
-                prompt = f"매력적인 YouTube Shorts 썸네일 이미지: {title}"
-                if topic:
-                    prompt += f" 주제: {topic}"
-                if script and len(script) > 0:
-                    prompt += f". 영상 내용: {script[0][:100]}"
-                prompt += ". 스타일: 현대적, 생동감 있는, 눈에 띄는, 세로형 (9:16), YouTube Shorts 썸네일에 적합. 이미지에 텍스트 없음."
+                style_prompt = "Style: High contrast, vibrant colors, 4k resolution, unreal engine 5 render style, highly detailed, eye-catching, dramatic composition."
+
+            # 주제 기반 프롬프트 생성 (영어/한국어 공통적으로 영어 프롬프트 사용 권장 - DALL-E 3가 영어를 더 잘 이해함)
+            # 하지만 한국어 설정이므로 한국어 뉘앙스를 살리기 위해 혼용하거나 영어로 번역하는 것이 좋음
+            # 여기서는 프롬프트 구조를 강화하여 영어로 작성 (DALL-E 3 최적화)
+            
+            prompt = f"A viral YouTube Shorts thumbnail image for a video titled: '{title}'."
+            if topic:
+                prompt += f" The video is about: {topic}."
+            if script and len(script) > 0:
+                prompt += f" Key scene context: {script[0][:100]}."
+            
+            prompt += f"\n\n{style_prompt}"
+            prompt += "\n\nIMPORTANT CONSTRAINTS:"
+            prompt += "\n- Vertical format (9:16 aspect ratio)"
+            prompt += "\n- Central composition, close-up or medium shot"
+            prompt += "\n- ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WATERMARKS in the image. The image must be text-free."
+            prompt += "\n- Make it emotionally engaging and click-worthy."
 
             print(f"🎨 DALL-E 3로 썸네일 이미지 생성 중...")
             print(f"   프롬프트: {prompt[:100]}...")
 
-            # DALL-E 3 API 호출
-            response = self.openai_client.images.generate(
+            # DALL-E 3 API 호출 (with retry)
+            response = self._api_call_with_retry(
+                self.openai_client.images.generate,
                 model="dall-e-3",
                 prompt=prompt,
                 size="1024x1792",  # 9:16 비율 (YouTube Shorts)
@@ -2953,9 +3012,9 @@ class AIVideoGenerator:
             # 생성된 이미지 URL 가져오기
             image_url = response.data[0].url
 
-            # 이미지 다운로드
+            # 이미지 다운로드 (with retry)
             import requests
-            img_response = requests.get(image_url)
+            img_response = self._http_get_with_retry(image_url)
             img_response.raise_for_status()
 
             # PIL Image로 변환

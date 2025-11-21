@@ -28,6 +28,14 @@
   - SHORT_STORY `routine micro story` → `output/videos/shorts_20251119_172417.mp4` (56.73s)
   - AUTO `black friday sales tip` → `output/videos/shorts_20251119_172737.mp4` (55.71s)
 - 모든 테스트에서 썸네일 첫 프레임 삽입, 영어 자막/썸네일, 배경 영상 무중복, 오디오-비디오 동기화가 정상임을 확인
+
+- **2025-11-21**: 안정성 및 모니터링 시스템 구축 완료
+  - ✅ 에러 처리 및 재시도 로직 강화 (retry decorator with exponential backoff)
+  - ✅ API 할당량 관리 개선 (QuotaManager with rate limiting)
+  - ✅ 로깅 및 모니터링 강화 (structured logging + performance tracking)
+  - ✅ 성과 분석 시스템 (AnalyticsManager: 주제별 성과, 최적 업로드 시간)
+  - ✅ 문서 업데이트 (README, STABILITY_FEATURES.md)
+  - ✅ 자막 줄 간격 개선 (30px → 50px로 증가하여 가독성 향상)
 - **2025-11-19**: 위 테스트용 6개 영상을 `YouTubeUploader`로 수동 업로드 (ID: OaqGCXeROeo, OgUBCWgDQpE, 2Kp-2c65iyw, Vu8xrbP7Fqs, oHHjFBFcZY0, T892L_SCKns). 워크스페이스에 썸네일 파일이 없어 썸네일 업로드는 생략됨.
 - **2025-11-21**: `output/videos/shorts_20251121_003213.mp4` 자막 위치 조정 테스트 후 `YouTubeUploader`로 즉시 업로드 (ID: yyTVlenTrj4, 썸네일 `output/thumbnails/thumb_20251121_003425.jpg`)
 - **2025-11-21**: 동일 자막 설정으로 5개 추가 영어 영상을 생성해 즉시 업로드
@@ -54,17 +62,17 @@
 **필요한 작업**:
 
 - [ ] 영상 품질 지속적 개선
-  - [ ] AI 스크립트 생성 프롬프트 최적화
-  - [ ] 배경 영상 선택 알고리즘 개선
-  - [ ] 썸네일 최적화 (DALL-E 3 활용 강화)
+  - [x] AI 스크립트 생성 프롬프트 최적화 (2025 전략 반영: Loop, CTA, Mindset Flip)
+  - [x] 배경 영상 선택 알고리즘 개선 (문장별 키워드 우선, 추상적 키워드 처리)
+  - [x] 썸네일 최적화 (DALL-E 3 활용 강화: 동적 스타일 및 클릭 유도 프롬프트)
 - [ ] 성과 분석 및 최적화
-  - [ ] 조회수, 참여도 데이터 분석
-  - [ ] 주제별 성과 추적 및 자동 필터링
-  - [ ] 최적 업로드 시간 분석
+  - [x] 조회수, 참여도 데이터 분석 (AnalyticsManager 구현 완료)
+  - [x] 주제별 성과 추적 및 자동 필터링 (AnalyticsManager 기능 추가 완료)
+  - [x] 최적 업로드 시간 분석 (AnalyticsManager 기능 추가 완료)
 - [ ] 안정성 개선
-  - [ ] 에러 처리 및 재시도 로직 강화
-  - [ ] API 할당량 관리 개선
-  - [ ] 로깅 및 모니터링 강화
+  - [x] 에러 처리 및 재시도 로직 강화 (retry decorator 구현 및 주요 API에 적용 완료)
+  - [x] API 할당량 관리 개선 (QuotaManager 구현 완료)
+  - [x] 로깅 및 모니터링 강화 (logger 및 performance_tracker 구현 완료)
 
 **참고 사항**:
 
@@ -178,6 +186,13 @@
 - [ ] 사용자 요청 주제 반영 시스템
 - [ ] 댓글 기반 다음 주제 제안
 - [ ] 협업 콘텐츠 (게스트 등)
+
+### 2025 콘텐츠 전략 (New)
+- [x] **마인드셋 플립 (Mindset Flip)**: 부정적 생각을 긍정적으로 뒤집는 15초 영상 (프롬프트 반영 완료)
+- [x] **금융 팩트 폭격**: "매일 커피값 아끼면 10년 뒤 얼마?"와 같은 충격적인 숫자 제시 (프롬프트 반영 완료)
+- [ ] **생산성 툴 추천**: "내 인생을 바꾼 앱 3가지" 시리즈
+- [x] **루프형 구조 도입**: 영상의 끝이 시작과 자연스럽게 이어지도록 스크립트 작성 (프롬프트 반영 완료)
+- [x] **인터랙티브 질문**: 영상 마지막에 구체적인 질문을 던져 댓글 유도 ("당신의 2025년 목표는 무엇인가요?") (프롬프트 반영 완료)
 
 ### 기술 관련
 

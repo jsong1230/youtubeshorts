@@ -63,15 +63,45 @@ def main():
             # 동기화 상태 확인
             bot.sync_manager.print_sync_status()
 
+        elif command == 'social-upload':
+            # 생성된 영상 소셜 미디어 업로드 (테스트용)
+            # python main.py social-upload [video_path] [title]
+            if len(sys.argv) < 4:
+                print("사용법: python main.py social-upload [video_path] [title]")
+                sys.exit(1)
+            
+            video_path = sys.argv[2]
+            title = sys.argv[3]
+            
+            from src.uploaders.social_manager import SocialManager
+            manager = SocialManager()
+            results = manager.upload_all(video_path, title, description=title)
+            print(f"📊 소셜 업로드 결과: {results}")
+
+        elif command == 'analyze':
+            # 성과 분석 리포트
+            from src.analytics.analytics_manager import AnalyticsManager
+            manager = AnalyticsManager()
+            manager.generate_performance_report()
+
+        elif command == 'quota-status':
+            # API 할당량 상태 확인
+            from src.utils.quota_manager import get_quota_manager
+            quota_mgr = get_quota_manager()
+            quota_mgr.print_usage_stats()
+
         else:
             print("사용법:")
             print("  python main.py test [주제]     - 영상 생성만 (업로드 없음)")
             print("  python main.py upload [주제] [--force]  - 즉시 영상 생성 및 업로드 (--force: 중복 체크 건너뛰기)")
+            print("  python main.py social-upload [path] [title] - 소셜 미디어 업로드 테스트")
             print("  python main.py stats          - 모든 영상 통계 업데이트")
             print("  python main.py report         - 수익화 리포트 출력")
             print("  python main.py schedule       - 자동 업로드 스케줄러 시작")
             print("  python main.py sync-status    - 동기화 상태 확인")
-            print("  python main.py instagram-test - Instagram Graph API 연결 테스트")
+            print(f"  python main.py instagram-test - Instagram Graph API 연결 테스트")
+            print(f"  python main.py analyze        - YouTube Shorts 성과 분석 리포트 출력")
+            print(f"  python main.py quota-status   - API 할당량 사용 현황 확인")
     else:
         # 기본: 즉시 업로드
         bot.create_and_upload()

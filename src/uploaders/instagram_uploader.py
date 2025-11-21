@@ -1,495 +1,161 @@
 """
-Instagram Reels 자동 업로드 모듈
+Instagram Reels 업로더 (Graph API 사용)
 """
 import os
-from typing import Dict, Optional
-
+import time
 import requests
-
 import config
-
+from pathlib import Path
 
 class InstagramUploader:
-    """Instagram Graph API를 사용한 Reels 업로드 클래스"""
-
-    GRAPH_API_DEFAULT_VERSION = "v21.0"
-
-    def __init__(self):
-        self.app_id = config.INSTAGRAM_APP_ID
-        self.app_secret = config.INSTAGRAM_APP_SECRET
-        self.access_token = config.INSTAGRAM_ACCESS_TOKEN
-        self.instagram_account_id = config.INSTAGRAM_ACCOUNT_ID
-        self.graph_api_version = os.getenv(
-            "INSTAGRAM_GRAPH_API_VERSION",
-            self.GRAPH_API_DEFAULT_VERSION,
-        )
-        self.graph_api_base = f"https://graph.facebook.com/{self.graph_api_version}"
-        self.authenticated = False
-        self.instagram_username: Optional[str] = None
-
-        if self._has_required_credentials():
-            self._authenticate()
-
-    def _has_required_credentials(self) -> bool:
-        """필수 자격 증명이 설정되었는지 확인"""
-        return all(
-            [
-                self.app_id,
-                self.app_secret,
-                self.access_token,
-                self.instagram_account_id,
-            ]
-        )
-
-    def _authenticate(self, verbose: bool = True) -> bool:
-        """Instagram Graph API 인증"""
-        if not self._has_required_credentials():
-            if verbose:
-                print("⚠️ Instagram API 자격 증명이 설정되지 않았습니다.")
-                print("   Facebook for Developers에서 앱을 만들고 API 키를 발급받아 .env 파일에 설정하세요.")
-            self.authenticated = False
-            return False
-
-        api_version = self.graph_api_version or self.GRAPH_API_DEFAULT_VERSION
-
-        if verbose:
-            print("🔍 Instagram Graph API 연결 테스트 중...")
-
-        try:
-            pages_url = f"https://graph.facebook.com/{api_version}/me/accounts"
-            pages_params = {
-                "fields": "id,name,access_token,instagram_business_account{id,username,name,account_type}",
-                "access_token": self.access_token,
-            }
-
-            pages_response = requests.get(pages_url, params=pages_params, timeout=10)
-
-            if pages_response.status_code == 200:
-                pages_data = pages_response.json()
-                pages = pages_data.get("data", [])
-
-                if pages and verbose:
-                    print(f"   ✅ Facebook 페이지 발견: {len(pages)}개")
-
-                for page in pages:
-                    instagram_account = page.get("instagram_business_account")
-                    if not instagram_account:
-                        continue
-
-                    page_name = page.get("name", "N/A")
-                    instagram_id = instagram_account.get("id")
-                    instagram_username = instagram_account.get("username")
-                    instagram_name = instagram_account.get("name")
-                    account_type = instagram_account.get("account_type")
-
-                    if self.instagram_account_id and instagram_id == self.instagram_account_id:
-                        if verbose:
-                            print("   ✅ Instagram 계정 확인됨!")
-                            print(f"      페이지: {page_name}")
-                            print(f"      사용자명: @{instagram_username}")
-                            print(f"      이름: {instagram_name}")
-                            print(f"      계정 타입: {account_type}")
-
-                        page_token = page.get("access_token")
-                        if page_token:
-                            instagram_url = f"https://graph.facebook.com/{api_version}/{instagram_id}"
-                            instagram_params = {
-                                "fields": "id,username,name",
-                                "access_token": page_token,
-                            }
-
-                            instagram_response = requests.get(
-                                instagram_url, params=instagram_params, timeout=10
-                            )
-                            if instagram_response.status_code == 200:
-                                data = instagram_response.json()
-                                self.instagram_username = data.get("username") or instagram_username
-                                self.authenticated = True
-                                self.access_token = page_token
-                                if verbose:
-                                    print("✅ Instagram 연결 성공! (페이지 토큰 사용)")
-                                return True
-
-                    elif not self.instagram_account_id:
-                        if verbose:
-                            print("   ✅ Instagram 계정 발견 (Account ID 미설정 시 첫 번째 계정 사용)")
-                            print(f"      페이지: {page_name}")
-                            print(f"      사용자명: @{instagram_username}")
-                            print(f"      ID: {instagram_id}")
-
-                        page_token = page.get("access_token")
-                        if page_token:
-                            instagram_url = f"https://graph.facebook.com/{api_version}/{instagram_id}"
-                            instagram_params = {
-                                "fields": "id,username,name",
-                                "access_token": page_token,
-                            }
-
-                            instagram_response = requests.get(
-                                instagram_url, params=instagram_params, timeout=10
-                            )
-                            if instagram_response.status_code == 200:
-                                data = instagram_response.json()
-                                self.instagram_username = data.get("username")
-                                self.authenticated = True
-                                self.instagram_account_id = instagram_id
-                                self.access_token = page_token
-                                if verbose:
-                                    print("✅ Instagram 연결 성공!")
-                                return True
-                        break
-
-                if pages and not self.authenticated and verbose:
-                    print("   ⚠️  Facebook 페이지는 있지만 Instagram 계정이 연결되지 않았습니다.")
-                    print("   Instagram 계정을 Facebook 페이지에 연결하세요.")
-                if not pages and verbose:
-                    print("   ⚠️  Facebook 페이지를 찾을 수 없습니다.")
-
-            if self.instagram_account_id and not self.authenticated:
-                if verbose:
-                    print("   🔍 직접 Account ID로 접근 시도...")
-                url = f"https://graph.facebook.com/{api_version}/{self.instagram_account_id}"
-                params = {
-                    "fields": "id,username,name",
-                    "access_token": self.access_token,
-                }
-
-                response = requests.get(url, params=params, timeout=10)
-
-                if response.status_code == 200:
-                    data = response.json()
-                    username = data.get("username", "N/A")
-                    name = data.get("name", "N/A")
-
-                    self.instagram_username = None if username == "N/A" else username
-                    self.authenticated = True
-                    if verbose:
-                        print("✅ Instagram 연결 성공! (직접 접근)")
-                        print(f"   ID: {data.get('id', 'N/A')}")
-                        print(f"   사용자명: @{username}")
-                        if name != "N/A":
-                            print(f"   이름: {name}")
-                    return True
-
-                error_data = response.json() if response.content else {}
-                error_message = error_data.get("error", {}).get("message", "알 수 없는 오류")
-                error_code = error_data.get("error", {}).get("code", response.status_code)
-                if verbose:
-                    print(f"   ❌ 직접 접근 실패 (코드: {error_code})")
-                    print(f"   오류 메시지: {error_message}")
-
-            if not self.authenticated:
-                try:
-                    account_info = self._fetch_account_info()
-                    if account_info:
-                        self.instagram_username = account_info.get("username")
-                        self.authenticated = True
-                        if verbose:
-                            username = (
-                                f"@{self.instagram_username}"
-                                if self.instagram_username
-                                else "알 수 없음"
-                            )
-                            print(
-                                f"✅ Instagram Graph API 연결 성공: {username} (ID: {self.instagram_account_id})"
-                            )
-                        return True
-                except (requests.exceptions.RequestException, ValueError) as fallback_error:
-                    if verbose:
-                        print("⚠️ Instagram 계정 정보를 가져오지 못했습니다.")
-                        print(f"   상세: {fallback_error}")
-
-            if verbose:
-                print("❌ Instagram 연결 실패")
-                print("   💡 해결 방법:")
-                print("      1. Facebook 페이지가 생성되어 있는지 확인")
-                print("      2. Instagram 계정이 Facebook 페이지에 연결되어 있는지 확인")
-                print("      3. Access Token에 'pages_show_list' 권한이 있는지 확인")
-                print("      4. Facebook for Developers에서 Instagram Graph API 제품이 추가되어 있는지 확인")
-
-            self.authenticated = False
-            return False
-
-        except requests.exceptions.Timeout:
-            if verbose:
-                print("❌ Instagram 연결 실패: 요청 시간 초과")
-            self.authenticated = False
-            return False
-        except requests.exceptions.RequestException as request_error:
-            if verbose:
-                print("❌ Instagram 연결 실패: 네트워크 오류")
-                print(f"   상세: {request_error}")
-            self.authenticated = False
-            return False
-        except ValueError as api_error:
-            if verbose:
-                print(f"⚠️ Instagram API 응답 오류: {api_error}")
-            self.authenticated = False
-            return False
-        except Exception as error:
-            if verbose:
-                print(f"❌ Instagram 인증 실패: {error}")
-                import traceback
-
-                traceback.print_exc()
-            self.authenticated = False
-            return False
-
-    def _fetch_account_info(self) -> Optional[Dict]:
-        """Instagram 계정 정보를 Graph API로 조회"""
-        url = f"{self.graph_api_base}/{self.instagram_account_id}"
-        params = {
-            "fields": "id,username",
-            "access_token": self.access_token,
-        }
-        response = requests.get(url, params=params, timeout=15)
-        response.raise_for_status()
-        data = response.json()
-
-        if "error" in data:
-            error = data["error"]
-            message = error.get("message", "알 수 없는 오류")
-            error_code = error.get("code")
-            raise ValueError(f"{message} (code: {error_code})")
-
-        return data
-
-    def test_connection(self, verbose: bool = True) -> bool:
-        """
-        Instagram Graph API 연결 테스트
-
-        Args:
-            verbose: 상세 로그 출력 여부
-
-        Returns:
-            연결 성공 여부
-        """
-        return self._authenticate(verbose=verbose)
-
-    def upload_reel(
-        self,
-        video_path: str,
-        caption: str,
-        thumbnail_url: str = None,
-        share_to_feed: bool = True
-    ):
-        """
-        Instagram Reels에 영상 업로드
-        
-        Args:
-            video_path: 업로드할 영상 파일 경로
-            caption: 영상 캡션 (해시태그 포함 가능)
-            thumbnail_url: 썸네일 URL (선택사항)
-            share_to_feed: 피드에도 공유할지 여부
-        
-        Returns:
-            업로드된 Reels의 ID 또는 None
-        """
-        if not self.authenticated and self._has_required_credentials():
-            self._authenticate()
-
-        if not self.authenticated:
-            print("⚠️ Instagram 인증이 필요합니다. 업로드를 건너뜁니다.")
-            return None
-        
-        if not os.path.exists(video_path):
-            print(f"⚠️ 영상 파일을 찾을 수 없습니다: {video_path}")
-            return None
-        
-        try:
-            api_version = "v19.0"
-            
-            print(f"📤 Instagram Reels 업로드 시작: {os.path.basename(video_path)}")
-            
-            # 영상 파일 크기 확인
-            video_size = os.path.getsize(video_path)
-            print(f"   영상 파일 크기: {video_size / (1024*1024):.2f} MB")
-            
-            # 1단계: Facebook Graph API를 통해 영상을 임시로 업로드하여 공개 URL 획득
-            print(f"   1단계: Facebook에 영상 업로드 중 (임시 URL 획득용)...")
-            
-            # 먼저 Facebook 페이지 목록 조회
-            pages_url = f"https://graph.facebook.com/{api_version}/me/accounts"
-            pages_params = {
-                "fields": "id,access_token",
-                "access_token": self.access_token
-            }
-            
-            pages_response = requests.get(pages_url, params=pages_params, timeout=10)
-            page_token = None
-            page_id = None
-            
-            if pages_response.status_code == 200:
-                pages_data = pages_response.json()
-                pages = pages_data.get('data', [])
-                if pages:
-                    page = pages[0]
-                    page_id = page.get('id')
-                    page_token = page.get('access_token')
-                    print(f"   Facebook 페이지 발견: {page_id}")
-            
-            # Facebook 페이지가 있으면 페이지에 업로드, 없으면 /me/videos 시도
-            if page_token and page_id:
-                fb_upload_url = f"https://graph.facebook.com/{api_version}/{page_id}/videos"
-                upload_token = page_token
-            else:
-                fb_upload_url = f"https://graph.facebook.com/{api_version}/me/videos"
-                upload_token = self.access_token
-                print(f"   Facebook 페이지가 없어 사용자 계정에 업로드 시도...")
-            
-            with open(video_path, 'rb') as video_file:
-                files = {
-                    'source': (os.path.basename(video_path), video_file, 'video/mp4')
-                }
-                fb_data = {
-                    "title": os.path.basename(video_path),
-                    "description": "Temporary upload for Instagram Reels",
-                    "access_token": upload_token
-                }
-                
-                fb_response = requests.post(fb_upload_url, data=fb_data, files=files, timeout=300)
-            
-            if fb_response.status_code != 200:
-                try:
-                    error = fb_response.json().get('error', {})
-                    error_code = error.get('code')
-                    error_msg = error.get('message', 'N/A')
-                    print(f"   ❌ Facebook 업로드 실패 (코드: {error_code})")
-                    print(f"   오류 메시지: {error_msg}")
-                    
-                    # Facebook 업로드 실패 시 직접 파일 업로드 시도
-                    print(f"\n   🔄 Instagram Graph API에 직접 파일 업로드 시도...")
-                    container_url = f"https://graph.facebook.com/{api_version}/{self.instagram_account_id}/media"
-                    
-                    with open(video_path, 'rb') as video_file:
-                        files = {
-                            'video_file': (os.path.basename(video_path), video_file, 'video/mp4')
-                        }
-                        data = {
-                            "media_type": "REELS",
-                            "caption": caption,
-                            "access_token": self.access_token
-                        }
-                        container_response = requests.post(container_url, data=data, files=files, timeout=300)
-                except:
-                    print(f"   ❌ Facebook 업로드 실패")
-                    print(f"   응답: {fb_response.text[:200]}")
-                    return None
-            else:
-                # Facebook 업로드 성공 - 영상 ID 획득
-                fb_data = fb_response.json()
-                video_id = fb_data.get('id')
-                
-                if not video_id:
-                    print(f"   ❌ Facebook 영상 ID를 받지 못했습니다.")
-                    return None
-                
-                print(f"   ✅ Facebook 업로드 성공: {video_id}")
-                
-                # 영상 정보 조회하여 공개 URL 획득
-                video_info_url = f"https://graph.facebook.com/{api_version}/{video_id}"
-                video_info_params = {
-                    "fields": "source,permalink_url",
-                    "access_token": self.access_token
-                }
-                
-                video_info_response = requests.get(video_info_url, params=video_info_params, timeout=30)
-                if video_info_response.status_code == 200:
-                    video_info = video_info_response.json()
-                    # source URL 또는 permalink_url 사용
-                    video_url = video_info.get('source') or video_info.get('permalink_url')
-                    if not video_url:
-                        # 기본 URL 형식 사용
-                        video_url = f"https://graph.facebook.com/{api_version}/{video_id}/video"
-                else:
-                    # 기본 URL 형식 사용
-                    video_url = f"https://graph.facebook.com/{api_version}/{video_id}/video"
-                
-                print(f"   영상 URL: {video_url}")
-                
-                # 2단계: Instagram Reels 컨테이너 생성 (video_url 사용)
-                print(f"   2단계: Instagram Reels 컨테이너 생성 중...")
-                container_url = f"https://graph.facebook.com/{api_version}/{self.instagram_account_id}/media"
-                container_params = {
-                    "media_type": "REELS",
-                    "video_url": video_url,
-                    "caption": caption,
-                    "access_token": self.access_token
-                }
-                
-                container_response = requests.post(container_url, params=container_params, timeout=60)
-            
-            if container_response.status_code != 200:
-                try:
-                    error = container_response.json().get('error', {})
-                    error_code = error.get('code')
-                    error_msg = error.get('message', 'N/A')
-                    print(f"   ❌ 컨테이너 생성 실패 (코드: {error_code})")
-                    print(f"   오류 메시지: {error_msg}")
-                    
-                    # video_url이 필요한 경우 안내
-                    if error_code == 100 and 'video_url' in error_msg.lower():
-                        print(f"\n   💡 Instagram Graph API는 공개 URL이 필요합니다.")
-                        print(f"   로컬 파일을 직접 업로드하려면 다른 방법이 필요합니다.")
-                        print(f"   또는 영상을 공개 URL에 업로드한 후 그 URL을 사용하세요.")
-                except:
-                    print(f"   ❌ 컨테이너 생성 실패")
-                    print(f"   응답: {container_response.text[:200]}")
-                return None
-            
-            container_data = container_response.json()
-            creation_id = container_data.get('id')
-            
-            if not creation_id:
-                print(f"   ❌ 컨테이너 ID를 받지 못했습니다.")
-                print(f"   응답: {container_data}")
-                return None
-            
-            print(f"   ✅ 컨테이너 생성 성공: {creation_id}")
-            
-            # 2단계: 미디어 게시
-            print(f"   2단계: Reels 게시 중...")
-            publish_url = f"https://graph.facebook.com/{api_version}/{self.instagram_account_id}/media_publish"
-            publish_params = {
-                "creation_id": creation_id,
-                "access_token": self.access_token
-            }
-            
-            publish_response = requests.post(publish_url, params=publish_params, timeout=60)
-            
-            if publish_response.status_code != 200:
-                error = publish_response.json().get('error', {})
-                error_code = error.get('code')
-                error_msg = error.get('message', 'N/A')
-                print(f"   ❌ Reels 게시 실패 (코드: {error_code})")
-                print(f"   오류 메시지: {error_msg}")
-                return None
-            
-            publish_data = publish_response.json()
-            reel_id = publish_data.get('id')
-            
-            if reel_id:
-                print(f"   ✅ Reels 게시 성공: {reel_id}")
-                print(f"✅ Instagram 업로드 완료!")
-                return reel_id
-            else:
-                print(f"   ⚠️  Reels ID를 받지 못했습니다.")
-                print(f"   응답: {publish_data}")
-                return None
-            
-        except FileNotFoundError:
-            print(f"⚠️ 영상 파일을 찾을 수 없습니다: {video_path}")
-            return None
-        except requests.exceptions.Timeout:
-            print(f"⚠️ Instagram 업로드 실패: 요청 시간 초과")
-            return None
-        except Exception as e:
-            print(f"⚠️ Instagram 업로드 실패: {e}")
-            import traceback
-            traceback.print_exc()
-            return None
+    """Instagram Graph API를 사용하여 Reels 업로드"""
     
-    def is_available(self) -> bool:
-        """Instagram 업로더 사용 가능 여부"""
-        return self.authenticated
+    def __init__(self):
+        self.access_token = config.INSTAGRAM_ACCESS_TOKEN
+        self.account_id = config.INSTAGRAM_ACCOUNT_ID
+        self.api_version = "v19.0"
+        self.base_url = f"https://graph.facebook.com/{self.api_version}"
+        
+        if not self.access_token or not self.account_id:
+            print("⚠️ Instagram 설정이 누락되었습니다. (ACCESS_TOKEN 또는 ACCOUNT_ID)")
+            self.is_configured = False
+        else:
+            self.is_configured = True
 
+    def upload_reel(self, video_path: str, caption: str = "") -> bool:
+        """
+        Reels 업로드 프로세스:
+        1. 미디어 컨테이너 생성 (업로드)
+        2. 컨테이너 상태 확인 (처리 완료 대기)
+        3. 미디어 게시 (Publish)
+        """
+        if not self.is_configured:
+            print("❌ Instagram 업로더가 설정되지 않았습니다.")
+            return False
+            
+        if not os.path.exists(video_path):
+            print(f"❌ 영상 파일을 찾을 수 없습니다: {video_path}")
+            return False
+
+        # 주의: Graph API는 로컬 파일 업로드를 직접 지원하지 않고, 
+        # 공개된 URL에서 다운로드하는 방식을 주로 사용합니다.
+        # 하지만 로컬 테스트를 위해 임시로 ngrok 등을 사용하거나,
+        # 실제 운영 환경에서는 S3 등에 업로드 후 URL을 전달해야 합니다.
+        # 
+        # 여기서는 사용자가 비디오 호스팅 URL을 제공하거나, 
+        # 추후 확장을 위해 'video_url' 파라미터를 받는 구조로 작성합니다.
+        # *현재 구현은 로컬 파일을 직접 올릴 수 없으므로, 
+        #  이 부분은 실제 호스팅 로직이 필요함을 알립니다.*
+        
+        print("⚠️ Instagram Graph API는 공개된 비디오 URL이 필요합니다.")
+        print("   현재 로컬 파일 직접 업로드는 지원하지 않으므로,")
+        print("   실제 사용 시에는 AWS S3나 호스팅 서버에 먼저 업로드해야 합니다.")
+        
+        # TODO: 실제 호스팅 로직 구현 필요 (S3, Google Cloud Storage 등)
+        # 임시로 로컬 경로를 반환하며 실패 처리
+        print(f"❌ [미구현] 비디오 호스팅 URL 생성 필요: {video_path}")
+        return False
+
+    def upload_reel_from_url(self, video_url: str, caption: str = "") -> bool:
+        """공개된 URL에서 비디오를 가져와 Reels로 게시"""
+        if not self.is_configured:
+            return False
+
+        print(f"🚀 Instagram Reels 업로드 시작: {video_url}")
+        
+        # 1. 컨테이너 생성
+        container_id = self._create_media_container(video_url, caption)
+        if not container_id:
+            return False
+            
+        # 2. 처리 대기
+        if not self._wait_for_processing(container_id):
+            return False
+            
+        # 3. 게시
+        media_id = self._publish_media(container_id)
+        if media_id:
+            print(f"✅ Instagram Reels 게시 성공! Media ID: {media_id}")
+            return True
+        
+        return False
+
+    def _create_media_container(self, video_url: str, caption: str) -> str:
+        """미디어 컨테이너 생성 요청"""
+        url = f"{self.base_url}/{self.account_id}/media"
+        payload = {
+            "media_type": "REELS",
+            "video_url": video_url,
+            "caption": caption,
+            "share_to_feed": "true",
+            "access_token": self.access_token
+        }
+        
+        try:
+            response = requests.post(url, data=payload)
+            result = response.json()
+            
+            if "id" in result:
+                print(f"   📦 컨테이너 생성 완료: {result['id']}")
+                return result["id"]
+            else:
+                print(f"❌ 컨테이너 생성 실패: {result}")
+                return None
+        except Exception as e:
+            print(f"❌ API 요청 오류: {e}")
+            return None
+
+    def _wait_for_processing(self, container_id: str, timeout: int = 300) -> bool:
+        """컨테이너 처리 상태 확인"""
+        url = f"{self.base_url}/{container_id}"
+        params = {
+            "fields": "status_code,status",
+            "access_token": self.access_token
+        }
+        
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                response = requests.get(url, params=params)
+                result = response.json()
+                
+                status = result.get("status_code")
+                if status == "FINISHED":
+                    print("   ✅ 미디어 처리 완료")
+                    return True
+                elif status == "ERROR":
+                    print(f"❌ 미디어 처리 중 오류 발생: {result}")
+                    return False
+                elif status == "IN_PROGRESS":
+                    print("   ⏳ 처리 중... (대기)")
+                    time.sleep(5)
+                else:
+                    print(f"   ❓ 알 수 없는 상태: {status}")
+                    time.sleep(5)
+            except Exception as e:
+                print(f"❌ 상태 확인 오류: {e}")
+                return False
+                
+        print("❌ 처리 시간 초과")
+        return False
+
+    def _publish_media(self, container_id: str) -> str:
+        """컨테이너 게시 요청"""
+        url = f"{self.base_url}/{self.account_id}/media_publish"
+        payload = {
+            "creation_id": container_id,
+            "access_token": self.access_token
+        }
+        
+        try:
+            response = requests.post(url, data=payload)
+            result = response.json()
+            
+            if "id" in result:
+                return result["id"]
+            else:
+                print(f"❌ 게시 실패: {result}")
+                return None
+        except Exception as e:
+            print(f"❌ 게시 요청 오류: {e}")
+            return None

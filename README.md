@@ -49,6 +49,15 @@ AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하
 - **백그라운드 실행**: 서버나 컴퓨터가 켜져 있는 동안 자동 실행
 - **macOS LaunchAgent 지원**: 재부팅 후에도 자동 시작
 
+### 5. 안정성 및 모니터링 (NEW)
+
+- **자동 재시도 로직**: API 호출 실패 시 지수 백오프로 자동 재시도
+- **API 할당량 관리**: 실시간 API 사용량 추적 및 rate limiting
+- **구조화된 로깅**: 색상 코딩된 콘솔 출력 + 파일 로그 (자동 로테이션)
+- **성능 메트릭 추적**: 영상 생성 시간, API 응답 시간, 성공률 등 자동 추적
+
+자세한 내용은 [docs/STABILITY_FEATURES.md](./docs/STABILITY_FEATURES.md)를 참고하세요.
+
 ## 📋 사전 요구사항
 
 ### 필수 소프트웨어
@@ -209,13 +218,19 @@ youtubeshorts/
 │   ├── uploaders/              # 업로드 모듈
 │   │   └── youtube_uploader.py
 │   ├── analytics/              # 분석 모듈
+│   │   ├── analytics_manager.py  # 성과 분석
 │   │   └── monetization.py
 │   ├── pipeline/               # 파이프라인 모듈
 │   │   ├── bot.py              # 메인 봇 클래스
 │   │   ├── database.py         # SQLite 데이터베이스
 │   │   └── tts_engine.py       # TTS 엔진 추상화
 │   └── utils/                  # 유틸리티
-│       └── create_client_secrets.py
+│       ├── create_client_secrets.py
+│       ├── retry_decorator.py  # 재시도 로직
+│       ├── quota_manager.py    # API 할당량 관리
+│       ├── logger.py           # 구조화된 로깅
+│       ├── performance_tracker.py  # 성능 메트릭
+│       └── youtube_auth.py     # YouTube 인증
 │
 ├── docs/                       # 문서
 │   ├── API_SETUP.md            # OpenAI API 설정 가이드
@@ -238,6 +253,10 @@ youtubeshorts/
 │   ├── videos/                 # 생성된 영상
 │   ├── thumbnails/            # 썸네일
 │   └── temp/                  # 임시 파일
+│
+├── logs/                       # 로그 파일 (자동 생성)
+│   ├── youtubeshorts.log      # 메인 로그
+│   └── performance_metrics.json  # 성능 메트릭
 │
 ├── token.json                  # YouTube 인증 토큰 (자동 생성)
 └── client_secrets.json         # Google OAuth 설정 (생성 필요)
@@ -333,6 +352,27 @@ python main.py instagram-test
 ```
 
 이 명령은 `.env`에 저장된 `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`, `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_ACCOUNT_ID`를 사용해 Graph API 연결을 시도하고 결과를 출력합니다. 연결에 성공하면 Instagram 사용자명과 계정 ID가 표시되고, 실패 시 원인을 로그로 확인할 수 있습니다.
+
+### 성과 분석 및 모니터링
+
+```bash
+# YouTube Shorts 성과 분석 리포트
+python main.py analyze
+
+# API 할당량 사용 현황 확인
+python main.py quota-status
+```
+
+**성과 분석 리포트 포함 내용:**
+- 채널 통계 (구독자, 총 조회수, 영상 수)
+- Top 5 인기 영상
+- 주제별 성과 분석 (평균 조회수, 참여율)
+- 최적 업로드 시간 분석 (KST 기준)
+
+**할당량 모니터링:**
+- OpenAI API: 분당 요청 수 (RPM)
+- Pexels API: 시간당 요청 수
+- YouTube API: 일일 할당량 (quota units)
 
 ## 📊 수익화 추적
 

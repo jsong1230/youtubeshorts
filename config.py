@@ -31,6 +31,15 @@ AI_API_PROVIDER = os.getenv('AI_API_PROVIDER', 'openai').lower()  # 'openai' 또
 PEXELS_API_KEY = os.getenv('PEXELS_API_KEY')  # https://www.pexels.com/api/ 에서 무료로 발급 가능 (CC0 라이선스)
 UNSPLASH_ACCESS_KEY = os.getenv('UNSPLASH_ACCESS_KEY')  # https://unsplash.com/developers 에서 무료로 발급 가능 (Unsplash License)
 
+# API Quota Limits (할당량 제한)
+OPENAI_RPM_LIMIT = int(os.getenv('OPENAI_RPM_LIMIT', '500'))  # OpenAI requests per minute
+PEXELS_HOURLY_LIMIT = int(os.getenv('PEXELS_HOURLY_LIMIT', '200'))  # Pexels requests per hour
+YOUTUBE_DAILY_QUOTA = int(os.getenv('YOUTUBE_DAILY_QUOTA', '10000'))  # YouTube quota units per day
+
+# Quota Warning Thresholds (경고 임계값)
+QUOTA_WARNING_THRESHOLD = 0.8  # 80% usage warning
+QUOTA_CRITICAL_THRESHOLD = 0.95  # 95% usage critical alert
+
 # 영상 생성 설정
 USE_BACKGROUND_VIDEO = os.getenv('USE_BACKGROUND_VIDEO', 'true').lower() == 'true'  # 배경 영상 사용 여부 (기본: true)
 
@@ -77,14 +86,16 @@ MONETIZATION_DATA_PATH = os.getenv('MONETIZATION_DATA_PATH', 'data/monetization_
 ENABLE_TIKTOK_UPLOAD = os.getenv('ENABLE_TIKTOK_UPLOAD', 'false').lower() == 'true'
 ENABLE_INSTAGRAM_UPLOAD = os.getenv('ENABLE_INSTAGRAM_UPLOAD', 'false').lower() == 'true'
 
+
 # TikTok API 설정 (선택사항)
 TIKTOK_CLIENT_KEY = os.getenv('TIKTOK_CLIENT_KEY')
 TIKTOK_CLIENT_SECRET = os.getenv('TIKTOK_CLIENT_SECRET')
 TIKTOK_ACCESS_TOKEN = os.getenv('TIKTOK_ACCESS_TOKEN')
+TIKTOK_REFRESH_TOKEN = os.getenv('TIKTOK_REFRESH_TOKEN')
 
 # Instagram Graph API 설정 (선택사항)
 INSTAGRAM_APP_ID = os.getenv('INSTAGRAM_APP_ID')
 INSTAGRAM_APP_SECRET = os.getenv('INSTAGRAM_APP_SECRET')
 INSTAGRAM_ACCESS_TOKEN = os.getenv('INSTAGRAM_ACCESS_TOKEN')
-INSTAGRAM_ACCOUNT_ID = os.getenv('INSTAGRAM_ACCOUNT_ID')
+INSTAGRAM_ACCOUNT_ID = os.getenv('INSTAGRAM_ACCOUNT_ID')  # Instagram Business Account ID
 
