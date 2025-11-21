@@ -22,6 +22,11 @@ from src.pipeline.sync_manager import SyncManager
 from src.analytics.ab_testing import ABTestDatabase, VideoStyle
 from src.pipeline.topic_database import TopicDatabase, TopicSource
 from src.analytics.thumbnail_optimizer import ThumbnailOptimizer
+from src.analytics.advanced_analytics import PerformancePredictor, AutoOptimizer, CompetitorAnalyzer, AudienceSegmentAnalyzer
+from src.web.notifications import NotificationService
+from src.generators.series_generator import SeriesGenerator, SeriesType
+from src.generators.user_request_handler import UserRequestHandler
+from src.analytics.comment_analyzer import CommentAnalyzer
 import config
 import json
 
@@ -48,6 +53,14 @@ class ShortsBot:
         self.ab_test_db = ABTestDatabase()
         self.topic_database = TopicDatabase()
         self.thumbnail_optimizer = ThumbnailOptimizer()
+        self.performance_predictor = PerformancePredictor()
+        self.auto_optimizer = AutoOptimizer()
+        self.competitor_analyzer = CompetitorAnalyzer()
+        self.audience_segment_analyzer = AudienceSegmentAnalyzer()
+        self.notification_service = NotificationService()
+        self.series_generator = SeriesGenerator()
+        self.user_request_handler = UserRequestHandler()
+        self.comment_analyzer = CommentAnalyzer()
     
     def _get_performance_based_prompt(self) -> str:
         """
@@ -217,6 +230,16 @@ class ShortsBot:
             elif language is None:
                 language = 'en'  # 기본값을 영어로 변경
                 print(f"🌐 언어 기본값: 영어")
+            
+            # 사용자 요청 주제 확인 (우선순위)
+            if not topic:
+                user_request = self.user_request_handler.get_next_request()
+                if user_request:
+                    topic = user_request['topic']
+                    request_id = user_request['id']
+                    print(f"📝 사용자 요청 주제 사용: {topic} (요청 ID: {request_id})")
+                    # 요청을 진행 중으로 표시
+                    self.user_request_handler.mark_in_progress(request_id)
             
             # 성과 기반 프롬프트 가져오기 (하루 1개 생성 전)
             performance_prompt = self._get_performance_based_prompt()
@@ -445,6 +468,12 @@ class ShortsBot:
                 script=None  # 향후 추가 가능
             )
             
+            # 사용자 요청 완료 처리 (요청이 있었던 경우)
+            if not topic and 'user_request' in locals() and user_request:
+                request_id = user_request['id']
+                self.user_request_handler.mark_completed(request_id, video_id)
+                print(f"✅ 사용자 요청 완료 처리: 요청 ID {request_id} -> 영상 ID {video_id}")
+            
             # A/B 테스트 데이터베이스에 저장 (기본 스타일)
             try:
                 # 현재 영상의 스타일 정보 추출
@@ -529,7 +558,31 @@ class ShortsBot:
                 upload_date=datetime.now().isoformat()
             )
             
-            # 주제 출처를 TopicSource enum 값으로 매핑하는 헬퍼 메서드
+            print(f"\n✅ 완료! 영상 ID: {video_id}")
+            print(f"🔗 https://www.youtube.com/watch?v={video_id}\n")
+            
+            # 알림 전송
+            try:
+                video_url = f"https://www.youtube.com/watch?v={video_id}"
+                self.notification_service.notify_video_uploaded(
+                    video_id=video_id,
+                    title=title,
+                    video_url=video_url
+                )
+            except Exception as e:
+                print(f"⚠️ 알림 전송 실패: {e}")
+            
+            # 리포트 출력
+            self.monetization.print_report()
+            
+            return video_id
+            
+        except Exception as e:
+            print(f"\n❌ 오류 발생: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
     def _map_topic_source(self, source: str) -> str:
         """
         주제 출처 문자열을 TopicSource enum 값으로 매핑
@@ -553,88 +606,6 @@ class ShortsBot:
         }
         
         return mapping.get(source, TopicSource.MANUAL.value)
-    
-            # 7. 통계 업데이트
-            stats = self.uploader.get_video_stats(video_id)
-            if stats:
-                self.database.update_video_stats(
-                    video_id=video_id,
-                    views=stats.get('views', 0),
-                    likes=stats.get('likes', 0),
-                    comments=stats.get('comments', 0)
-                )
-                self.monetization.update_video_stats(video_id)
-                
-                # 주제 데이터베이스 통계도 업데이트
-                try:
-                    from src.pipeline.topic_database import TopicDatabase
-                    topic_db = TopicDatabase()
-                    topic_db.link_topic_to_video(
-                        topic=actual_topic,
-                        video_id=video_id,
-                        views=stats.get('views', 0),
-                        likes=stats.get('likes', 0),
-                        comments=stats.get('comments', 0)
-                    )
-                    print(f"✅ 주제 데이터베이스 통계 업데이트 완료")
-                except Exception as e:
-                    print(f"⚠️ 주제 데이터베이스 통계 업데이트 실패: {e}")
-                
-                # A/B 테스트 통계 업데이트
-                try:
-                    watch_time = stats.get('watch_time', 0)  # 평균 시청 시간 (초)
-                    self.ab_test_db.update_test_stats(
-                        video_id=video_id,
-                        views=stats.get('views', 0),
-                        likes=stats.get('likes', 0),
-                        comments=stats.get('comments', 0),
-                        watch_time=watch_time
-                    )
-                    print(f"✅ A/B 테스트 통계 업데이트 완료")
-                except Exception as e:
-                    print(f"⚠️ A/B 테스트 통계 업데이트 실패: {e}")
-                
-                # 썸네일 최적화 데이터베이스에 저장 (video_id 포함)
-                if thumbnail_path:
-                    try:
-                        # 썸네일 스타일 추출 (DALL-E 3 또는 프레임 추출)
-                        if thumbnail_style is None:
-                            thumbnail_style = "dalle3" if thumbnail_path and "thumb_" in thumbnail_path else "frame_extract"
-                        self.thumbnail_optimizer.add_thumbnail(
-                            video_id=video_id,
-                            thumbnail_path=thumbnail_path,
-                            thumbnail_variant="default",
-                            thumbnail_style=thumbnail_style
-                        )
-                    except Exception as e:
-                        print(f"⚠️ 썸네일 최적화 데이터베이스 저장 실패: {e}")
-                
-                # 썸네일 최적화 통계 업데이트
-                try:
-                    # 조회수를 클릭 수로 추정, 노출 수는 조회수보다 크다고 가정 (실제로는 YouTube API에서 가져와야 함)
-                    impressions = stats.get('impressions', stats.get('views', 0) * 10)  # 기본값: 조회수의 10배
-                    self.thumbnail_optimizer.update_thumbnail_stats(
-                        video_id=video_id,
-                        views=stats.get('views', 0),
-                        impressions=impressions
-                    )
-                    print(f"✅ 썸네일 최적화 통계 업데이트 완료")
-                except Exception as e:
-                    print(f"⚠️ 썸네일 최적화 통계 업데이트 실패: {e}")
-            
-            print(f"\n✅ 완료! 영상 ID: {video_id}")
-            print(f"🔗 https://www.youtube.com/watch?v={video_id}\n")
-            
-            # 리포트 출력
-            self.monetization.print_report()
-            
-            return video_id
-            
-        except Exception as e:
-            print(f"\n❌ 오류 발생: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return None
     
     def create_and_upload_all_types(self):
         """모든 콘텐츠 타입에 대해 영상 생성 및 업로드 (6개)"""

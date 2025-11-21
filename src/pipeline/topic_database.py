@@ -467,6 +467,66 @@ class TopicDatabase:
         
         return filtered_topics[:limit]
     
+    def get_all_topics(self, status: str = None) -> List[Dict]:
+        """
+        모든 주제 조회
+        
+        Args:
+            status: 주제 상태 필터 (None이면 모든 상태)
+        
+        Returns:
+            주제 리스트
+        """
+        return self.get_topics(status=status)
+    
+    def get_topics_by_content_type(self, content_type: str) -> List[Dict]:
+        """
+        콘텐츠 타입별 주제 조회
+        
+        Args:
+            content_type: 콘텐츠 타입
+        
+        Returns:
+            주제 리스트
+        """
+        return self.get_topics(content_type=content_type, status=TopicStatus.ACTIVE.value)
+    
+    def get_videos_by_topic(self, topic: str) -> List[Dict]:
+        """
+        주제별 영상 조회
+        
+        Args:
+            topic: 주제 텍스트
+        
+        Returns:
+            영상 리스트 (video_id, views, likes, comments, engagement_rate)
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # 주제 ID 가져오기
+            topic_id = self.get_topic_id(topic)
+            if not topic_id:
+                conn.close()
+                return []
+            
+            # 주제에 연결된 영상 가져오기
+            cursor.execute('''
+                SELECT video_id, views, likes, comments, engagement_rate
+                FROM topic_videos
+                WHERE topic_id = ?
+            ''', (topic_id,))
+            
+            rows = cursor.fetchall()
+            conn.close()
+            
+            return [dict(row) for row in rows]
+        except Exception as e:
+            print(f"⚠️ 주제별 영상 조회 실패: {e}")
+            return []
+    
     def get_low_performing_topics(
         self,
         content_type: str = None,

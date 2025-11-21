@@ -198,6 +198,59 @@ class VideoDatabase:
             print(f"⚠️ 성과 좋은 영상 조회 실패: {e}")
             return []
     
+    def get_all_videos(
+        self,
+        limit: int = None,
+        days: int = None,
+        order_by: str = 'upload_date'
+    ) -> List[Dict]:
+        """
+        모든 영상 조회 (필터 없이)
+        
+        Args:
+            limit: 반환할 영상 수 (None이면 제한 없음)
+            days: 최근 며칠간의 데이터만 조회 (None이면 전체)
+            order_by: 정렬 기준 ('upload_date', 'views', 'engagement_rate' 등)
+        
+        Returns:
+            영상 리스트
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            query = 'SELECT video_id, title, topic, prompt, upload_date, views, likes, comments, engagement_rate FROM videos'
+            params = []
+            
+            if days:
+                cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+                query += ' WHERE upload_date >= ?'
+                params.append(cutoff_date)
+            
+            # 정렬
+            if order_by == 'upload_date':
+                query += ' ORDER BY upload_date DESC'
+            elif order_by == 'views':
+                query += ' ORDER BY views DESC'
+            elif order_by == 'engagement_rate':
+                query += ' ORDER BY engagement_rate DESC'
+            else:
+                query += ' ORDER BY upload_date DESC'
+            
+            if limit:
+                query += ' LIMIT ?'
+                params.append(limit)
+            
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            conn.close()
+            
+            return [dict(row) for row in rows]
+        except Exception as e:
+            print(f"⚠️ 모든 영상 조회 실패: {e}")
+            return []
+    
     def get_top_topics(
         self,
         limit: int = 5,

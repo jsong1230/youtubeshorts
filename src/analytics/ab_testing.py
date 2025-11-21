@@ -363,6 +363,45 @@ class ABTestDatabase:
             print(f"⚠️ 최고 성과 스타일 조회 실패: {e}")
             return []
     
+    def get_test_by_video_id(self, video_id: str) -> Optional[Dict]:
+        """
+        비디오 ID로 A/B 테스트 데이터 가져오기
+        
+        Args:
+            video_id: YouTube 영상 ID
+        
+        Returns:
+            A/B 테스트 데이터 또는 None
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT * FROM ab_tests
+                WHERE video_id = ?
+                ORDER BY created_at DESC
+                LIMIT 1
+            ''', (video_id,))
+            
+            row = cursor.fetchone()
+            conn.close()
+            
+            if row:
+                result = dict(row)
+                # style_config JSON 파싱
+                if result.get('style_config'):
+                    try:
+                        result['style_config'] = json.loads(result['style_config'])
+                    except:
+                        pass
+                return result
+            return None
+        except Exception as e:
+            print(f"⚠️ A/B 테스트 데이터 가져오기 실패: {e}")
+            return None
+    
     def should_test_new_style(
         self,
         content_type: str,
