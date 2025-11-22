@@ -4,6 +4,7 @@ YouTube Shorts 스크립트 생성 모듈
 import re
 import random
 import time
+import datetime
 import hashlib
 from typing import List, Optional, Tuple
 from enum import Enum
@@ -1013,7 +1014,7 @@ class ScriptGenerator:
         Returns:
             'spring', 'summer', 'autumn', 'winter'
         """
-        month = datetime.now().month
+        month = datetime.datetime.now().month
         if 3 <= month <= 5:
             return 'spring'
         elif 6 <= month <= 8:

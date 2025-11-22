@@ -103,6 +103,10 @@ class Settings:
         self.instagram_access_token = os.getenv('INSTAGRAM_ACCESS_TOKEN')
         self.instagram_account_id = os.getenv('INSTAGRAM_ACCOUNT_ID')
         
+        # Parallel Processing 설정
+        self.max_parallel_workers = self._get_int('MAX_PARALLEL_WORKERS', 3)
+        self.enable_parallel_generation = self._get_bool('ENABLE_PARALLEL_GENERATION', True)
+        
         # 설정 검증
         self._validate()
         
@@ -219,3 +223,7 @@ INSTAGRAM_APP_ID = _settings.instagram_app_id
 INSTAGRAM_APP_SECRET = _settings.instagram_app_secret
 INSTAGRAM_ACCESS_TOKEN = _settings.instagram_access_token
 INSTAGRAM_ACCOUNT_ID = _settings.instagram_account_id
+
+# Parallel Processing
+MAX_PARALLEL_WORKERS = _settings.max_parallel_workers
+ENABLE_PARALLEL_GENERATION = _settings.enable_parallel_generation

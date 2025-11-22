@@ -84,6 +84,31 @@ def main():
             manager = AnalyticsManager()
             manager.generate_performance_report()
 
+        elif command == 'batch':
+            # 병렬 영상 생성
+            # python main.py batch [count] [--workers N] [--upload]
+            if len(sys.argv) < 3:
+                print("사용법: python main.py batch [개수] [--workers N] [--upload]")
+                sys.exit(1)
+            
+            count = int(sys.argv[2])
+            
+            # 옵션 파싱
+            workers = 3  # 기본값
+            upload = False
+            
+            for i, arg in enumerate(sys.argv[3:], start=3):
+                if arg == '--workers' and i + 1 < len(sys.argv):
+                    workers = int(sys.argv[i + 1])
+                elif arg == '--upload':
+                    upload = True
+            
+            from src.pipeline.batch_generator import BatchVideoGenerator
+            batch_gen = BatchVideoGenerator(max_workers=workers)
+            results = batch_gen.generate_batch(count=count, upload=upload)
+            
+            print(f"\n✅ 배치 생성 완료: {results['success']}/{results['total']} 성공")
+
         elif command == 'quota-status':
             # API 할당량 상태 확인
             from src.utils.quota_manager import get_quota_manager
@@ -94,6 +119,7 @@ def main():
             print("사용법:")
             print("  python main.py test [주제]     - 영상 생성만 (업로드 없음)")
             print("  python main.py upload [주제] [--force]  - 즉시 영상 생성 및 업로드 (--force: 중복 체크 건너뛰기)")
+            print("  python main.py batch [개수] [--workers N] [--upload] - 병렬 영상 생성")
             print("  python main.py social-upload [path] [title] - 소셜 미디어 업로드 테스트")
             print("  python main.py stats          - 모든 영상 통계 업데이트")
             print("  python main.py report         - 수익화 리포트 출력")
