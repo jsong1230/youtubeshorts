@@ -126,7 +126,7 @@ class ShortsBot:
             
             # AI로 영상 생성 (매번 새로운 아이디어로)
             print("📹 영상 생성 중...")
-            video_path, script, generated_topic = self.video_generator.generate_video(
+            video_path, thumbnail_path, generated_topic, script = self.video_generator.generate_video(
                 topic=topic, 
                 duration=None,
                 performance_prompt=None,
@@ -359,18 +359,9 @@ class ShortsBot:
         if '#Shorts' not in title and '#shorts' not in title:
             title = f"{title} #Shorts"
         
-        # 3. 썸네일 생성
-        print("\n🖼️ 썸네일 생성 중...")
-        thumbnail_path = self.video_generator.generate_thumbnail(
-            video_path, 
-            title, 
-            topic=actual_topic,
-            script=script,
-            language=language
-        )
-        
+        # 썸네일 임베딩 (이미 generate_video에서 생성됨)
         if thumbnail_path:
-            print("🎞️ 썸네일 이미지를 영상 첫 프레임에 삽입합니다...")
+            print("\n🎞️ 썸네일 이미지를 영상 첫 프레임에 삽입합니다...")
             self.video_generator.embed_thumbnail_frame(video_path, thumbnail_path)
             print(f"✅ 썸네일 생성 완료: {thumbnail_path}")
         else:
