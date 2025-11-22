@@ -85,29 +85,45 @@ def main():
             manager.generate_performance_report()
 
         elif command == 'batch':
-            # 병렬 영상 생성
-            # python main.py batch [count] [--workers N] [--upload]
+            # 여러 영상 순차 생성 (2개 이상만 허용)
+            # ⚠️ 현재 디버깅 중: 문제가 있을 수 있음
+            print("⚠️  배치 기능은 현재 디버깅 중입니다.")
+            print("⚠️  문제가 발생할 수 있으니, 단일 영상 생성은 'python main.py test'를 사용하세요.")
+            print()
+            
             if len(sys.argv) < 3:
-                print("사용법: python main.py batch [개수] [--workers N] [--upload]")
+                print("사용법: python main.py batch [개수] [--upload]")
+                print("  주의: 배치는 2개 이상의 영상을 생성할 때만 사용하세요.")
+                print("  단일 영상 생성은 'python main.py test' 또는 'python main.py generate'를 사용하세요.")
                 sys.exit(1)
             
             count = int(sys.argv[2])
             
+            # 단일 영상 생성은 일반 명령 사용 안내
+            if count == 1:
+                print("⚠️  단일 영상 생성은 배치 명령이 필요하지 않습니다.")
+                print("💡 다음 명령을 사용하세요:")
+                print("   python main.py test [주제]     - 영상 생성만")
+                print("   python main.py upload [주제]  - 영상 생성 및 업로드")
+                sys.exit(1)
+            
             # 옵션 파싱
-            workers = 3  # 기본값
             upload = False
+            if '--upload' in sys.argv:
+                upload = True
             
-            for i, arg in enumerate(sys.argv[3:], start=3):
-                if arg == '--workers' and i + 1 < len(sys.argv):
-                    workers = int(sys.argv[i + 1])
-                elif arg == '--upload':
-                    upload = True
-            
-            from src.pipeline.batch_generator import BatchVideoGenerator
-            batch_gen = BatchVideoGenerator(max_workers=workers)
-            results = batch_gen.generate_batch(count=count, upload=upload)
-            
-            print(f"\n✅ 배치 생성 완료: {results['success']}/{results['total']} 성공")
+            try:
+                from src.pipeline.batch_generator import BatchVideoGenerator
+                batch_gen = BatchVideoGenerator(max_workers=1)  # 순차 처리
+                results = batch_gen.generate_batch(count=count, upload=upload)
+                
+                print(f"\n✅ 배치 생성 완료: {results['success']}/{results['total']} 성공")
+            except Exception as e:
+                print(f"\n❌ 배치 생성 중 오류 발생: {e}")
+                import traceback
+                traceback.print_exc()
+                print("\n💡 문제가 지속되면 단일 영상 생성('python main.py test')을 사용하세요.")
+                sys.exit(1)
 
         elif command == 'quota-status':
             # API 할당량 상태 확인
@@ -119,7 +135,7 @@ def main():
             print("사용법:")
             print("  python main.py test [주제]     - 영상 생성만 (업로드 없음)")
             print("  python main.py upload [주제] [--force]  - 즉시 영상 생성 및 업로드 (--force: 중복 체크 건너뛰기)")
-            print("  python main.py batch [개수] [--workers N] [--upload] - 병렬 영상 생성")
+            print("  python main.py batch [개수] [--upload] - 여러 영상 순차 생성 (2개 이상)")
             print("  python main.py social-upload [path] [title] - 소셜 미디어 업로드 테스트")
             print("  python main.py stats          - 모든 영상 통계 업데이트")
             print("  python main.py report         - 수익화 리포트 출력")

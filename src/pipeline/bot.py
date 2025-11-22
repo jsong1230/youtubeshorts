@@ -503,6 +503,148 @@ class ShortsBot:
             
         return upload_results
 
+    def _save_upload_log(self, video_assets: Dict[str, Any], upload_results: Dict[str, str], 
+                        content_type: ContentType, video_path: str = None):
+        """업로드 기록을 파일로 저장 (다른 IDE/머신에서도 확인 가능)"""
+        try:
+            video_id = upload_results.get('youtube')
+            if not video_id:
+                return
+            
+            # data 폴더 확인 및 생성
+            data_dir = Path("data")
+            data_dir.mkdir(exist_ok=True)
+            
+            # 업로드 로그 파일 경로
+            log_file = data_dir / "upload_log.json"
+            
+            # 기존 로그 읽기
+            upload_logs = []
+            if log_file.exists():
+                try:
+                    with open(log_file, 'r', encoding='utf-8') as f:
+                        upload_logs = json.load(f)
+                except:
+                    upload_logs = []
+            
+            # 새 로그 항목 추가
+            log_entry = {
+                'timestamp': datetime.now().isoformat(),
+                'video_id': video_id,
+                'title': video_assets.get('title'),
+                'topic': video_assets.get('actual_topic'),
+                'content_type': content_type.value if content_type else 'auto',
+                'video_path': video_path or video_assets.get('video_path'),
+                'thumbnail_path': video_assets.get('thumbnail_path'),
+                'upload_results': upload_results,
+                'url': f"https://www.youtube.com/watch?v={video_id}" if video_id else None
+            }
+            
+            upload_logs.append(log_entry)
+            
+            # 최근 1000개만 유지 (파일 크기 관리)
+            if len(upload_logs) > 1000:
+                upload_logs = upload_logs[-1000:]
+            
+            # 로그 파일 저장
+            with open(log_file, 'w', encoding='utf-8') as f:
+                json.dump(upload_logs, f, ensure_ascii=False, indent=2)
+            
+            print(f"✅ 업로드 로그 저장 완료: {log_file}")
+            
+            # HISTORY.md에 기록 추가
+            self._append_to_history(log_entry)
+            
+        except Exception as e:
+            print(f"⚠️ 업로드 로그 저장 실패: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _append_to_history(self, log_entry: Dict[str, Any]):
+        """HISTORY.md에 업로드 기록 추가"""
+        try:
+            history_file = Path("HISTORY.md")
+            if not history_file.exists():
+                return
+            
+            # HISTORY.md 읽기
+            with open(history_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # 날짜 추출
+            upload_date = datetime.fromisoformat(log_entry['timestamp']).strftime('%Y-%m-%d')
+            
+            # 기록 항목 생성
+            history_entry = f"""
+- **{upload_date} - 영상 업로드 완료**
+  - **제목**: {log_entry.get('title', 'N/A')}
+  - **주제**: {log_entry.get('topic', 'N/A')}
+  - **콘텐츠 타입**: {log_entry.get('content_type', 'auto')}
+  - **Video ID**: {log_entry.get('video_id', 'N/A')}
+  - **URL**: {log_entry.get('url', 'N/A')}
+  - **영상 파일**: {log_entry.get('video_path', 'N/A')}
+  - **썸네일**: {log_entry.get('thumbnail_path', 'N/A')}
+  - **업로드 시간**: {log_entry.get('timestamp', 'N/A')}
+"""
+            
+            # "최근 업데이트" 섹션 찾기
+            import re
+            
+            # "**최근 업데이트**" 패턴 찾기 (프로젝트 개요 섹션 내)
+            if "**최근 업데이트**" in content:
+                # 프로젝트 개요 섹션의 최근 업데이트 부분 뒤에 추가
+                pattern = r'(\*\*최근 업데이트\*\*:.*?\n)'
+                match = re.search(pattern, content, re.DOTALL)
+                if match:
+                    insert_pos = match.end()
+                    # 다음 섹션(##) 전까지 찾기
+                    next_section = content.find('\n##', insert_pos)
+                    if next_section > 0:
+                        content = content[:next_section] + history_entry + content[next_section:]
+                    else:
+                        content = content[:insert_pos] + history_entry + content[insert_pos:]
+                else:
+                    # 프로젝트 개요 섹션 끝에 추가
+                    pattern = r'(## 프로젝트 개요.*?\n)'
+                    match = re.search(pattern, content, re.DOTALL)
+                    if match:
+                        insert_pos = match.end()
+                        content = content[:insert_pos] + history_entry + content[insert_pos:]
+                    else:
+                        # 파일 시작 부분에 추가
+                        content = "## 최근 업데이트" + history_entry + "\n\n" + content
+            elif "## 최근 업데이트" in content:
+                # "## 최근 업데이트" 섹션 뒤에 추가
+                pattern = r'(## 최근 업데이트.*?\n)'
+                match = re.search(pattern, content, re.DOTALL)
+                if match:
+                    insert_pos = match.end()
+                    content = content[:insert_pos] + history_entry + content[insert_pos:]
+                else:
+                    # 파일 시작 부분에 추가
+                    content = "## 최근 업데이트" + history_entry + "\n\n" + content
+            else:
+                # 프로젝트 개요 섹션 뒤에 추가
+                pattern = r'(## 프로젝트 개요.*?\n)'
+                match = re.search(pattern, content, re.DOTALL)
+                if match:
+                    insert_pos = match.end()
+                    content = content[:insert_pos] + history_entry + content[insert_pos:]
+                else:
+                    # 파일 시작 부분에 추가
+                    content = "## 최근 업데이트" + history_entry + "\n\n" + content
+            
+            # HISTORY.md 저장
+            with open(history_file, 'w', encoding='utf-8') as f:
+                f.write(content)
+            
+            print(f"✅ HISTORY.md에 기록 추가 완료")
+            
+        except Exception as e:
+            print(f"⚠️ HISTORY.md 기록 추가 실패: {e}")
+            import traceback
+            traceback.print_exc()
+
     def _update_databases(self, video_assets: Dict[str, Any], upload_results: Dict[str, str], 
                          request_id: Optional[str], content_type: ContentType, performance_prompt: str):
         """데이터베이스 및 상태 업데이트"""
@@ -577,6 +719,14 @@ class ShortsBot:
                 print(f"✅ 주제 데이터베이스에 저장 완료: {video_assets.get('actual_topic')[:50]}...")
         except Exception as e:
             print(f"⚠️ 주제 데이터베이스 저장 실패: {e}")
+        
+        # 5. 업로드 로그 파일 저장 (다른 IDE/머신에서도 확인 가능)
+        self._save_upload_log(
+            video_assets=video_assets,
+            upload_results=upload_results,
+            content_type=content_type,
+            video_path=video_assets.get('video_path')
+        )
             
         # 5. 동기화 상태 업데이트
         print("\n🔄 동기화 상태 업데이트 중...")

@@ -4,7 +4,7 @@ GPT API로 테스트 영상 생성
 """
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from generators.video_generator import AIVideoGenerator
 from generators.script_generator import ContentType
@@ -94,3 +94,4 @@ if __name__ == "__main__":
         print("\n반복 문제가 해결되었는지 영상을 재생하여 확인해주세요.")
     else:
         sys.exit(1)
+

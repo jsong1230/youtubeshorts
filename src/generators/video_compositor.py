@@ -128,38 +128,57 @@ class VideoCompositor:
             print(
                 f"   duration 정보: 실제 음성 {total_audio_duration:.2f}초, 목표 {duration}초 (스케일링하지 않음)")
 
-        # 배경 미디어 그룹핑: 2-3개 문장마다 배경 변경 (관련 문장들은 같은 배경 사용)
+        # 배경 미디어 그룹핑: 여러 배경 영상을 스크립트와 연동
         background_groups = []
-        group_size = VideoConstants.BACKGROUND_GROUP_SIZE
+        group_size = VideoConstants.BACKGROUND_GROUP_SIZE  # 배경 변경 주기 (문장 수)
         use_background_video = getattr(config, 'USE_BACKGROUND_VIDEO', True)
 
         # 각 그룹에서 사용할 배경 영상의 시작 시간을 추적 (순차 재생용)
         video_start_times = {}  # {bg_video_path: current_start_time}
-        downloaded_videos = []  # 이미 다운로드한 영상 경로 추적 (중복 방지)
+        downloaded_video_ids = set()  # 이미 다운로드한 영상 ID 추적 (중복 방지)
         
         for i in range(0, len(script), group_size):
             group_end = min(i + group_size, len(script))
             group_sentence = script[i]
             group_duration = sum(sentence_audio_durations[i:group_end])
             
-            # 배경 영상 다운로드 시도
+            # 배경 영상 다운로드 시도 (다양한 키워드로 재시도)
             bg_video_path = None
             if use_background_video and config.PEXELS_API_KEY:
-                max_retries = 3
-                for retry in range(max_retries):
-                    bg_video_path = self._download_video_for_sentence(
+                # 재시도 전략: 문장 키워드 -> 주제 키워드 -> 일반 키워드
+                retry_keywords = []
+                
+                # 1차: 문장 키워드
+                if self.media_downloader:
+                    sentence_keywords = self.media_downloader.extract_keywords(group_sentence)
+                    if sentence_keywords:
+                        retry_keywords.append(sentence_keywords[0])
+                
+                # 2차: 주제 키워드
+                if topic and self.media_downloader:
+                    topic_keywords = self.media_downloader.extract_keywords(topic)
+                    if topic_keywords and topic_keywords[0] not in retry_keywords:
+                        retry_keywords.append(topic_keywords[0])
+                
+                # 3차: 일반 키워드 (winter, home, lifestyle 등)
+                general_keywords = ["home", "lifestyle", "indoor", "cozy", "warm"]
+                retry_keywords.extend(general_keywords)
+                
+                for retry_idx, keyword in enumerate(retry_keywords[:5]):  # 최대 5개 키워드 시도
+                    bg_video_path, video_id = self._download_video_for_sentence(
                         group_sentence,
                         i,
                         group_duration,
                         topic=topic,
-                        exclude_videos=downloaded_videos  # 이미 다운로드한 영상 제외
+                        exclude_video_ids=downloaded_video_ids,
+                        force_keyword=keyword if retry_idx > 0 else None  # 첫 번째는 자동, 이후는 강제 키워드
                     )
-                    if bg_video_path:
-                        downloaded_videos.append(bg_video_path)
+                    if bg_video_path and video_id:
+                        downloaded_video_ids.add(video_id)  # 영상 ID 추가
                         break
-                    elif retry < max_retries - 1:
-                        print(
-                            f"   ⚠️ 배경 영상 다운로드 실패, 재시도 {retry + 1}/{max_retries}")
+                    elif retry_idx < len(retry_keywords) - 1:
+                        print(f"   ⚠️ 배경 영상 다운로드 실패 ({keyword}), 다음 키워드 시도...")
+                
                 if not bg_video_path:
                     print(f"   ⚠️ 배경 영상 다운로드 최종 실패, 그라데이션 배경 사용")
 
@@ -177,255 +196,132 @@ class VideoCompositor:
             print(
                 f"   배경 미디어 그룹 {len(background_groups)}: 문장 {i+1}-{group_end} ({media_type}) - {group_sentence[:30]}...)")
 
-        # 배경 영상들을 순차적으로 재생하기 위한 추적 변수
-        current_bg_video_index = 0
-        current_bg_video_start_time = 0.0
-        current_bg_video_path = None
-        current_bg_video_clip = None
-        current_bg_video_used_duration = 0.0
+        # 배경 영상 준비: 각 그룹의 배경 영상을 시간에 맞춰서 하나의 연속된 클립으로 합성
+        total_video_duration = sum(sentence_audio_durations)
+        base_video_clip = None
+        subtitle_clips = []  # 모든 자막 클립을 시간에 맞춰 저장
         
-        # 각 문장별로 영상 클립 생성
-        for i, sentence in enumerate(script):
-            # 실제 음성 길이에 맞춘 duration 사용
-            sentence_duration = sentence_audio_durations[i]
-            actual_audio_duration = sentence_audio_durations[i] if i < len(
-                sentence_audio_durations) else sentence_duration
+        # 각 그룹의 배경 영상을 시간에 맞춰서 처리
+        background_clips = []
+        current_time = 0.0
+        
+        for gs, ge, bg_video_path, bg_image in background_groups:
+            group_duration = sum(sentence_audio_durations[gs:ge])
             
-            # 해당 문장이 속한 그룹의 배경 미디어 찾기
-            bg_video_path = None
-            bg_image = None
-            group_start = None
-            group_end = None
-            for gs, ge, gv, gi in background_groups:
-                if gs <= i < ge:
-                    bg_video_path = gv
-                    bg_image = gi
-                    group_start = gs
-                    group_end = ge
-                    break
-            
-            # 새로운 배경 영상 그룹이 시작되면 이전 배경 영상 종료
-            if bg_video_path and bg_video_path != current_bg_video_path:
-                if current_bg_video_clip:
-                    current_bg_video_clip.close()
-                current_bg_video_path = bg_video_path
-                current_bg_video_start_time = 0.0
-                current_bg_video_used_duration = 0.0
-                current_bg_video_clip = None
-            
-            # 배경 영상이 있으면 영상 클립 사용
             if bg_video_path and os.path.exists(bg_video_path):
                 try:
-                    if current_bg_video_clip is None:
-                        print(f"   📹 배경 영상 로드: {bg_video_path}")
-                        source_video = VideoFileClip(bg_video_path)
-                        source_duration = source_video.duration
-                        print(f"   원본 영상 길이: {source_duration:.2f}초")
-                        current_bg_video_clip = source_video.resize((VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
-                        current_bg_video_start_time = 0.0
-                        current_bg_video_used_duration = 0.0
-                    start_time = current_bg_video_start_time
-                    source_duration = current_bg_video_clip.duration
-
-                    if start_time >= source_duration:
-                        print(
-                            f"   ⚠️ 문장 {i+1}: 배경 영상이 끝에 도달 ({start_time:.2f}초 >= {source_duration:.2f}초)")
-                        # 다음 그룹의 배경 영상 찾기
-                        next_bg_video_path = None
-                        for gs, ge, gv, gi in background_groups:
-                            if gs > i:
-                                if gv and os.path.exists(
-                                        gv) and gv != current_bg_video_path:
-                                    next_bg_video_path = gv
-                                    break
-
-                        if next_bg_video_path:
-                            print(f"   🔄 다음 배경 영상으로 전환: {next_bg_video_path}")
-                            if current_bg_video_clip:
-                                current_bg_video_clip.close()
-                            current_bg_video_path = next_bg_video_path
-                            current_bg_video_start_time = 0.0
-                            current_bg_video_used_duration = 0.0
-                            current_bg_video_clip = None
-                            bg_video_path = next_bg_video_path
-                            source_video = VideoFileClip(bg_video_path)
-                            source_duration = source_video.duration
-                            print(f"   원본 영상 길이: {source_duration:.2f}초")
-                            current_bg_video_clip = source_video.resize(
-                                (VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
-                            current_bg_video_start_time = 0.0
-                            start_time = 0.0
-                        else:
-                            print(f"   ⚠️ 다음 배경 영상이 없음, 이미지로 대체")
-                            bg_video_path = None
-                    else:
-                        end_time = min(
-                            start_time + actual_audio_duration, source_duration)
-                        video_clip = current_bg_video_clip.subclip(
-                            start_time, end_time)
-                        video_clip = video_clip.set_duration(
-                            actual_audio_duration)
-
-                        current_bg_video_start_time = start_time + actual_audio_duration
-                        current_bg_video_used_duration += actual_audio_duration
-
-                        print(
-                            f"   📍 배경 영상 재생 위치: {start_time:.2f}초~{end_time:.2f}초 (원본: {source_duration:.2f}초, 클립 duration: {actual_audio_duration:.2f}초, 음성: {actual_audio_duration:.2f}초)")
-
-                        try:
-                            print(
-                                f"   문장 {i+1} 배경 영상 자막 추가 시도: {sentence[:30]}...")
-                            subtitle_clip = self._create_subtitle_clip(
-                                sentence, actual_audio_duration, language=language)
-                            if subtitle_clip:
-                                subtitle_clip = subtitle_clip.set_duration(actual_audio_duration)
-                                if getattr(subtitle_clip, "pos", None) is None:
-                                    subtitle_clip = subtitle_clip.set_position(('center', 'bottom'))
-                                subtitle_clip = subtitle_clip.set_start(0)
-                                video_clip = video_clip.set_start(0)
-                                video_clip = CompositeVideoClip(
-                                    [video_clip, subtitle_clip])
-                                video_clip = video_clip.set_duration(
-                                    actual_audio_duration)
-                                print(
-                                    f"   ✅ 배경 영상 자막 추가 성공 (duration: {actual_audio_duration:.2f}초, 음성: {actual_audio_duration:.2f}초, 자막 start: 0초)")
-                            else:
-                                print(f"   ⚠️ 자막 클립이 None입니다")
-                        except Exception as e:
-                            print(f"   ❌ 자막 추가 실패 (계속 진행): {e}")
-                            import traceback
-                            traceback.print_exc()
-
-                        is_last_sentence = (i == len(script) - 1)
-                        is_first_sentence = (i == 0)
-                        fade_duration = min(VideoConstants.DEFAULT_FADE_DURATION, actual_audio_duration * VideoConstants.FADE_RATIO)
-                        
-                        if is_first_sentence:
-                            if actual_audio_duration > fade_duration:
-                                video_clip = video_clip.fx(fadein, fade_duration)
-                                video_clip = video_clip.set_duration(actual_audio_duration)
-                        elif is_last_sentence:
-                            if actual_audio_duration > fade_duration:
-                                video_clip = video_clip.fx(fadeout, fade_duration)
-                                video_clip = video_clip.set_duration(actual_audio_duration)
-                        else:
-                            if actual_audio_duration > fade_duration * 2:
-                                video_clip = video_clip.fx(fadein, fade_duration).fx(fadeout, fade_duration)
-                                video_clip = video_clip.set_duration(actual_audio_duration)
-
-                        print(
-                            f"   ✅ 문장 {i+1} 클립 추가: {video_clip.duration:.2f}초 (음성 길이와 일치: {actual_audio_duration:.2f}초)")
-                        print(f"   📁 사용한 배경 영상: {bg_video_path}")
+                    print(f"   📹 배경 영상 로드 (그룹 {gs+1}-{ge}): {bg_video_path}")
+                    source_video = VideoFileClip(bg_video_path)
+                    source_duration = source_video.duration
+                    print(f"   원본 영상 길이: {source_duration:.2f}초, 그룹 길이: {group_duration:.2f}초")
                     
-                    clips.append(video_clip)
-                    continue
-
+                    # 배경 영상을 리사이즈
+                    source_video = source_video.resize((VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
+                    
+                    # 배경 영상이 짧으면 마지막 프레임을 freeze해서 확장
+                    if source_duration < group_duration:
+                        # 마지막 프레임 가져오기
+                        last_frame = source_video.get_frame(source_duration - 0.1)
+                        from PIL import Image
+                        import numpy as np
+                        last_frame_img = Image.fromarray(last_frame.astype('uint8'))
+                        
+                        # 마지막 프레임을 ImageClip으로 만들어서 확장
+                        remaining_duration = group_duration - source_duration
+                        last_frame_clip = ImageClip(np.array(last_frame_img)).set_duration(remaining_duration)
+                        last_frame_clip = last_frame_clip.resize((VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
+                        
+                        # 배경 영상과 마지막 프레임 연결
+                        group_clip = concatenate_videoclips([source_video, last_frame_clip])
+                        source_video.close()
+                        print(f"   ✅ 배경 영상 + 마지막 프레임 확장: {source_duration:.2f}초 + {remaining_duration:.2f}초 = {group_duration:.2f}초")
+                    else:
+                        # 배경 영상이 충분히 긴 경우
+                        group_clip = source_video.subclip(0, group_duration)
+                        source_video.close()
+                        print(f"   ✅ 배경 영상 준비 완료: {group_duration:.2f}초")
+                    
+                    background_clips.append(group_clip)
                 except Exception as e:
                     print(f"   배경 영상 사용 실패, 이미지로 대체: {e}")
                     import traceback
                     traceback.print_exc()
                     bg_video_path = None
             
-            if bg_image is None:
-                print(f"   🎨 문장 {i+1} 그라데이션 배경 사용 (배경 영상 없음)")
-                bg_image = self._create_gradient_background(i, len(script))
+            # 배경 영상이 없으면 그라데이션 배경 이미지 클립 생성
+            if bg_video_path is None or not os.path.exists(bg_video_path):
+                if bg_image is None:
+                    bg_image = self._create_gradient_background(gs, len(script))
+                bg_path = os.path.join(config.TEMP_DIR, f"base_background_{gs}.png")
+                if bg_image.mode != 'RGB':
+                    bg_image = bg_image.convert('RGB')
+                bg_image.save(bg_path, 'PNG')
+                group_clip = ImageClip(bg_path).set_duration(group_duration)
+                group_clip = group_clip.resize((VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
+                background_clips.append(group_clip)
+                print(f"   🎨 그라데이션 배경 사용 (그룹 {gs+1}-{ge}): {group_duration:.2f}초")
             
-            subtitle_text = sentence
-            subtitle_mode = getattr(config, "SUBTITLE_MODE", "full_sentence")
-            use_keywords = subtitle_mode != 'full_sentence'
-            if use_keywords:
-                key_words = self._extract_key_words_for_subtitle(
-                    sentence, language=language)
-                if key_words:
-                    subtitle_text = key_words
-            text_image = self._draw_text_on_image(
-                bg_image.copy(), subtitle_text, language=language)
-            if use_keywords:
-                print(
-                    f"   문장 {i+1} 핵심 단어 자막 추가: {subtitle_text} (원본: {sentence[:30]}...)")
+            current_time += group_duration
+        
+        # 모든 그룹의 배경 영상을 하나의 연속된 클립으로 합성
+        if background_clips:
+            if len(background_clips) == 1:
+                base_video_clip = background_clips[0]
             else:
-                print(f"   문장 {i+1} 전체 문장 자막 추가: {sentence[:30]}...")
-            
-            bg_path = os.path.join(config.TEMP_DIR, f"frame_{i}.png")
-            if text_image.mode != 'RGB':
-                text_image = text_image.convert('RGB')
-            
-            text_image.save(bg_path, 'PNG')
-            
-            actual_audio_duration = sentence_audio_durations[i] if i < len(
-                sentence_audio_durations) else sentence_duration
-            img_clip = ImageClip(bg_path).set_duration(actual_audio_duration)
-            img_clip = img_clip.resize((VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
-            
-            if i == 0:
-                img_clip = img_clip.fx(fadein, VideoConstants.DEFAULT_FADE_DURATION)
-                img_clip = img_clip.set_duration(actual_audio_duration)
-            elif i == len(script) - 1:
-                img_clip = img_clip.fx(fadeout, VideoConstants.DEFAULT_FADE_DURATION)
-                img_clip = img_clip.set_duration(actual_audio_duration)
-            
-            img_clip = img_clip.set_duration(actual_audio_duration)
-
-            print(
-                f"   ✅ 문장 {i+1} 이미지 클립 추가: {img_clip.duration:.2f}초 (목표: {actual_audio_duration:.2f}초, 실제 음성: {actual_audio_duration:.2f}초)")
-            
-            clips.append(img_clip)
+                base_video_clip = concatenate_videoclips(background_clips)
+            print(f"   ✅ 모든 배경 영상 합성 완료: {total_video_duration:.2f}초 ({len(background_clips)}개 그룹)")
+        else:
+            # 배경이 전혀 없는 경우 (예외 상황)
+            bg_image = self._create_gradient_background(0, len(script))
+            bg_path = os.path.join(config.TEMP_DIR, "base_background.png")
+            if bg_image.mode != 'RGB':
+                bg_image = bg_image.convert('RGB')
+            bg_image.save(bg_path, 'PNG')
+            base_video_clip = ImageClip(bg_path).set_duration(total_video_duration)
+            base_video_clip = base_video_clip.resize((VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
+            print(f"   🎨 그라데이션 배경 사용: {total_video_duration:.2f}초")
         
-        if not clips:
-            raise ValueError("생성된 클립이 없습니다.")
-        
-        print(f"🔗 클립 연결 중... (총 {len(clips)}개)")
-        for idx, clip in enumerate(clips):
-            if idx < len(sentence_audio_durations):
-                expected_duration = sentence_audio_durations[idx]
-                if abs(clip.duration - expected_duration) > 0.01:
-                    print(
-                        f"   클립 {idx+1} duration 조정: {clip.duration:.2f}초 -> {expected_duration:.2f}초 (음성 길이와 일치)")
-                    clips[idx] = clip.set_duration(expected_duration)
+        # 각 문장의 자막을 시간에 맞춰서 생성
+        current_time = 0.0
+        for i, sentence in enumerate(script):
+            actual_audio_duration = sentence_audio_durations[i] if i < len(sentence_audio_durations) else sentence_audio_durations[0] if sentence_audio_durations else 3.0
             
-            if idx == len(clips) - 1:
-                print(f"   🎬 마지막 클립에 {VideoConstants.FINAL_CLIP_EXTENSION}초 여유 추가 (자연스러운 마무리)")
-                clips[idx] = clips[idx].set_duration(clips[idx].duration + VideoConstants.FINAL_CLIP_EXTENSION)
-
-        # 유효한 클립 필터링
-        valid_clips = []
-        for idx, clip in enumerate(clips):
-            if clip is None: continue
             try:
-                _ = clip.duration
-                valid_clips.append(clip)
-            except: continue
+                print(f"   문장 {i+1} 자막 생성: {sentence[:30]}... (시작: {current_time:.2f}초)")
+                subtitle_clip = self._create_subtitle_clip(
+                    sentence, actual_audio_duration, language=language)
+                if subtitle_clip:
+                    subtitle_clip = subtitle_clip.set_duration(actual_audio_duration)
+                    if getattr(subtitle_clip, "pos", None) is None:
+                        subtitle_clip = subtitle_clip.set_position(('center', 'bottom'))
+                    subtitle_clip = subtitle_clip.set_start(current_time)
+                    subtitle_clips.append(subtitle_clip)
+                    print(f"   ✅ 자막 추가: {current_time:.2f}초~{current_time + actual_audio_duration:.2f}초")
+                else:
+                    print(f"   ⚠️ 자막 클립이 None입니다")
+            except Exception as e:
+                print(f"   ❌ 자막 생성 실패 (계속 진행): {e}")
+                import traceback
+                traceback.print_exc()
+            
+            current_time += actual_audio_duration
+        
+        # 하나의 CompositeVideoClip으로 합성
+        print(f"🎬 하나의 연속된 영상으로 합성 중... (배경: {total_video_duration:.2f}초, 자막: {len(subtitle_clips)}개)")
+        if subtitle_clips:
+            final_video = CompositeVideoClip([base_video_clip] + subtitle_clips)
+        else:
+            final_video = base_video_clip
+        
+        final_video = final_video.set_duration(total_video_duration)
+        
+        # 페이드 효과 적용
+        fade_duration = min(VideoConstants.DEFAULT_FADE_DURATION, total_video_duration * VideoConstants.FADE_RATIO)
+        if total_video_duration > fade_duration * 2:
+            final_video = final_video.fx(fadein, fade_duration).fx(fadeout, fade_duration)
+            final_video = final_video.set_duration(total_video_duration)
 
-        if not valid_clips:
-            raise ValueError("유효한 클립이 없습니다.")
-
-        print(f"   최종 연결: {len(valid_clips)}개 클립을 순차적으로 연결 (경계 중복 방지)")
-        final_video = concatenate_videoclips(
-            valid_clips, method="chain", transition=None)
-
-        clips_total = sum(c.duration for c in valid_clips)
-        actual_total_duration = sum(sentence_audio_durations)
-        target_duration = clips_total
-
-        print(
-            f"📏 예상 총 길이: {actual_total_duration:.2f}초, 클립 합계: {clips_total:.2f}초, 연결 후: {final_video.duration:.2f}초")
-
-        if abs(final_video.duration - target_duration) > 0.01:
-            print(
-                f"⚠️ 연결 직후 길이 불일치 감지! ({final_video.duration:.2f}초 vs {target_duration:.2f}초)")
-            final_video = final_video.subclip(0, target_duration)
-            final_video = final_video.set_duration(target_duration)
-
-        if final_video.duration > 0:
-            expected_frames = int(target_duration * VideoConstants.VIDEO_FPS)
-            actual_frames = int(final_video.duration * VideoConstants.VIDEO_FPS)
-            if actual_frames > expected_frames * 1.05:
-                print(
-                    f"⚠️ 프레임 수가 예상보다 많습니다! ({actual_frames} > {expected_frames}) - 반복 가능성")
-                final_video = final_video.subclip(0, target_duration)
-                final_video = final_video.set_duration(target_duration)
-
-        print(f"✅ 최종 영상 길이: {final_video.duration:.2f}초")
+        print(f"✅ 최종 영상 길이: {final_video.duration:.2f}초 (목표: {total_video_duration:.2f}초)")
         
         # 음성 추가
         if audio_clips:
@@ -553,43 +449,57 @@ class VideoCompositor:
         index: int,
         duration: float,
         topic: str = None,
-        exclude_videos: list = None
-    ) -> str:
-        """문장에 맞는 배경 영상 다운로드"""
+        exclude_video_ids: set = None,
+        force_keyword: str = None
+    ) -> tuple:
+        """문장에 맞는 배경 영상 다운로드
+        
+        Args:
+            force_keyword: 강제로 사용할 키워드 (재시도 시 사용)
+        
+        Returns:
+            tuple: (bg_video_path, video_id) 또는 (None, None)
+        """
         if not self.media_downloader:
-            return None
+            return None, None
             
         try:
-            # 주제에서 키워드 추출 (우선 사용)
-            topic_keyword = None
-            if topic:
-                topic_keywords = self.media_downloader.extract_keywords(topic)
-                if topic_keywords:
-                    topic_keyword = topic_keywords[0]
-                    topic_english = self.media_downloader.translate_keyword_to_english(
-                        topic_keyword)
-                    print(
-                        f"🎯 주제 키워드 우선 사용: {topic} -> {topic_keyword} -> {topic_english}")
-
-            # 문장에서 키워드 추출
-            sentence_keywords = self.media_downloader.extract_keywords(sentence)
-            sentence_keyword = sentence_keywords[0] if sentence_keywords else None
-
-            if sentence_keyword:
-                keyword = sentence_keyword
-                english_keyword = self.media_downloader.translate_keyword_to_english(sentence_keyword)
-                print(f"🎯 문장 키워드 우선 사용: {sentence} -> {keyword} -> {english_keyword}")
-            elif topic_keyword:
-                keyword = topic_keyword
-                english_keyword = self.media_downloader.translate_keyword_to_english(topic_keyword)
-                print(f"⚠️ 문장 키워드 없음, 주제 키워드 사용: {topic} -> {keyword}")
+            # force_keyword가 있으면 우선 사용
+            if force_keyword:
+                keyword = force_keyword
+                english_keyword = self.media_downloader.translate_keyword_to_english(force_keyword)
+                print(f"🔄 대체 키워드 사용: {force_keyword} -> {english_keyword}")
             else:
+                # 주제에서 키워드 추출 (우선 사용)
+                topic_keyword = None
                 if topic:
-                    keyword = topic
-                    english_keyword = self.media_downloader.translate_keyword_to_english(topic)
+                    topic_keywords = self.media_downloader.extract_keywords(topic)
+                    if topic_keywords:
+                        topic_keyword = topic_keywords[0]
+                        topic_english = self.media_downloader.translate_keyword_to_english(
+                            topic_keyword)
+                        print(
+                            f"🎯 주제 키워드 우선 사용: {topic} -> {topic_keyword} -> {topic_english}")
+
+                # 문장에서 키워드 추출
+                sentence_keywords = self.media_downloader.extract_keywords(sentence)
+                sentence_keyword = sentence_keywords[0] if sentence_keywords else None
+
+                if sentence_keyword:
+                    keyword = sentence_keyword
+                    english_keyword = self.media_downloader.translate_keyword_to_english(sentence_keyword)
+                    print(f"🎯 문장 키워드 우선 사용: {sentence} -> {keyword} -> {english_keyword}")
+                elif topic_keyword:
+                    keyword = topic_keyword
+                    english_keyword = self.media_downloader.translate_keyword_to_english(topic_keyword)
+                    print(f"⚠️ 문장 키워드 없음, 주제 키워드 사용: {topic} -> {keyword}")
                 else:
-                    keyword = "nature"
-                    english_keyword = "nature"
+                    if topic:
+                        keyword = topic
+                        english_keyword = self.media_downloader.translate_keyword_to_english(topic)
+                    else:
+                        keyword = "nature"
+                        english_keyword = "nature"
             
             print(f"🎬 배경 영상 다운로드 시도: {keyword} -> {english_keyword}")
             
@@ -609,20 +519,15 @@ class VideoCompositor:
                     if response.status_code == 200:
                         data = response.json()
                         if data.get('videos') and len(data['videos']) > 0:
-                            downloaded_video_ids = set()
-                            if exclude_videos:
-                                for existing_path in exclude_videos:
-                                    if os.path.exists(existing_path):
-                                        match = re.search(
-                                            r'bg_video_\d+_(\d+)\.mp4', existing_path)
-                                        if match:
-                                            downloaded_video_ids.add(
-                                                int(match.group(1)))
+                            # exclude_video_ids가 None이면 빈 세트로 초기화
+                            if exclude_video_ids is None:
+                                exclude_video_ids = set()
 
                             video_data = None
                             for video in data['videos']:
                                 video_id = video.get('id', 0)
-                                if video_id in downloaded_video_ids:
+                                # 이미 다운로드한 영상 ID는 건너뛰기
+                                if video_id in exclude_video_ids:
                                     continue
                                 
                                 duration_sec = video.get('duration', 0)
@@ -660,14 +565,14 @@ class VideoCompositor:
                                             if chunk:
                                                 f.write(chunk)
                                     print(f"✅ Pexels 배경 영상 다운로드 성공: {english_keyword} (ID: {video_id})")
-                                    return bg_video_path
+                                    return bg_video_path, video_id
                 except Exception as e:
                     print(f"   Pexels API 실패: {e}")
             
-            return None
+            return None, None
         except Exception as e:
             print(f"⚠️ 배경 영상 다운로드 실패: {e}")
-            return None
+            return None, None
 
     def _create_gradient_background(
         self, index: int, total: int) -> Image.Image:

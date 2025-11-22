@@ -7,6 +7,21 @@
 **YouTube Shorts 자동 업로드 봇**: AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하고 수익화를 추적하는 봇
 
 **최근 업데이트 (2025-11-22)**:
+- **테스트 파일 구조 개선**: 루트 디렉토리의 테스트 파일들을 `tests/` 디렉토리로 이동
+  - `generate_test_video.py`, `test_script_fixes.py`, `test_ad_revenue.py`, `test_ad_revenue_complete.py`를 `tests/`로 이동
+  - import 경로 수정: `sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))`로 변경
+  - 프로젝트 구조 정리 및 테스트 파일 일관성 향상
+- **배경 영상 품질 개선**: 배경 영상 중복 방지 및 다운로드 실패 시 재시도 전략 개선
+  - **영상 ID 직접 추적**: 배경 영상 경로 대신 영상 ID를 직접 추적하여 중복 방지 정확도 향상
+    - `downloaded_video_ids` 세트를 사용하여 이미 사용한 영상 ID 추적
+    - `_download_video_for_sentence` 메서드가 `(bg_video_path, video_id)` 튜플 반환
+    - 각 그룹마다 다른 배경 영상이 사용되도록 보장
+  - **다중 키워드 재시도 전략**: 배경 영상 다운로드 실패 시 여러 키워드를 순차적으로 시도
+    - 첫 번째 시도: 문장에서 추출한 키워드 (예: "sunny")
+    - 두 번째 시도: 주제에서 추출한 키워드 (예: "winter")
+    - 세 번째 시도 이후: 일반 키워드 ("home", "lifestyle", "indoor", "cozy", "warm")
+    - 최대 5개 키워드까지 시도하여 그라데이션 배경 사용 빈도 감소
+    - `force_keyword` 파라미터 추가로 재시도 시 다른 키워드 사용 가능
 - **자막 배경 박스 제거**: 사용자 요청에 따라 자막을 둘러싼 배경 박스를 완전히 제거
   - `_draw_text_on_image` 메서드: 반투명 검은색 배경 박스 제거
   - `_create_subtitle_clip` 메서드: 그라데이션 배경 박스 및 테두리 제거

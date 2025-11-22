@@ -1,25 +1,21 @@
 """
-Batch video generation with parallel processing
+Batch video generation with sequential processing
 """
-import os
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional, Dict, Any
-from datetime import datetime
 
-import config
 from src.pipeline.bot import ShortsBot
 
 
 class BatchVideoGenerator:
-    """병렬 영상 생성 관리자"""
+    """순차 영상 생성 관리자"""
     
-    def __init__(self, max_workers: int = 3):
+    def __init__(self, max_workers: int = 1):
         """
         Args:
-            max_workers: 동시 실행할 최대 워커 수 (기본: 3)
+            max_workers: 호환성을 위한 파라미터 (사용하지 않음, 순차 처리)
         """
-        self.max_workers = max_workers
+        self.max_workers = 1  # 순차 처리만 지원
         self.results = []
         
     def generate_batch(
@@ -30,7 +26,7 @@ class BatchVideoGenerator:
         force: bool = False
     ) -> Dict[str, Any]:
         """
-        여러 영상을 병렬로 생성
+        여러 영상을 순차적으로 생성
         
         Args:
             count: 생성할 영상 개수
@@ -42,10 +38,9 @@ class BatchVideoGenerator:
             결과 딕셔너리 (성공/실패 개수, 소요 시간 등)
         """
         print(f"\n{'='*60}")
-        print(f"🚀 병렬 영상 생성 시작")
+        print(f"🚀 순차 영상 생성 시작")
         print(f"{'='*60}")
         print(f"📊 생성할 영상 개수: {count}")
-        print(f"⚙️  워커 수: {self.max_workers}")
         print(f"📤 업로드 여부: {'예' if upload else '아니오'}")
         print(f"{'='*60}\n")
         
@@ -60,48 +55,37 @@ class BatchVideoGenerator:
         else:
             topics = [None] * count
         
-        # ThreadPoolExecutor로 병렬 실행
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            # 작업 제출
-            futures = {}
-            for i in range(count):
-                topic = topics[i] if i < len(topics) else None
-                future = executor.submit(
-                    self._generate_single_video,
-                    index=i + 1,
+        # 순차 실행
+        for i in range(count):
+            topic = topics[i] if i < len(topics) else None
+            index = i + 1
+            
+            try:
+                result = self._generate_single_video(
+                    index=index,
                     topic=topic,
                     upload=upload,
                     force=force
                 )
-                futures[future] = i + 1
-            
-            # 진행 상황 추적
-            completed = 0
-            for future in as_completed(futures):
-                index = futures[future]
-                completed += 1
+                self.results.append(result)
                 
-                try:
-                    result = future.result()
-                    self.results.append(result)
+                if result['success']:
+                    print(f"\n✅ [{index}/{count}] 영상 #{index} 생성 완료")
+                    if result.get('video_path'):
+                        print(f"   📹 경로: {result['video_path']}")
+                    if result.get('video_id'):
+                        print(f"   🎬 YouTube ID: {result['video_id']}")
+                else:
+                    print(f"\n❌ [{index}/{count}] 영상 #{index} 생성 실패")
+                    print(f"   오류: {result.get('error', 'Unknown error')}")
                     
-                    if result['success']:
-                        print(f"\n✅ [{completed}/{count}] 영상 #{index} 생성 완료")
-                        if result.get('video_path'):
-                            print(f"   📹 경로: {result['video_path']}")
-                        if result.get('video_id'):
-                            print(f"   🎬 YouTube ID: {result['video_id']}")
-                    else:
-                        print(f"\n❌ [{completed}/{count}] 영상 #{index} 생성 실패")
-                        print(f"   오류: {result.get('error', 'Unknown error')}")
-                        
-                except Exception as e:
-                    print(f"\n❌ [{completed}/{count}] 영상 #{index} 예외 발생: {e}")
-                    self.results.append({
-                        'index': index,
-                        'success': False,
-                        'error': str(e)
-                    })
+            except Exception as e:
+                print(f"\n❌ [{index}/{count}] 영상 #{index} 예외 발생: {e}")
+                self.results.append({
+                    'index': index,
+                    'success': False,
+                    'error': str(e)
+                })
         
         # 결과 집계
         end_time = time.time()
@@ -112,7 +96,7 @@ class BatchVideoGenerator:
         
         # 결과 출력
         print(f"\n{'='*60}")
-        print(f"📊 병렬 생성 완료")
+        print(f"📊 순차 생성 완료")
         print(f"{'='*60}")
         print(f"✅ 성공: {success_count}/{count}")
         print(f"❌ 실패: {failure_count}/{count}")
@@ -143,7 +127,7 @@ class BatchVideoGenerator:
         force: bool = False
     ) -> Dict[str, Any]:
         """
-        단일 영상 생성 (워커 스레드에서 실행)
+        단일 영상 생성 (순차 실행)
         
         Args:
             index: 영상 번호
@@ -157,7 +141,7 @@ class BatchVideoGenerator:
         try:
             print(f"\n🎬 영상 #{index} 생성 시작... (주제: {topic or '자동 생성'})")
             
-            # ShortsBot 인스턴스 생성 (각 워커마다 독립적)
+            # ShortsBot 인스턴스 생성
             bot = ShortsBot()
             
             if upload:

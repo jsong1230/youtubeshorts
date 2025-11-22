@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from analytics.trend_collector import TrendCollector
 from pipeline.topic_database import TopicDatabase
@@ -71,3 +71,4 @@ if __name__ == "__main__":
     test_cpm_analysis()
     test_topic_database_cpm()
     # test_script_generation_targeting() # Skip this if no API key or to save cost
+
