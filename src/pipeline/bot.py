@@ -126,7 +126,7 @@ class ShortsBot:
             
             # AI로 영상 생성 (매번 새로운 아이디어로)
             print("📹 영상 생성 중...")
-            video_path, thumbnail_path, generated_topic, script = self.video_generator.generate_video(
+            result = self.video_generator.generate_video(
                 topic=topic, 
                 duration=None,
                 performance_prompt=None,
@@ -134,10 +134,64 @@ class ShortsBot:
                 target_audience="General Audience"  # 기본값
             )
             
+            # 반환값 처리
+            thumbnail_path = None
+            if len(result) == 4:
+                # (video_path, script, generated_topic, topic_source) 또는 (video_path, thumbnail_path, generated_topic, script)
+                if isinstance(result[1], str) and result[1].endswith(('.jpg', '.png', '.jpeg')):
+                    # 썸네일 경로인 경우
+                    video_path, thumbnail_path, generated_topic, script = result
+                    topic_source = None
+                else:
+                    # 스크립트인 경우
+                    video_path, script, generated_topic, topic_source = result
+            else:
+                video_path, thumbnail_path, generated_topic, script = result
+                topic_source = None
+            
+            if not video_path:
+                print("❌ 영상 생성 실패")
+                return None
+            
+            # 실제 사용된 주제
+            actual_topic = generated_topic if generated_topic else topic
+            
+            # 제목 생성
+            if actual_topic:
+                title = actual_topic
+            else:
+                title = datetime.now().strftime('%Y년 %m월 %d일')
+            
+            # 제목에 #Shorts 추가
+            if '#Shorts' not in title and '#shorts' not in title:
+                title = f"{title} #Shorts"
+            
+            # 영상 메타데이터를 JSON 파일로 저장 (업로드 시 사용)
+            import os
+            video_basename = os.path.basename(video_path)
+            video_name_without_ext = os.path.splitext(video_basename)[0]
+            metadata_file = os.path.join(config.VIDEO_OUTPUT_DIR, f"{video_name_without_ext}_metadata.json")
+            
+            metadata = {
+                'video_path': video_path,
+                'thumbnail_path': thumbnail_path,
+                'title': title,
+                'topic': actual_topic,
+                'script': script,
+                'language': language,
+                'created_at': datetime.now().isoformat()
+            }
+            
+            with open(metadata_file, 'w', encoding='utf-8') as f:
+                json.dump(metadata, f, ensure_ascii=False, indent=2)
+            
             print(f"\n✅ 영상 생성 완료!")
             print(f"📁 파일 위치: {video_path}")
             if thumbnail_path:
                 print(f"🖼️ 썸네일 위치: {thumbnail_path}")
+            print(f"📝 제목: {title}")
+            print(f"📌 주제: {actual_topic}")
+            print(f"💾 메타데이터 저장: {metadata_file}")
             print(f"🔍 확인 방법: open {video_path}")
             
             return video_path
@@ -208,6 +262,34 @@ class ShortsBot:
             traceback.print_exc()
             return None
 
+    def _load_video_metadata(self, video_path: str) -> Optional[Dict[str, Any]]:
+        """
+        영상 파일 경로에서 메타데이터 파일을 읽어옴
+        
+        Args:
+            video_path: 영상 파일 경로
+            
+        Returns:
+            메타데이터 딕셔너리 또는 None
+        """
+        try:
+            import os
+            video_basename = os.path.basename(video_path)
+            video_name_without_ext = os.path.splitext(video_basename)[0]
+            metadata_file = os.path.join(config.VIDEO_OUTPUT_DIR, f"{video_name_without_ext}_metadata.json")
+            
+            if os.path.exists(metadata_file):
+                with open(metadata_file, 'r', encoding='utf-8') as f:
+                    metadata = json.load(f)
+                    print(f"✅ 메타데이터 파일 로드: {metadata_file}")
+                    return metadata
+            else:
+                print(f"⚠️ 메타데이터 파일을 찾을 수 없습니다: {metadata_file}")
+                return None
+        except Exception as e:
+            print(f"⚠️ 메타데이터 파일 읽기 실패: {e}")
+            return None
+    
     def _check_upload_constraints(self, force: bool) -> bool:
         """
         업로드 제약 조건 확인 (동기화 상태, 일일 업로드 제한 등)

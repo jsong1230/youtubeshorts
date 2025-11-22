@@ -180,18 +180,15 @@ class VideoCompositor:
                         print(f"   ⚠️ 배경 영상 다운로드 실패 ({keyword}), 다음 키워드 시도...")
                 
                 if not bg_video_path:
-                    print(f"   ⚠️ 배경 영상 다운로드 최종 실패, 그라데이션 배경 사용")
-
-            # 배경 영상이 없으면 그라데이션 배경 사용
-            bg_image = None
-            if not bg_video_path:
-                    bg_image = self._create_gradient_background(i, len(script))
+                    print(f"   ⚠️ 배경 영상 다운로드 최종 실패 (모든 키워드 시도 완료)")
+                    # 배경 영상이 없으면 에러 발생 (임의 이미지 생성 금지)
+                    raise ValueError(f"그룹 {i+1}-{group_end}에 대한 배경 영상을 다운로드할 수 없습니다. 모든 키워드 시도 실패.")
             
             # 배경 영상이 있으면 시작 시간 초기화
             if bg_video_path and bg_video_path not in video_start_times:
                 video_start_times[bg_video_path] = 0.0
             
-            background_groups.append((i, group_end, bg_video_path, bg_image))
+            background_groups.append((i, group_end, bg_video_path, None))  # bg_image는 항상 None
             media_type = "영상" if bg_video_path else "이미지"
             print(
                 f"   배경 미디어 그룹 {len(background_groups)}: 문장 {i+1}-{group_end} ({media_type}) - {group_sentence[:30]}...)")
@@ -243,23 +240,14 @@ class VideoCompositor:
                     
                     background_clips.append(group_clip)
                 except Exception as e:
-                    print(f"   배경 영상 사용 실패, 이미지로 대체: {e}")
+                    print(f"   ❌ 배경 영상 사용 실패: {e}")
                     import traceback
                     traceback.print_exc()
-                    bg_video_path = None
+                    raise ValueError(f"그룹 {gs+1}-{ge}의 배경 영상을 로드할 수 없습니다: {e}")
             
-            # 배경 영상이 없으면 그라데이션 배경 이미지 클립 생성
+            # 배경 영상이 없으면 에러 발생 (임의 이미지 생성 금지)
             if bg_video_path is None or not os.path.exists(bg_video_path):
-                if bg_image is None:
-                    bg_image = self._create_gradient_background(gs, len(script))
-                bg_path = os.path.join(config.TEMP_DIR, f"base_background_{gs}.png")
-                if bg_image.mode != 'RGB':
-                    bg_image = bg_image.convert('RGB')
-                bg_image.save(bg_path, 'PNG')
-                group_clip = ImageClip(bg_path).set_duration(group_duration)
-                group_clip = group_clip.resize((VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
-                background_clips.append(group_clip)
-                print(f"   🎨 그라데이션 배경 사용 (그룹 {gs+1}-{ge}): {group_duration:.2f}초")
+                raise ValueError(f"그룹 {gs+1}-{ge}에 배경 영상이 없습니다. 배경 영상 다운로드가 필요합니다.")
             
             current_time += group_duration
         
@@ -271,15 +259,8 @@ class VideoCompositor:
                 base_video_clip = concatenate_videoclips(background_clips)
             print(f"   ✅ 모든 배경 영상 합성 완료: {total_video_duration:.2f}초 ({len(background_clips)}개 그룹)")
         else:
-            # 배경이 전혀 없는 경우 (예외 상황)
-            bg_image = self._create_gradient_background(0, len(script))
-            bg_path = os.path.join(config.TEMP_DIR, "base_background.png")
-            if bg_image.mode != 'RGB':
-                bg_image = bg_image.convert('RGB')
-            bg_image.save(bg_path, 'PNG')
-            base_video_clip = ImageClip(bg_path).set_duration(total_video_duration)
-            base_video_clip = base_video_clip.resize((VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
-            print(f"   🎨 그라데이션 배경 사용: {total_video_duration:.2f}초")
+            # 배경이 전혀 없는 경우 (예외 상황) - 에러 발생
+            raise ValueError("배경 영상이 하나도 없습니다. 배경 영상 다운로드가 필요합니다.")
         
         # 각 문장의 자막을 시간에 맞춰서 생성
         current_time = 0.0
@@ -573,75 +554,6 @@ class VideoCompositor:
         except Exception as e:
             print(f"⚠️ 배경 영상 다운로드 실패: {e}")
             return None, None
-
-    def _create_gradient_background(
-        self, index: int, total: int) -> Image.Image:
-        """그라데이션 배경 이미지 생성"""
-        width, height = VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT
-        
-        colors = [
-            [(255, 107, 107), (255, 159, 64)],
-            [(74, 144, 226), (80, 227, 194)],
-            [(255, 206, 84), (255, 159, 64)],
-            [(156, 136, 255), (220, 138, 221)],
-            [(99, 205, 218), (85, 230, 193)],
-        ]
-        
-        color_pair = colors[index % len(colors)]
-        start_color = color_pair[0]
-        end_color = color_pair[1]
-        
-        image = Image.new('RGB', (width, height))
-        draw = ImageDraw.Draw(image)
-        
-        for y in range(height):
-            ratio = y / height
-            r = int(start_color[0] * (1 - ratio) + end_color[0] * ratio)
-            g = int(start_color[1] * (1 - ratio) + end_color[1] * ratio)
-            b = int(start_color[2] * (1 - ratio) + end_color[2] * ratio)
-            draw.line([(0, y), (width, y)], fill=(r, g, b))
-        
-        overlay = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-        overlay_draw = ImageDraw.Draw(overlay)
-        
-        center_x = width // 2
-        center_y = height // 3
-        
-        big_radius = 300
-        overlay_draw.ellipse(
-            [center_x - big_radius, center_y - big_radius,
-             center_x + big_radius, center_y + big_radius],
-            fill=(255, 255, 255, 50),
-            outline=(255, 255, 255, 100),
-            width=8
-        )
-        
-        mid_radius = 200
-        overlay_draw.ellipse(
-            [center_x - mid_radius, center_y - mid_radius,
-             center_x + mid_radius, center_y + mid_radius],
-            fill=(255, 255, 255, 30),
-            outline=(255, 255, 255, 80),
-            width=5
-        )
-        
-        for i in range(6):
-            angle = i * 60
-            radius_offset = 280
-            small_x = center_x + \
-                int(radius_offset * (1 if i % 2 == 0 else 0.8) * (1 if i < 3 else -1))
-            small_y = center_y + int(180 * (1 if i % 2 == 0 else -1))
-            small_radius = 100 + (i % 3) * 30
-            overlay_draw.ellipse(
-                [small_x - small_radius, small_y - small_radius,
-                 small_x + small_radius, small_y + small_radius],
-                fill=(255, 255, 255, 60),
-                outline=(255, 255, 255, 120),
-                width=4
-            )
-        
-        image = Image.alpha_composite(image.convert('RGBA'), overlay)
-        return image
 
     def _draw_text_on_image(
         self,

@@ -42,9 +42,43 @@ def main():
             # 즉시 업로드
             # --force 또는 -f 플래그 제외하고 주제 추출
             args = [arg for arg in sys.argv[2:] if arg not in ['--force', '-f']]
-            topic = args[0] if args else None
             force = '--force' in sys.argv or '-f' in sys.argv
-            bot.create_and_upload(topic=topic, force=force)
+            
+            # 첫 번째 인자가 파일 경로인지 확인
+            if args and (args[0].endswith('.mp4') or os.path.exists(args[0])):
+                # 파일 경로로 업로드 (메타데이터에서 제목 읽기)
+                video_path = args[0]
+                metadata = bot._load_video_metadata(video_path)
+                if metadata:
+                    # 메타데이터에서 정보 가져오기
+                    topic = metadata.get('topic')
+                    title = metadata.get('title')
+                    thumbnail_path = metadata.get('thumbnail_path')
+                    description = bot._generate_description(metadata.get('language', 'en'), topic, topic)
+                    
+                    # 영상 자산 딕셔너리 생성
+                    video_assets = {
+                        'video_path': video_path,
+                        'thumbnail_path': thumbnail_path,
+                        'title': title,
+                        'description': description,
+                        'tags': config.DEFAULT_TAGS,
+                        'actual_topic': topic
+                    }
+                    
+                    # 업로드
+                    upload_results = bot._upload_to_platforms(video_assets)
+                    video_id = upload_results.get('youtube')
+                    if video_id:
+                        bot._update_databases(video_assets, upload_results, None, None, None)
+                        print(f"\n✅ 업로드 완료! 영상 ID: {video_id}")
+                        print(f"🔗 https://www.youtube.com/watch?v={video_id}\n")
+                else:
+                    print(f"❌ 메타데이터 파일을 찾을 수 없습니다. 영상을 다시 생성하거나 주제를 직접 입력하세요.")
+            else:
+                # 주제로 새로 생성 및 업로드
+                topic = args[0] if args else None
+                bot.create_and_upload(topic=topic, force=force)
 
         elif command == 'stats':
             # 통계 업데이트 및 리포트
