@@ -1101,7 +1101,7 @@ class VideoCompositor:
                 
                 txt_clip = ImageClip(temp_subtitle_path)
                 txt_clip = txt_clip.set_duration(duration)
-                txt_clip = txt_clip.set_position(('center', 'bottom'))
+                txt_clip = txt_clip.set_position(('center', 250))  # ImageMagick과 동일한 위치
                 txt_clip = txt_clip.set_start(0)
                 
                 fade_duration = min(0.3, duration * 0.1)
