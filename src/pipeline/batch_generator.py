@@ -171,15 +171,21 @@ class BatchVideoGenerator:
                     'topic': result.get('topic')
                 }
             else:
-                # 생성만
-                video_path, thumbnail_path, selected_topic, script = bot.create_video_only(topic=topic)
-                return {
-                    'index': index,
-                    'success': True,
-                    'video_path': video_path,
-                    'thumbnail_path': thumbnail_path,
-                    'topic': selected_topic
-                }
+                # 생성만 (create_video_only는 video_path만 반환)
+                video_path = bot.create_video_only(topic=topic)
+                if video_path:
+                    return {
+                        'index': index,
+                        'success': True,
+                        'video_path': video_path,
+                        'topic': topic
+                    }
+                else:
+                    return {
+                        'index': index,
+                        'success': False,
+                        'error': 'Video generation returned None'
+                    }
                 
         except Exception as e:
             import traceback
