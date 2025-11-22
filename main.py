@@ -3,6 +3,7 @@ YouTube Shorts 자동 업로드 봇 메인 실행 파일
 하루 1개 업로드 → 3개월 후 수익화 → 월 $100~500 목표
 """
 import sys
+import os
 from pathlib import Path
 
 # 프로젝트 루트를 경로에 추가
@@ -12,6 +13,7 @@ sys.path.insert(0, str(project_root))
 def main():
     """메인 함수"""
     import sys
+    import config
 
     if len(sys.argv) > 1 and sys.argv[1] == 'instagram-test':
         from src.uploaders.instagram_uploader import InstagramUploader
@@ -73,6 +75,21 @@ def main():
                         bot._update_databases(video_assets, upload_results, None, None, None)
                         print(f"\n✅ 업로드 완료! 영상 ID: {video_id}")
                         print(f"🔗 https://www.youtube.com/watch?v={video_id}\n")
+                        
+                        # 업로드 성공 후 원본 파일 삭제
+                        try:
+                            # 영상 파일 삭제
+                            if os.path.exists(video_path):
+                                os.remove(video_path)
+                                print(f"🗑️  원본 영상 파일 삭제: {video_path}")
+                            
+                            # 메타데이터 JSON 파일 삭제
+                            metadata_path = video_path.replace('.mp4', '_metadata.json')
+                            if os.path.exists(metadata_path):
+                                os.remove(metadata_path)
+                                print(f"🗑️  메타데이터 파일 삭제: {metadata_path}")
+                        except Exception as e:
+                            print(f"⚠️  파일 삭제 중 오류 발생: {e}")
                 else:
                     print(f"❌ 메타데이터 파일을 찾을 수 없습니다. 영상을 다시 생성하거나 주제를 직접 입력하세요.")
             else:
