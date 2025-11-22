@@ -134,33 +134,11 @@ class ShortsBot:
                 target_audience="General Audience"  # 기본값
             )
             
-            # 실제 사용된 주제
-            actual_topic = generated_topic if generated_topic else topic
-            
-            # 제목 생성
-            if actual_topic:
-                title = actual_topic
-            else:
-                title = datetime.now().strftime('%Y년 %m월 %d일')
-            
-            # 썸네일 생성
-            print("\n🖼️ 썸네일 생성 중...")
-            thumbnail_path = self.video_generator.generate_thumbnail(
-                video_path, 
-                title,
-                topic=actual_topic,
-                script=script,
-                language=language
-            )
-            if thumbnail_path:
-                print("🎞️ 썸네일 이미지를 영상 첫 프레임에 삽입합니다...")
-                self.video_generator.embed_thumbnail_frame(video_path, thumbnail_path)
-            
             print(f"\n✅ 영상 생성 완료!")
             print(f"📁 파일 위치: {video_path}")
-            print(f"🖼️ 썸네일 위치: {thumbnail_path}")
+            if thumbnail_path:
+                print(f"🖼️ 썸네일 위치: {thumbnail_path}")
             print(f"🔍 확인 방법: open {video_path}")
-            print(f"🔍 썸네일 확인: open {thumbnail_path}")
             
             return video_path
             
