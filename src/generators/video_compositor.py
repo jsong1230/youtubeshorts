@@ -984,11 +984,11 @@ class VideoCompositor:
                         try:
                             frame = txt_clip.get_frame(0)
                             clip_height = frame.shape[0]
-                            # 자막을 더 위로 올림 (화면 상단 1/3 지점)
-                            raised_y = 500  # 고정 위치로 변경 (1920px 기준 상단 1/3 지점)
+                            # 자막을 화면 상단으로 올림 (모바일 UI 가림 방지)
+                            raised_y = 250  # 1920px 기준 상단 1/8 지점
                             txt_clip = txt_clip.set_position(('center', raised_y))
                         except:
-                            txt_clip = txt_clip.set_position(('center', 500))
+                            txt_clip = txt_clip.set_position(('center', 250))
                         txt_clip = txt_clip.set_start(0)
                         if abs(txt_clip.duration - duration) > 0.01:
                             txt_clip = txt_clip.set_duration(duration)
