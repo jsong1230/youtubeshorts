@@ -693,6 +693,27 @@ class AIVideoGenerator:
             if pools:
                 idx = random.choices(range(len(pools)), weights=weights, k=1)[0]
                 selected_pool, source = pools[idx]
+                
+                # CPM 점수 기반 가중치 선택
+                # 주제별 CPM 점수를 계산하여 가중치 적용
+                try:
+                    from src.analytics.trend_collector import TrendCollector
+                    collector = TrendCollector()
+                    
+                    # 각 주제의 CPM 점수 계산
+                    topic_weights = []
+                    for topic in selected_pool:
+                        cpm_score = collector.analyze_cpm_potential(topic)
+                        topic_weights.append(cpm_score)
+                    
+                    # 가중치 기반 선택 (CPM 점수가 높을수록 선택 확률 증가)
+                    if topic_weights and sum(topic_weights) > 0:
+                        selected_topic = random.choices(selected_pool, weights=topic_weights, k=1)[0]
+                        return selected_topic, source
+                except Exception as e:
+                    print(f"⚠️ CPM 기반 선택 실패, 랜덤 선택으로 폴백: {e}")
+                
+                # CPM 선택 실패 시 랜덤 선택
                 return random.choice(selected_pool), source
 
         if seasonal_pool and random.random() < 0.25:
@@ -821,7 +842,8 @@ class AIVideoGenerator:
         output_filename: str = None,
         performance_prompt: str = None,
         content_type: ContentType = None,
-        language: str = 'ko'
+        language: str = 'ko',
+        target_audience: str = None
     ) -> tuple:
         """
         AI로 YouTube Shorts 영상 생성 (55초 목표, 매번 새로운 아이디어)
@@ -833,6 +855,7 @@ class AIVideoGenerator:
             performance_prompt: 성과 기반 프롬프트 (선택)
             content_type: 콘텐츠 타입 (None이면 자동 선택)
             language: 언어 코드 ('ko' 또는 'en', 기본값: 'ko')
+            target_audience: 타겟 오디언스 (예: '25-45세 직장인', '대학생', '은퇴자' 등)
         
         Returns:
             (생성된 영상 파일 경로, 스크립트 리스트, 주제, 주제 출처) 튜플
@@ -847,10 +870,10 @@ class AIVideoGenerator:
             # 주제가 주어진 경우 콘텐츠 타입 자동 감지
             if content_type is None:
                 content_type_str = getattr(config, "CONTENT_TYPE", "auto")
-            try:
-                content_type = ContentType(content_type_str.lower())
-            except ValueError:
-                content_type = ContentType.AUTO
+                try:
+                    content_type = ContentType(content_type_str.lower())
+                except ValueError:
+                    content_type = ContentType.AUTO
         content_type_str = content_type.value if content_type else 'auto'
         print(
             f"📹 영상 생성 시작: '{topic}' (타입: {content_type_str}, 언어: {language})")
@@ -860,7 +883,8 @@ class AIVideoGenerator:
             topic,
             performance_prompt=performance_prompt,
             content_type=content_type,
-            language=language
+            language=language,
+            target_audience=target_audience
         )
 
         print(f"📝 AI 생성 스크립트: {len(script)}개 문장")
@@ -1234,10 +1258,11 @@ class AIVideoGenerator:
         topic: str,
         performance_prompt: str = None,
         content_type: ContentType = None,
-        language: str = 'ko') -> list:
+        language: str = 'ko',
+        target_audience: str = None) -> list:
         """AI로 영상 스크립트 생성 (콘텐츠 타입별 최적화)"""
         return self.script_generator.generate_script(
-            topic, performance_prompt, content_type, language
+            topic, performance_prompt, content_type, language, target_audience
         )
 
     # _generate_script_with_claude 메서드는 script_generator.py로 이동됨

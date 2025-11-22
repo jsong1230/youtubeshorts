@@ -26,6 +26,15 @@ except ImportError:
 class TrendCollector:
     """YouTube 트렌드 키워드 수집 클래스"""
     
+    # High CPM Keywords (Estimated)
+    CPM_KEYWORDS = {
+        'finance': 2.5, 'invest': 3.0, 'stock': 2.8, 'crypto': 2.5, 'insurance': 4.0,
+        'loan': 3.5, 'credit': 3.2, 'mortgage': 3.8, 'attorney': 3.5, 'lawyer': 3.2,
+        'hosting': 3.0, 'software': 2.5, 'trading': 2.8, 'forex': 3.0, 'marketing': 2.0,
+        'business': 2.2, 'real estate': 2.5, 'wealth': 2.0, 'money': 1.5, 'passive income': 2.5,
+        'productivity': 1.2, 'tech': 1.5, 'review': 1.2, 'tutorial': 1.0
+    }
+    
     def __init__(self):
         """트렌드 수집기 초기화"""
         self.youtube = None
@@ -439,6 +448,30 @@ class TrendCollector:
         if not keywords:
             print("⚠️ 수집된 키워드가 없습니다.")
             return []
+        
+        # CPM 점수 기반 키워드 우선순위 정렬
+        try:
+            keyword_scores = []
+            for keyword in keywords:
+                cpm_score = self.analyze_cpm_potential(keyword)
+                keyword_scores.append((keyword, cpm_score))
+            
+            # CPM 점수 내림차순 정렬
+            keyword_scores.sort(key=lambda x: x[1], reverse=True)
+            
+            # 상위 키워드 선택 (고CPM 키워드 우선)
+            # 전체 키워드의 60%는 고CPM, 40%는 다양성을 위해 나머지에서 선택
+            high_cpm_count = int(len(keyword_scores) * 0.6)
+            high_cpm_keywords = [kw for kw, _ in keyword_scores[:high_cpm_count]]
+            other_keywords = [kw for kw, _ in keyword_scores[high_cpm_count:]]
+            
+            # 최종 키워드 리스트 (고CPM 우선 + 다양성)
+            prioritized_keywords = high_cpm_keywords + other_keywords[:5]
+            keywords = prioritized_keywords[:20]  # 최대 20개
+            
+            print(f"📊 CPM 우선순위 적용: 상위 {len(high_cpm_keywords)}개 고CPM 키워드 선택")
+        except Exception as e:
+            print(f"⚠️ CPM 우선순위 적용 실패, 원본 키워드 사용: {e}")
         
         try:
             # 콘텐츠 타입별 프롬프트
@@ -875,4 +908,28 @@ Return only the topics, one per line, without numbering or bullets. Each topic s
             import traceback
             traceback.print_exc()
             return []
+    
+    def analyze_cpm_potential(self, text: str) -> float:
+        """
+        텍스트(주제 또는 키워드)의 CPM 잠재력 점수 계산
+        
+        Args:
+            text: 분석할 텍스트
+            
+        Returns:
+            CPM 점수 (기본값 1.0)
+        """
+        if not text:
+            return 1.0
+            
+        text_lower = text.lower()
+        score = 1.0
+        
+        # 키워드 매칭
+        for keyword, weight in self.CPM_KEYWORDS.items():
+            if keyword in text_lower:
+                # 가장 높은 가중치 적용
+                score = max(score, weight)
+        
+        return score
 

@@ -1,7 +1,10 @@
 """
-AI 스크립트 생성 모듈
+YouTube Shorts 스크립트 생성 모듈
 """
 import re
+import random
+import time
+import hashlib
 from typing import List, Optional
 from enum import Enum
 
@@ -34,17 +37,18 @@ class ScriptGenerator:
         topic: str,
         performance_prompt: str = None,
         content_type: ContentType = None,
-        language: str = 'ko'
+        language: str = 'ko',
+        target_audience: str = None
     ) -> List[str]:
         """AI로 영상 스크립트 생성 (콘텐츠 타입별 최적화)"""
         # Claude API 사용
         if self.ai_provider == 'claude' and self.claude_client:
             return self._generate_script_with_claude(
-                topic, performance_prompt, content_type, language)
+                topic, performance_prompt, content_type, language, target_audience)
         # OpenAI API 사용
         elif self.openai_client:
             return self._generate_script_with_openai(
-                topic, performance_prompt, content_type, language)
+                topic, performance_prompt, content_type, language, target_audience)
         
         # AI 생성이 성공하지 못한 경우
         if not self.openai_client and not self.claude_client:
@@ -59,7 +63,8 @@ class ScriptGenerator:
         topic: str,
         performance_prompt: str = None,
         content_type: ContentType = None,
-        language: str = 'ko'
+        language: str = 'ko',
+        target_audience: str = None
     ) -> List[str]:
         """Claude API로 영상 스크립트 생성"""
         if not self.claude_client:
@@ -85,6 +90,13 @@ class ScriptGenerator:
             if performance_prompt:
                 system_prompt += "\n\n" + performance_prompt
             
+            # 타겟 오디언스 프롬프트 추가
+            if target_audience:
+                audience_prompt = f"\n\n**TARGET AUDIENCE:** {target_audience}\n- Tailor the language, tone, and examples specifically for this demographic.\n- Address their specific pain points and desires."
+                if language == 'ko':
+                    audience_prompt = f"\n\n**타겟 오디언스:** {target_audience}\n- 이 인구통계에 맞춰 언어, 톤, 예시를 조정하세요.\n- 그들의 구체적인 고충과 욕구를 다루세요."
+                system_prompt += audience_prompt
+            
             # 사용자 프롬프트 구성
             user_prompt = self._build_user_prompt(
                 topic, max_sentences, target_duration, language)
@@ -108,6 +120,9 @@ class ScriptGenerator:
                     )
                     script_text = response.content[0].text
                     filtered_sentences = self._parse_script_text(script_text, max_sentences)
+                    
+                    # 반복 구절 제거
+                    filtered_sentences = self._remove_repetitive_phrases(filtered_sentences)
                     
                     print(f"📝 Claude API로 생성된 문장 수: {len(filtered_sentences)}개 (목표: {max_sentences}개)")
                     return filtered_sentences[:max_sentences]
@@ -142,7 +157,8 @@ class ScriptGenerator:
         topic: str,
         performance_prompt: str = None,
         content_type: ContentType = None,
-        language: str = 'ko'
+        language: str = 'ko',
+        target_audience: str = None
     ) -> List[str]:
         """OpenAI API로 영상 스크립트 생성"""
         if not self.openai_client:
@@ -169,12 +185,22 @@ class ScriptGenerator:
             if performance_prompt:
                 system_prompt += "\n\n" + performance_prompt
             
+            # 타겟 오디언스 프롬프트 추가
+            if target_audience:
+                audience_prompt = f"\n\n**TARGET AUDIENCE:** {target_audience}\n- Tailor the language, tone, and examples specifically for this demographic.\n- Address their specific pain points and desires."
+                if language == 'ko':
+                    audience_prompt = f"\n\n**타겟 오디언스:** {target_audience}\n- 이 인구통계에 맞춰 언어, 톤, 예시를 조정하세요.\n- 그들의 구체적인 고충과 욕구를 다루세요."
+                system_prompt += audience_prompt
+            
             # 사용자 프롬프트 구성
             user_prompt = self._build_user_prompt(
                 topic, max_sentences, target_duration, language)
             
             for model in models_to_try:
                 try:
+                    # 랜덤 시드 생성 (다양성 확보)
+                    random_seed = int(time.time() * 1000) % 10000
+                    
                     response = self.openai_client.chat.completions.create(
                         model=model,
                         messages=[
@@ -182,13 +208,25 @@ class ScriptGenerator:
                             {"role": "user", "content": user_prompt}
                         ],
                         max_tokens=800,
-                        temperature=0.7
+                        temperature=0.9,  # 0.7 → 0.9로 증가 (더 다양한 응답)
+                        seed=random_seed,  # 매번 다른 시드 사용
+                        frequency_penalty=0.5,  # 같은 단어/구절 반복 억제
+                        presence_penalty=0.3   # 새로운 주제 도입 장려
                     )
                     script_text = response.choices[0].message.content
                     filtered_sentences = self._parse_script_text(script_text, max_sentences)
                     
-                    print(f"📝 OpenAI API로 생성된 문장 수: {len(filtered_sentences)}개 (목표: {max_sentences}개)")
-                    return filtered_sentences[:max_sentences]
+                    # 반복 구절 제거
+                    filtered_sentences = self._remove_repetitive_phrases(filtered_sentences)
+                    
+                    # 스크립트 중복 검사
+                    if self._is_script_unique(filtered_sentences):
+                        print(f"📝 OpenAI API로 생성된 문장 수: {len(filtered_sentences)}개 (목표: {max_sentences}개)")
+                        return filtered_sentences[:max_sentences]
+                    else:
+                        print(f"⚠️ 중복 스크립트 감지, 재생성 시도 중...")
+                        # 중복이면 다음 모델로 시도하거나 재생성
+                        continue
                 except Exception as e:
                     last_error = e
                     print(f"⚠️ OpenAI 모델 {model} 실패: {e}")
@@ -233,6 +271,7 @@ class ScriptGenerator:
         base_structure = f"""
 **CONTENT STRUCTURE ({target_duration} seconds total):**
 - **Important: Write all sentences in English only. Do not include any Korean sentences or words**
+- **CRITICAL: Create a UNIQUE and ORIGINAL script. Avoid repeating common phrases or structures from previous scripts**
 - Each sentence should be 3-4 seconds long, write 12-16 sentences total
 """
         
@@ -402,6 +441,7 @@ class ScriptGenerator:
 - 첫 3초 안에 강력한 Hook 문장으로 시청자의 관심을 끌어야 합니다
 - 한국어 속담, 관용어, 명언 등에 집중하세요
 - **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- **핵심: 독창적이고 유니크한 스크립트를 작성하세요. 이전 스크립트와 중복되는 표현이나 구조를 피하세요**
 - 목표는 약 55초 분량이며, 충분한 설명과 예시를 포함하세요
 - 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
 - **전략: '마인드셋 플립(Mindset Flip)' 기법을 사용하세요. 첫 문장에서 흔한 부정적인 생각을 제시하고 즉시 긍정적으로 재해석하세요.**
@@ -528,6 +568,134 @@ class ScriptGenerator:
                             break
         
         return filtered_sentences
+    
+    def _remove_repetitive_phrases(self, sentences: List[str]) -> List[str]:
+        """
+        문장 끝에 반복되는 구절 제거
+        
+        Args:
+            sentences: 문장 리스트
+        
+        Returns:
+            반복 구절이 제거된 문장 리스트
+        """
+        if len(sentences) < 3:
+            return sentences
+        
+        # 각 문장의 마지막 5단어 추출
+        ending_phrases = []
+        for sent in sentences:
+            words = sent.split()
+            if len(words) >= 5:
+                # 마지막 5단어를 구절로 저장
+                ending_phrase = " ".join(words[-5:]).lower()
+                ending_phrases.append(ending_phrase)
+            else:
+                ending_phrases.append("")
+        
+        # 반복되는 구절 찾기 (3회 이상 등장)
+        from collections import Counter
+        phrase_counts = Counter(ending_phrases)
+        repetitive_phrases = {phrase for phrase, count in phrase_counts.items() 
+                             if count >= 3 and phrase}  # 3회 이상 반복되는 구절
+        
+        if repetitive_phrases:
+            print(f"⚠️ 반복 구절 감지: {list(repetitive_phrases)[:2]}")  # 처음 2개만 출력
+            
+            # 반복 구절 제거
+            cleaned_sentences = []
+            for sent, ending in zip(sentences, ending_phrases):
+                if ending in repetitive_phrases:
+                    # 마지막 5단어 제거
+                    words = sent.split()
+                    if len(words) > 5:
+                        cleaned_sent = " ".join(words[:-5]).strip()
+                        if cleaned_sent and len(cleaned_sent) > 20:  # 최소 길이 확인
+                            cleaned_sentences.append(cleaned_sent)
+                        else:
+                            cleaned_sentences.append(sent)  # 너무 짧으면 원본 유지
+                    else:
+                        cleaned_sentences.append(sent)
+                else:
+                    cleaned_sentences.append(sent)
+            
+            print(f"✅ 반복 구절 제거 완료: {len(repetitive_phrases)}개 패턴")
+            return cleaned_sentences
+        
+        return sentences
+    
+    def _is_script_unique(self, script_sentences: List[str]) -> bool:
+        """
+        스크립트 중복 여부 확인
+        
+        Args:
+            script_sentences: 생성된 스크립트 문장 리스트
+        
+        Returns:
+            중복되지 않으면 True, 중복이면 False
+        """
+        if not script_sentences or len(script_sentences) < 3:
+            return True  # 너무 짧으면 검사 스킵
+        
+        try:
+            # 데이터베이스에서 최근 스크립트 조회
+            db = VideoDatabase()
+            recent_scripts = db.get_recent_scripts(limit=10)
+            
+            if not recent_scripts:
+                return True  # 비교할 스크립트 없음
+            
+            # 현재 스크립트의 첫 3문장 해시 생성
+            current_preview = " ".join(script_sentences[:3])
+            current_hash = hashlib.md5(current_preview.encode()).hexdigest()
+            
+            # 최근 스크립트들과 비교
+            for recent_script in recent_scripts:
+                if not recent_script:
+                    continue
+                
+                # 최근 스크립트의 첫 3문장 해시 생성
+                recent_sentences = recent_script.split('\n')[:3]
+                recent_preview = " ".join(recent_sentences)
+                recent_hash = hashlib.md5(recent_preview.encode()).hexdigest()
+                
+                # 해시가 동일하면 중복
+                if current_hash == recent_hash:
+                    print(f"⚠️ 중복 스크립트 발견: {current_preview[:100]}...")
+                    return False
+                
+                # 유사도 검사 (간단한 문자열 비교)
+                similarity = self._calculate_similarity(current_preview, recent_preview)
+                if similarity > 0.8:  # 80% 이상 유사하면 중복으로 간주
+                    print(f"⚠️ 유사한 스크립트 발견 (유사도: {similarity:.2%})")
+                    return False
+            
+            return True
+        except Exception as e:
+            print(f"⚠️ 스크립트 중복 검사 실패: {e}")
+            return True  # 에러 시 통과
+    
+    def _calculate_similarity(self, text1: str, text2: str) -> float:
+        """
+        두 텍스트의 유사도 계산 (간단한 단어 기반)
+        
+        Args:
+            text1: 첫 번째 텍스트
+            text2: 두 번째 텍스트
+        
+        Returns:
+            유사도 (0.0 ~ 1.0)
+        """
+        words1 = set(text1.lower().split())
+        words2 = set(text2.lower().split())
+        
+        if not words1 or not words2:
+            return 0.0
+        
+        intersection = words1.intersection(words2)
+        union = words1.union(words2)
+        
+        return len(intersection) / len(union) if union else 0.0
     
     def _build_default_script(
         self,

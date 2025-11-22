@@ -64,6 +64,7 @@ class TopicDatabase:
                 total_likes INTEGER DEFAULT 0,
                 total_comments INTEGER DEFAULT 0,
                 avg_engagement_rate REAL DEFAULT 0.0,
+                cpm_score REAL DEFAULT 1.0,
                 last_used_date TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
@@ -116,7 +117,8 @@ class TopicDatabase:
         source: str = TopicSource.MANUAL.value,
         season: str = None,
         language: str = 'en',
-        status: str = TopicStatus.ACTIVE.value
+        status: str = TopicStatus.ACTIVE.value,
+        cpm_score: float = 1.0
     ) -> Optional[int]:
         """
         주제 추가
@@ -128,6 +130,7 @@ class TopicDatabase:
             season: 계절 ('spring', 'summer', 'autumn', 'winter')
             language: 언어 ('en' 또는 'ko')
             status: 주제 상태 (TopicStatus enum 값)
+            cpm_score: CPM 잠재력 점수
         
         Returns:
             주제 ID 또는 None (실패 시)
@@ -140,9 +143,9 @@ class TopicDatabase:
             
             cursor.execute('''
                 INSERT OR IGNORE INTO topics 
-                (topic, content_type, source, status, season, language, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (topic, content_type, source, status, season, language, now, now))
+                (topic, content_type, source, status, season, language, cpm_score, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (topic, content_type, source, status, season, language, cpm_score, now, now))
             
             # 주제 ID 가져오기
             cursor.execute('SELECT id FROM topics WHERE topic = ?', (topic,))
@@ -181,17 +184,19 @@ class TopicDatabase:
         topic: str = None,
         content_type: str = None,
         status: str = None,
-        season: str = None
+        season: str = None,
+        cpm_score: float = None
     ) -> bool:
         """
         주제 업데이트
         
         Args:
             topic_id: 주제 ID
-            topic: 주제 텍스트 (변경 시)
-            content_type: 콘텐츠 타입 (변경 시)
-            status: 주제 상태 (변경 시)
-            season: 계절 (변경 시)
+            topic: 새로운 주제 텍스트
+            content_type: 새로운 콘텐츠 타입
+            status: 새로운 상태
+            season: 새로운 계절
+            cpm_score: 새로운 CPM 점수
         
         Returns:
             성공 여부
@@ -215,6 +220,9 @@ class TopicDatabase:
             if season is not None:
                 updates.append("season = ?")
                 params.append(season)
+            if cpm_score is not None:
+                updates.append("cpm_score = ?")
+                params.append(cpm_score)
             
             if not updates:
                 conn.close()
@@ -423,6 +431,59 @@ class TopicDatabase:
             return [dict(row) for row in rows]
         except Exception as e:
             print(f"⚠️ 주제 조회 실패: {e}")
+            return []
+    
+    def get_topics_by_cpm(
+        self,
+        content_type: str = None,
+        status: str = TopicStatus.ACTIVE.value,
+        min_cpm_score: float = 1.0,
+        limit: int = 10
+    ) -> List[Dict]:
+        """
+        CPM 점수 기준으로 주제 조회
+        
+        Args:
+            content_type: 콘텐츠 타입 필터
+            status: 주제 상태 필터
+            min_cpm_score: 최소 CPM 점수
+            limit: 반환할 주제 수 제한
+        
+        Returns:
+            주제 리스트 (CPM 점수 내림차순)
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            conditions = ["cpm_score >= ?"]
+            params = [min_cpm_score]
+            
+            if content_type:
+                conditions.append("content_type = ?")
+                params.append(content_type)
+            if status:
+                conditions.append("status = ?")
+                params.append(status)
+            
+            where_clause = "WHERE " + " AND ".join(conditions)
+            limit_clause = f"LIMIT {limit}" if limit else ""
+            
+            query = f'''
+                SELECT * FROM topics
+                {where_clause}
+                ORDER BY cpm_score DESC, avg_engagement_rate DESC
+                {limit_clause}
+            '''
+            
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            conn.close()
+            
+            return [dict(row) for row in rows]
+        except Exception as e:
+            print(f"⚠️ CPM 기준 주제 조회 실패: {e}")
             return []
     
     def get_high_performing_topics(

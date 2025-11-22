@@ -129,7 +129,8 @@ class ShortsBot:
                 topic=topic, 
                 duration=None,
                 performance_prompt=None,
-                language=language
+                language=language,
+                target_audience="General Audience"  # 기본값
             )
             
             # 실제 사용된 주제

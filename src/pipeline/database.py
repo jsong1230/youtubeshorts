@@ -97,12 +97,48 @@ class VideoDatabase:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (video_id, title, topic, prompt, script, now, now, now))
             
+            # 스크립트 저장 확인 로깅
+            if script:
+                script_preview = script[:100] if len(script) > 100 else script
+                print(f"✅ 스크립트 저장됨 (길이: {len(script)}자): {script_preview}...")
+            else:
+                print(f"⚠️ 스크립트가 비어있습니다 (video_id: {video_id})")
+            
             conn.commit()
             conn.close()
             return True
         except Exception as e:
             print(f"⚠️ 영상 추가 실패: {e}")
             return False
+    
+    def get_recent_scripts(self, limit: int = 10) -> List[str]:
+        """
+        최근 스크립트 조회 (중복 검사용)
+        
+        Args:
+            limit: 반환할 스크립트 수
+        
+        Returns:
+            최근 스크립트 리스트
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT script FROM videos
+                WHERE script IS NOT NULL AND script != ''
+                ORDER BY created_at DESC
+                LIMIT ?
+            ''', (limit,))
+            
+            rows = cursor.fetchall()
+            conn.close()
+            
+            return [row[0] for row in rows if row[0]]
+        except Exception as e:
+            print(f"⚠️ 최근 스크립트 조회 실패: {e}")
+            return []
     
     def update_video_stats(
         self,
