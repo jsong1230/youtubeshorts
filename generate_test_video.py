@@ -27,7 +27,7 @@ def generate_test_video():
     print("\n영상 생성 시작...\n")
     
     try:
-        video_path, script, selected_topic = generator.generate_video(
+        video_path, thumbnail_path, selected_topic, script = generator.generate_video(
             topic=test_topic,
             content_type=ContentType.HOOK,
             language='en',

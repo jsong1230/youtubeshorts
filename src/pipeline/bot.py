@@ -8,6 +8,7 @@ from datetime import datetime
 import pytz
 import sys
 from pathlib import Path
+from typing import Tuple, Optional, Dict, Any
 
 # 프로젝트 루트를 경로에 추가
 project_root = Path(__file__).parent.parent.parent
@@ -171,7 +172,7 @@ class ShortsBot:
     
     def create_and_upload(self, topic: str = None, content_type: ContentType = None, force: bool = False, language: str = None):
         """
-        영상 생성 및 업로드
+        영상 생성 및 업로드 (Refactored)
         
         Args:
             topic: 영상 주제 (None이면 자동 생성)
@@ -188,391 +189,35 @@ class ShortsBot:
                 print(f"⚠️ 강제 업로드 모드: 중복 체크를 건너뜁니다")
             print(f"{'='*50}\n")
             
-            # 동기화 상태 확인
-            self.sync_manager.print_sync_status()
+            # 1. 업로드 제약 확인
+            if not self._check_upload_constraints(force):
+                return None
             
-            # 오늘 이미 업로드했는지 확인 (로컬 상태) - force 모드가 아닐 때만
-            if not force and self.sync_manager.check_today_uploaded():
-                today_info = self.sync_manager.get_today_upload_info()
-                print(f"\n⚠️ 경고: 로컬 상태 파일에 따르면 오늘 이미 업로드했습니다.")
-                print(f"   영상 ID: {today_info.get('video_id', 'N/A')}")
-                print(f"   제목: {today_info.get('title', 'N/A')}")
-                print(f"   컴퓨터: {today_info.get('computer_id', 'N/A')}")
-                print(f"\n계속하시겠습니까? (y/n): ", end='')
-                try:
-                    response = input().strip().lower()
-                    if response != 'y':
-                        print("❌ 업로드를 취소했습니다.")
-                        return None
-                except EOFError:
-                    # 비대화형 환경에서는 자동으로 진행
-                    print("y (자동 진행)")
+            # 2. 주제 및 언어 결정
+            topic, language, request_id = self._determine_video_parameters(topic, language)
             
-            # YouTube API로 오늘 업로드 확인 (실제 서버 상태) - force 모드가 아닐 때만
-            if not force and not self.use_multi_platform:
-                if hasattr(self.uploader, 'check_today_uploaded'):
-                    if self.uploader.check_today_uploaded():
-                        print(f"\n⚠️ YouTube API 확인 결과, 오늘 이미 업로드된 영상이 있습니다.")
-                        print(f"   중복 업로드를 방지하기 위해 업로드를 건너뜁니다.")
-                        print(f"   강제로 업로드하려면 force=True 옵션을 사용하세요.")
-                        return None
-            
-            # 언어 자동 감지 (기본값: 영어, 주제가 한글이면 한글로 설정)
-            if language is None and topic:
-                # 주제에 한글이 많으면 한글로 감지, 그 외는 모두 영어
-                import re
-                korean_chars = len(re.findall(r'[가-힣]', topic))
-                total_chars = len(re.findall(r'[a-zA-Z가-힣]', topic))
-                if total_chars > 0 and korean_chars / total_chars > 0.5:
-                    language = 'ko'
-                    print(f"🌐 언어 자동 감지: 한국어 (주제: {topic})")
-                else:
-                    language = 'en'
-                    print(f"🌐 언어 자동 감지: 영어 (주제: {topic})")
-            elif language is None:
-                language = 'en'  # 기본값을 영어로 변경
-                print(f"🌐 언어 기본값: 영어")
-            
-            # 사용자 요청 주제 확인 (우선순위)
-            if not topic:
-                user_request = self.user_request_handler.get_next_request()
-                if user_request:
-                    topic = user_request['topic']
-                    request_id = user_request['id']
-                    print(f"📝 사용자 요청 주제 사용: {topic} (요청 ID: {request_id})")
-                    # 요청을 진행 중으로 표시
-                    self.user_request_handler.mark_in_progress(request_id)
-            
-            # 성과 기반 프롬프트 가져오기 (하루 1개 생성 전)
+            # 3. 성과 기반 프롬프트 가져오기
             performance_prompt = self._get_performance_based_prompt()
             if performance_prompt:
                 print("📊 성과 기반 프롬프트 적용 중...")
                 print(f"   {performance_prompt[:100]}...")
             
-            # 1. AI로 영상 생성 (길이 자동 조정, 성과 기반 프롬프트 포함, 템플릿 사용)
-            print("📹 1단계: AI 영상 생성 중...")
-            result = self.video_generator.generate_video(
-                topic=topic, 
-                duration=None,
-                performance_prompt=performance_prompt,
-                content_type=content_type,
-                language=language
-            )
+            # 4. 영상 콘텐츠 생성
+            video_assets = self._generate_video_content(topic, content_type, language, performance_prompt)
             
-            # 반환값 처리 (주제 출처 포함)
-            if len(result) == 4:
-                video_path, script, generated_topic, topic_source = result
-            else:
-                # 이전 버전 호환성
-                video_path, script, generated_topic = result
-                topic_source = None
+            # 5. 플랫폼 업로드
+            upload_results = self._upload_to_platforms(video_assets)
             
-            # 실제 사용된 주제 (생성된 경우 generated_topic 사용)
-            actual_topic = generated_topic if generated_topic else topic
+            # 6. 데이터베이스 및 상태 업데이트
+            self._update_databases(video_assets, upload_results, request_id, content_type, performance_prompt)
             
-            # 주제 출처 저장 (주제 데이터베이스 저장 시 사용)
-            self._last_topic_source = self._map_topic_source(topic_source)
-            
-            # 2. 제목 및 설명 생성
-            if actual_topic:
-                title = actual_topic
-            else:
-                title = datetime.now().strftime('%Y년 %m월 %d일')
-            
-            # 제목에 #Shorts 추가 (YouTube Shorts로 인식되도록)
-            if '#Shorts' not in title and '#shorts' not in title:
-                title = f"{title} #Shorts"
-            
-            # 3. 매력적인 썸네일 생성
-            print("\n🖼️ 썸네일 생성 중...")
-            thumbnail_path = self.video_generator.generate_thumbnail(
-                video_path, 
-                title, 
-                topic=actual_topic,
-                script=script,
-                language=language
-            )
-            if thumbnail_path:
-                print("🎞️ 썸네일 이미지를 영상 첫 프레임에 삽입합니다...")
-                self.video_generator.embed_thumbnail_frame(video_path, thumbnail_path)
-            
-            # 썸네일 생성 확인
-            if thumbnail_path:
-                print(f"✅ 썸네일 생성 완료: {thumbnail_path}")
-                if os.path.exists(thumbnail_path):
-                    print(f"   파일 크기: {os.path.getsize(thumbnail_path)} bytes")
-                else:
-                    print(f"   ⚠️ 경고: 썸네일 파일이 생성되었지만 찾을 수 없습니다!")
-            else:
-                print("   ⚠️ 경고: 썸네일 생성 실패 (None 반환)")
-            
-            # 썸네일 최적화 데이터베이스에 저장 (업로드 후 video_id로 업데이트)
-            thumbnail_style = None
-            if thumbnail_path:
-                try:
-                    # 썸네일 스타일 추출 (DALL-E 3 또는 프레임 추출)
-                    thumbnail_style = "dalle3" if thumbnail_path and "thumb_" in thumbnail_path else "frame_extract"
-                except Exception as e:
-                    print(f"⚠️ 썸네일 스타일 추출 실패: {e}")
-            
-            # 채널 정보 가져오기 (구독 링크용)
-            channel_info = None
-            if hasattr(self.uploader, 'get_channel_info'):
-                try:
-                    channel_info = self.uploader.get_channel_info()
-                except Exception as e:
-                    print(f"⚠️ 채널 정보 가져오기 실패: {e}")
-            
-            # 최근 영상 목록 가져오기 (관련 영상 링크용)
-            recent_videos = []
-            if hasattr(self.uploader, 'get_recent_videos'):
-                try:
-                    recent_videos = self.uploader.get_recent_videos(max_results=3)
-                except Exception as e:
-                    print(f"⚠️ 최근 영상 목록 가져오기 실패: {e}")
-            
-            # 언어에 따라 설명란 생성
-            if language == 'en':
-                description = f"{config.DEFAULT_DESCRIPTION}\n\n"
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "📺 Video Information\n"
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += f"📅 Upload Date: {datetime.now().strftime('%B %d, %Y')}\n"
-                if topic:
-                    description += f"📌 Topic: {topic}\n"
-                description += f"⏱️ Duration: ~55 seconds (YouTube Shorts optimized)\n\n"
+            video_id = upload_results.get('youtube')
+            if video_id:
+                print(f"\n✅ 완료! 영상 ID: {video_id}")
+                print(f"🔗 https://www.youtube.com/watch?v={video_id}\n")
                 
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "💡 About This Video\n"
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "This video was automatically generated using the latest AI technology.\n"
-                description += "We provide useful information and practical tips on new topics every day.\n"
-                description += "We will continue to upload diverse content that helps improve your daily life.\n\n"
-                
-                # 구독 유도 섹션 강화
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "🔔 SUBSCRIBE NOW - Don't Miss Daily Content!\n"
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                if channel_info and channel_info.get('channel_url'):
-                    description += f"👉 Subscribe here: {channel_info['channel_url']}\n\n"
-                description += "Why subscribe?\n"
-                description += "✅ Daily new videos with practical tips\n"
-                description += "✅ Finance, productivity, and lifestyle content\n"
-                description += "✅ Short, actionable advice (under 1 minute)\n"
-                description += "✅ AI-powered insights you can use today\n\n"
-                
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "🙏 Your Engagement Matters\n"
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "👍 LIKE: If this video helped you, please hit the like button!\n"
-                description += "🔔 SUBSCRIBE: Get notified when we upload new videos daily!\n"
-                description += "💬 COMMENT: Share your thoughts or suggest topics you'd like to see!\n"
-                description += "📤 SHARE: Help others discover this content by sharing!\n\n"
-                
-                # 관련 영상 링크 추가
-                if recent_videos:
-                    description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                    description += "📚 More Videos You Might Like\n"
-                    description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                    for i, video in enumerate(recent_videos[:3], 1):
-                        description += f"{i}. {video['title']}\n"
-                        description += f"   👉 {video['url']}\n\n"
-                
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "🏷️ Tags\n"
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "#shorts #finance #productivity #lifestyle #tips #money #investing #selfimprovement #ai #automation"
-            else:
-                description = f"{config.DEFAULT_DESCRIPTION}\n\n"
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "📺 영상 정보\n"
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += f"📅 업로드 날짜: {datetime.now().strftime('%Y년 %m월 %d일')}\n"
-                if topic:
-                    description += f"📌 영상 주제: {topic}\n"
-                description += f"⏱️ 영상 길이: 약 55초 (YouTube Shorts 최적화)\n\n"
-                
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "💡 이 영상에 대해\n"
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "이 영상은 최신 AI 기술을 활용하여 자동으로 생성되었습니다.\n"
-                description += "매일 새로운 주제로 유용한 정보와 실용적인 팁을 제공합니다.\n"
-                description += "생활에 도움이 되는 다양한 콘텐츠를 지속적으로 업로드할 예정입니다.\n\n"
-                
-                # 구독 유도 섹션 강화
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "🔔 지금 구독하세요 - 매일 새로운 콘텐츠를 놓치지 마세요!\n"
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                if channel_info and channel_info.get('channel_url'):
-                    description += f"👉 구독하기: {channel_info['channel_url']}\n\n"
-                description += "구독하면 좋은 이유:\n"
-                description += "✅ 매일 새로운 실용적인 팁 영상\n"
-                description += "✅ 재태크, 생산성, 라이프스타일 콘텐츠\n"
-                description += "✅ 짧고 실행 가능한 조언 (1분 이내)\n"
-                description += "✅ 오늘 바로 써먹을 수 있는 AI 인사이트\n\n"
-                
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "🙏 여러분의 참여를 기다립니다\n"
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "👍 좋아요: 영상이 도움이 되셨다면 좋아요를 눌러주세요!\n"
-                description += "🔔 구독: 매일 새로운 영상을 받아보시려면 구독해주세요!\n"
-                description += "💬 댓글: 궁금한 점이나 원하시는 주제가 있으시면 댓글로 알려주세요!\n"
-                description += "📤 공유: 친구들과 함께 보시면 더욱 좋습니다!\n\n"
-                
-                # 관련 영상 링크 추가
-                if recent_videos:
-                    description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                    description += "📚 더 많은 영상 보기\n"
-                    description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                    for i, video in enumerate(recent_videos[:3], 1):
-                        description += f"{i}. {video['title']}\n"
-                        description += f"   👉 {video['url']}\n\n"
-                
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "🏷️ 태그\n"
-                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                description += "#shorts #쇼츠 #ai #인공지능 #자동생성 #유용한정보 #팁 #라이프스타일 #일상 #정보 #꿀팁 #생활정보"
-            
-            # 4. 멀티 플랫폼 업로드 또는 YouTube 업로드
-            print("\n📤 2단계: 플랫폼 업로드 중...")
-            if self.use_multi_platform:
-                # 멀티 플랫폼 업로드
-                upload_results = self.uploader.upload_to_all(
-                    video_path=video_path,
-                    title=title,
-                    description=description,
-                    tags=config.DEFAULT_TAGS,
-                    thumbnail_path=thumbnail_path
-                )
-                # YouTube ID는 필수 (데이터베이스 저장용)
-                video_id = upload_results.get('youtube')
-            else:
-                # YouTube만 업로드
-                video_id = self.uploader.upload_video(
-                    video_path=video_path,
-                    title=title,
-                    description=description,
-                    tags=config.DEFAULT_TAGS,
-                    privacy_status='public',
-                    thumbnail_path=thumbnail_path
-                )
-                upload_results = {'youtube': video_id}
-            
-            # 5. 데이터베이스에 저장
-            print("\n💾 3단계: 데이터베이스에 저장 중...")
-            # 스크립트는 video_generator에서 가져올 수 없으므로 None으로 설정
-            # 향후 video_generator에서 스크립트를 반환하도록 수정 가능
-            self.database.add_video(
-                video_id=video_id,
-                title=title,
-                topic=topic,
-                prompt=performance_prompt if performance_prompt else None,
-                script=None  # 향후 추가 가능
-            )
-            
-            # 사용자 요청 완료 처리 (요청이 있었던 경우)
-            if not topic and 'user_request' in locals() and user_request:
-                request_id = user_request['id']
-                self.user_request_handler.mark_completed(request_id, video_id)
-                print(f"✅ 사용자 요청 완료 처리: 요청 ID {request_id} -> 영상 ID {video_id}")
-            
-            # A/B 테스트 데이터베이스에 저장 (기본 스타일)
-            try:
-                # 현재 영상의 스타일 정보 추출
-                style_info = {
-                    'background_music': getattr(config, 'USE_BACKGROUND_MUSIC', True),
-                    'subtitle_mode': getattr(config, 'SUBTITLE_MODE', 'full_sentence'),
-                    'content_type': content_type.value if content_type else 'auto'
-                }
-                
-                # 기본 스타일로 저장
-                style = VideoStyle.DEFAULT.value
-                if style_info.get('background_music'):
-                    style = VideoStyle.MUSIC.value
-                else:
-                    style = VideoStyle.NO_MUSIC.value
-                
-                self.ab_test_db.add_test(
-                    video_id=video_id,
-                    style=style,
-                    style_config=json.dumps(style_info),
-                    topic=actual_topic,
-                    content_type=content_type.value if content_type else 'auto'
-                )
-                print(f"✅ A/B 테스트 데이터베이스에 저장 완료: {style}")
-            except Exception as e:
-                print(f"⚠️ A/B 테스트 데이터베이스 저장 실패: {e}")
-            
-            # 주제 데이터베이스에 주제 저장
-            try:
-                from src.pipeline.topic_database import TopicDatabase, TopicSource
-                topic_db = TopicDatabase()
-                
-                # 주제 출처 결정
-                source = TopicSource.MANUAL.value
-                if hasattr(self, '_last_topic_source'):
-                    source = self._last_topic_source
-                
-                # 주제 추가 (없으면 생성)
-                topic_id = topic_db.add_topic(
-                    topic=actual_topic,
-                    content_type=content_type.value if content_type else 'auto',
-                    source=source,
-                    season=self.video_generator._get_season() if hasattr(self.video_generator, '_get_season') else None
-                )
-                
-                # 주제-영상 연결 (초기 통계는 0)
-                if topic_id:
-                    topic_db.link_topic_to_video(
-                        topic=actual_topic,
-                        video_id=video_id,
-                        views=0,
-                        likes=0,
-                        comments=0
-                    )
-                    print(f"✅ 주제 데이터베이스에 저장 완료: {actual_topic[:50]}...")
-            except Exception as e:
-                print(f"⚠️ 주제 데이터베이스 저장 실패: {e}")
-            
-            # 6. 동기화 상태 업데이트
-            print("\n🔄 동기화 상태 업데이트 중...")
-            self.sync_manager.record_upload(
-                video_id=video_id,
-                title=title,
-                topic=topic
-            )
-            print("✅ 동기화 상태 업데이트 완료")
-            
-            # 멀티 플랫폼 업로드 결과 출력
-            if self.use_multi_platform:
-                print("\n📊 업로드 결과:")
-                for platform, platform_id in upload_results.items():
-                    if platform_id:
-                        print(f"   ✅ {platform.capitalize()}: {platform_id}")
-                    else:
-                        print(f"   ⚠️ {platform.capitalize()}: 업로드 실패 또는 건너뜀")
-            
-            # 7. 수익화 추적에 추가
-            print("\n📊 4단계: 수익화 추적에 추가 중...")
-            self.monetization.add_video(
-                video_id=video_id,
-                title=title,
-                upload_date=datetime.now().isoformat()
-            )
-            
-            print(f"\n✅ 완료! 영상 ID: {video_id}")
-            print(f"🔗 https://www.youtube.com/watch?v={video_id}\n")
-            
-            # 알림 전송
-            try:
-                video_url = f"https://www.youtube.com/watch?v={video_id}"
-                self.notification_service.notify_video_uploaded(
-                    video_id=video_id,
-                    title=title,
-                    video_url=video_url
-                )
-            except Exception as e:
-                print(f"⚠️ 알림 전송 실패: {e}")
+                # 7. 알림 전송
+                self._send_notifications(video_assets, video_id)
             
             # 리포트 출력
             self.monetization.print_report()
@@ -584,6 +229,414 @@ class ShortsBot:
             import traceback
             traceback.print_exc()
             return None
+
+    def _check_upload_constraints(self, force: bool) -> bool:
+        """
+        업로드 제약 조건 확인 (동기화 상태, 일일 업로드 제한 등)
+        
+        Args:
+            force: 강제 업로드 여부
+            
+        Returns:
+            업로드 진행 가능 여부
+        """
+        # 동기화 상태 확인
+        self.sync_manager.print_sync_status()
+        
+        if force:
+            print(f"⚠️ 강제 업로드 모드: 중복 체크를 건너뜁니다")
+            return True
+            
+        # 오늘 이미 업로드했는지 확인 (로컬 상태)
+        if self.sync_manager.check_today_uploaded():
+            today_info = self.sync_manager.get_today_upload_info()
+            print(f"\n⚠️ 경고: 로컬 상태 파일에 따르면 오늘 이미 업로드했습니다.")
+            print(f"   영상 ID: {today_info.get('video_id', 'N/A')}")
+            print(f"   제목: {today_info.get('title', 'N/A')}")
+            print(f"   컴퓨터: {today_info.get('computer_id', 'N/A')}")
+            print(f"\n계속하시겠습니까? (y/n): ", end='')
+            try:
+                response = input().strip().lower()
+                if response != 'y':
+                    print("❌ 업로드를 취소했습니다.")
+                    return False
+            except EOFError:
+                # 비대화형 환경에서는 자동으로 진행
+                print("y (자동 진행)")
+        
+        # YouTube API로 오늘 업로드 확인 (실제 서버 상태)
+        if not self.use_multi_platform:
+            if hasattr(self.uploader, 'check_today_uploaded'):
+                if self.uploader.check_today_uploaded():
+                    print(f"\n⚠️ YouTube API 확인 결과, 오늘 이미 업로드된 영상이 있습니다.")
+                    print(f"   중복 업로드를 방지하기 위해 업로드를 건너뜁니다.")
+                    print(f"   강제로 업로드하려면 force=True 옵션을 사용하세요.")
+                    return False
+                    
+        return True
+
+    def _determine_video_parameters(self, topic: str, language: str) -> Tuple[str, str, Optional[str]]:
+        """
+        영상 주제 및 언어 결정
+        
+        Args:
+            topic: 입력된 주제
+            language: 입력된 언어
+            
+        Returns:
+            (결정된 주제, 결정된 언어, 사용자 요청 ID)
+        """
+        request_id = None
+        
+        # 언어 자동 감지 (기본값: 영어, 주제가 한글이면 한글로 설정)
+        if language is None and topic:
+            # 주제에 한글이 많으면 한글로 감지, 그 외는 모두 영어
+            import re
+            korean_chars = len(re.findall(r'[가-힣]', topic))
+            total_chars = len(re.findall(r'[a-zA-Z가-힣]', topic))
+            if total_chars > 0 and korean_chars / total_chars > 0.5:
+                language = 'ko'
+                print(f"🌐 언어 자동 감지: 한국어 (주제: {topic})")
+            else:
+                language = 'en'
+                print(f"🌐 언어 자동 감지: 영어 (주제: {topic})")
+        elif language is None:
+            language = 'en'  # 기본값을 영어로 변경
+            print(f"🌐 언어 기본값: 영어")
+        
+        # 사용자 요청 주제 확인 (우선순위)
+        if not topic:
+            user_request = self.user_request_handler.get_next_request()
+            if user_request:
+                topic = user_request['topic']
+                request_id = user_request['id']
+                print(f"📝 사용자 요청 주제 사용: {topic} (요청 ID: {request_id})")
+                # 요청을 진행 중으로 표시
+                self.user_request_handler.mark_in_progress(request_id)
+                
+        return topic, language, request_id
+
+    def _generate_video_content(self, topic: str, content_type: ContentType, language: str, performance_prompt: str) -> Dict[str, Any]:
+        """
+        영상 콘텐츠 생성 (영상, 썸네일, 메타데이터)
+        
+        Returns:
+            영상 자산 딕셔너리 (video_path, thumbnail_path, title, description, tags, etc.)
+        """
+        # 1. AI로 영상 생성
+        print("📹 1단계: AI 영상 생성 중...")
+        result = self.video_generator.generate_video(
+            topic=topic, 
+            duration=None,
+            performance_prompt=performance_prompt,
+            content_type=content_type,
+            language=language
+        )
+        
+        # 반환값 처리
+        if len(result) == 4:
+            video_path, script, generated_topic, topic_source = result
+        else:
+            video_path, script, generated_topic = result
+            topic_source = None
+        
+        if not video_path:
+            raise Exception("영상 생성 실패")
+            
+        # 실제 사용된 주제
+        actual_topic = generated_topic if generated_topic else topic
+        
+        # 주제 출처 저장
+        self._last_topic_source = self._map_topic_source(topic_source)
+        
+        # 2. 제목 생성
+        if actual_topic:
+            title = actual_topic
+        else:
+            title = datetime.now().strftime('%Y년 %m월 %d일')
+        
+        # 제목에 #Shorts 추가
+        if '#Shorts' not in title and '#shorts' not in title:
+            title = f"{title} #Shorts"
+        
+        # 3. 썸네일 생성
+        print("\n🖼️ 썸네일 생성 중...")
+        thumbnail_path = self.video_generator.generate_thumbnail(
+            video_path, 
+            title, 
+            topic=actual_topic,
+            script=script,
+            language=language
+        )
+        
+        if thumbnail_path:
+            print("🎞️ 썸네일 이미지를 영상 첫 프레임에 삽입합니다...")
+            self.video_generator.embed_thumbnail_frame(video_path, thumbnail_path)
+            print(f"✅ 썸네일 생성 완료: {thumbnail_path}")
+        else:
+            print("   ⚠️ 경고: 썸네일 생성 실패 (None 반환)")
+            
+        # 4. 설명 및 태그 생성
+        description = self._generate_description(language, topic, actual_topic)
+        
+        return {
+            'video_path': video_path,
+            'thumbnail_path': thumbnail_path,
+            'title': title,
+            'description': description,
+            'tags': config.DEFAULT_TAGS,
+            'actual_topic': actual_topic,
+            'script': script,
+            'topic_source': topic_source
+        }
+
+    def _generate_description(self, language: str, original_topic: str, actual_topic: str) -> str:
+        """설명란 텍스트 생성"""
+        # 채널 정보 및 최근 영상 가져오기
+        channel_info = None
+        recent_videos = []
+        
+        try:
+            if hasattr(self.uploader, 'get_channel_info'):
+                channel_info = self.uploader.get_channel_info()
+            if hasattr(self.uploader, 'get_recent_videos'):
+                recent_videos = self.uploader.get_recent_videos(max_results=3)
+        except Exception as e:
+            print(f"⚠️ 채널 정보/최근 영상 가져오기 실패: {e}")
+
+        if language == 'en':
+            description = f"{config.DEFAULT_DESCRIPTION}\n\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "📺 Video Information\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += f"📅 Upload Date: {datetime.now().strftime('%B %d, %Y')}\n"
+            if original_topic:
+                description += f"📌 Topic: {original_topic}\n"
+            description += f"⏱️ Duration: ~55 seconds (YouTube Shorts optimized)\n\n"
+            
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "💡 About This Video\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "This video was automatically generated using the latest AI technology.\n"
+            description += "We provide useful information and practical tips on new topics every day.\n"
+            description += "We will continue to upload diverse content that helps improve your daily life.\n\n"
+            
+            # 구독 유도 섹션
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "🔔 SUBSCRIBE NOW - Don't Miss Daily Content!\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            if channel_info and channel_info.get('channel_url'):
+                description += f"👉 Subscribe here: {channel_info['channel_url']}\n\n"
+            description += "Why subscribe?\n"
+            description += "✅ Daily new videos with practical tips\n"
+            description += "✅ Finance, productivity, and lifestyle content\n"
+            description += "✅ Short, actionable advice (under 1 minute)\n"
+            description += "✅ AI-powered insights you can use today\n\n"
+            
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "🙏 Your Engagement Matters\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "👍 LIKE: If this video helped you, please hit the like button!\n"
+            description += "🔔 SUBSCRIBE: Get notified when we upload new videos daily!\n"
+            description += "💬 COMMENT: Share your thoughts or suggest topics you'd like to see!\n"
+            description += "📤 SHARE: Help others discover this content by sharing!\n\n"
+            
+            # 관련 영상 링크
+            if recent_videos:
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "📚 More Videos You Might Like\n"
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                for i, video in enumerate(recent_videos[:3], 1):
+                    description += f"{i}. {video['title']}\n"
+                    description += f"   👉 {video['url']}\n\n"
+            
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "🏷️ Tags\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "#shorts #finance #productivity #lifestyle #tips #money #investing #selfimprovement #ai #automation"
+        else:
+            description = f"{config.DEFAULT_DESCRIPTION}\n\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "📺 영상 정보\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += f"📅 업로드 날짜: {datetime.now().strftime('%Y년 %m월 %d일')}\n"
+            if original_topic:
+                description += f"📌 영상 주제: {original_topic}\n"
+            description += f"⏱️ 영상 길이: 약 55초 (YouTube Shorts 최적화)\n\n"
+            
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "💡 이 영상에 대해\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "이 영상은 최신 AI 기술을 활용하여 자동으로 생성되었습니다.\n"
+            description += "매일 새로운 주제로 유용한 정보와 실용적인 팁을 제공합니다.\n"
+            description += "생활에 도움이 되는 다양한 콘텐츠를 지속적으로 업로드할 예정입니다.\n\n"
+            
+            # 구독 유도 섹션
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "🔔 지금 구독하세요 - 매일 새로운 콘텐츠를 놓치지 마세요!\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            if channel_info and channel_info.get('channel_url'):
+                description += f"👉 구독하기: {channel_info['channel_url']}\n\n"
+            description += "구독하면 좋은 이유:\n"
+            description += "✅ 매일 새로운 실용적인 팁 영상\n"
+            description += "✅ 재태크, 생산성, 라이프스타일 콘텐츠\n"
+            description += "✅ 짧고 실행 가능한 조언 (1분 이내)\n"
+            description += "✅ 오늘 바로 써먹을 수 있는 AI 인사이트\n\n"
+            
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "🙏 여러분의 참여를 기다립니다\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "👍 좋아요: 영상이 도움이 되셨다면 좋아요를 눌러주세요!\n"
+            description += "🔔 구독: 매일 새로운 영상을 받아보시려면 구독해주세요!\n"
+            description += "💬 댓글: 궁금한 점이나 원하시는 주제가 있으시면 댓글로 알려주세요!\n"
+            description += "📤 공유: 친구들과 함께 보시면 더욱 좋습니다!\n\n"
+            
+            # 관련 영상 링크
+            if recent_videos:
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                description += "📚 더 많은 영상 보기\n"
+                description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                for i, video in enumerate(recent_videos[:3], 1):
+                    description += f"{i}. {video['title']}\n"
+                    description += f"   👉 {video['url']}\n\n"
+            
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "🏷️ 태그\n"
+            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            description += "#shorts #쇼츠 #ai #인공지능 #자동생성 #유용한정보 #팁 #라이프스타일 #일상 #정보 #꿀팁 #생활정보"
+            
+        return description
+
+    def _upload_to_platforms(self, video_assets: Dict[str, Any]) -> Dict[str, str]:
+        """플랫폼에 영상 업로드"""
+        print("\n📤 2단계: 플랫폼 업로드 중...")
+        
+        if self.use_multi_platform:
+            # 멀티 플랫폼 업로드
+            upload_results = self.uploader.upload_to_all(
+                video_path=video_assets['video_path'],
+                title=video_assets['title'],
+                description=video_assets['description'],
+                tags=video_assets['tags'],
+                thumbnail_path=video_assets['thumbnail_path']
+            )
+        else:
+            # YouTube만 업로드
+            video_id = self.uploader.upload_video(
+                video_path=video_assets['video_path'],
+                title=video_assets['title'],
+                description=video_assets['description'],
+                tags=video_assets['tags'],
+                privacy_status='public',
+                thumbnail_path=video_assets['thumbnail_path']
+            )
+            upload_results = {'youtube': video_id}
+            
+        return upload_results
+
+    def _update_databases(self, video_assets: Dict[str, Any], upload_results: Dict[str, str], 
+                         request_id: Optional[str], content_type: ContentType, performance_prompt: str):
+        """데이터베이스 및 상태 업데이트"""
+        print("\n💾 3단계: 데이터베이스에 저장 중...")
+        
+        video_id = upload_results.get('youtube')
+        if not video_id:
+            print("⚠️ YouTube Video ID가 없어 데이터베이스 업데이트 일부를 건너뜁니다.")
+            return
+
+        # 1. 메인 비디오 DB 저장
+        self.database.add_video(
+            video_id=video_id,
+            title=video_assets['title'],
+            topic=video_assets.get('actual_topic'),
+            prompt=performance_prompt if performance_prompt else None,
+            script=None  # 향후 추가 가능
+        )
+        
+        # 2. 사용자 요청 완료 처리
+        if request_id:
+            self.user_request_handler.mark_completed(request_id, video_id)
+            print(f"✅ 사용자 요청 완료 처리: 요청 ID {request_id} -> 영상 ID {video_id}")
+            
+        # 3. A/B 테스트 DB 저장
+        try:
+            style_info = {
+                'background_music': getattr(config, 'USE_BACKGROUND_MUSIC', True),
+                'subtitle_mode': getattr(config, 'SUBTITLE_MODE', 'full_sentence'),
+                'content_type': content_type.value if content_type else 'auto'
+            }
+            
+            style = VideoStyle.DEFAULT.value
+            if style_info.get('background_music'):
+                style = VideoStyle.MUSIC.value
+            else:
+                style = VideoStyle.NO_MUSIC.value
+            
+            self.ab_test_db.add_test(
+                video_id=video_id,
+                style=style,
+                style_config=json.dumps(style_info),
+                topic=video_assets.get('actual_topic'),
+                content_type=content_type.value if content_type else 'auto'
+            )
+            print(f"✅ A/B 테스트 데이터베이스에 저장 완료: {style}")
+        except Exception as e:
+            print(f"⚠️ A/B 테스트 데이터베이스 저장 실패: {e}")
+            
+        # 4. 주제 DB 저장
+        try:
+            from src.pipeline.topic_database import TopicDatabase, TopicSource
+            topic_db = TopicDatabase()
+            
+            source = TopicSource.MANUAL.value
+            if hasattr(self, '_last_topic_source'):
+                source = self._last_topic_source
+            
+            topic_id = topic_db.add_topic(
+                topic=video_assets.get('actual_topic'),
+                content_type=content_type.value if content_type else 'auto',
+                source=source,
+                season=self.video_generator._get_season() if hasattr(self.video_generator, '_get_season') else None
+            )
+            
+            if topic_id:
+                topic_db.link_topic_to_video(
+                    topic=video_assets.get('actual_topic'),
+                    video_id=video_id,
+                    views=0, likes=0, comments=0
+                )
+                print(f"✅ 주제 데이터베이스에 저장 완료: {video_assets.get('actual_topic')[:50]}...")
+        except Exception as e:
+            print(f"⚠️ 주제 데이터베이스 저장 실패: {e}")
+            
+        # 5. 동기화 상태 업데이트
+        print("\n🔄 동기화 상태 업데이트 중...")
+        self.sync_manager.record_upload(
+            video_id=video_id,
+            title=video_assets['title'],
+            topic=video_assets.get('actual_topic')
+        )
+        print("✅ 동기화 상태 업데이트 완료")
+        
+        # 6. 수익화 추적 추가
+        print("\n📊 4단계: 수익화 추적에 추가 중...")
+        self.monetization.add_video(
+            video_id=video_id,
+            title=video_assets['title'],
+            upload_date=datetime.now().isoformat()
+        )
+
+    def _send_notifications(self, video_assets: Dict[str, Any], video_id: str):
+        """알림 전송"""
+        try:
+            video_url = f"https://www.youtube.com/watch?v={video_id}"
+            self.notification_service.notify_video_uploaded(
+                video_id=video_id,
+                title=video_assets['title'],
+                video_url=video_url
+            )
+        except Exception as e:
+            print(f"⚠️ 알림 전송 실패: {e}")
     
     def _map_topic_source(self, source: str) -> str:
         """
