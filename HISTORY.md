@@ -4,6 +4,66 @@
 
 ## 프로젝트 개요
 
+- **2025-11-23 - 영상 업로드 완료**
+  - **제목**: The Hidden Cost of Free Shipping That's Costing You  a Year #Shorts
+  - **주제**: The Hidden Cost of Free Shipping That's Costing You  a Year
+  - **콘텐츠 타입**: auto
+  - **Video ID**: t18QLHi_GgI
+  - **URL**: https://www.youtube.com/watch?v=t18QLHi_GgI
+  - **영상 파일**: output/videos/shorts_20251122_221040.mp4
+  - **썸네일**: output/thumbnails/thumb_20251122_221329.jpg
+  - **업로드 시간**: 2025-11-23T00:02:06.682831
+
+- **2025-11-23 - 영상 업로드 완료**
+  - **제목**: Why I Stopped Saving Money and Started Investing Instead #Shorts
+  - **주제**: Why I Stopped Saving Money and Started Investing Instead
+  - **콘텐츠 타입**: auto
+  - **Video ID**: O7CbNnLi3O0
+  - **URL**: https://www.youtube.com/watch?v=O7CbNnLi3O0
+  - **영상 파일**: output/videos/shorts_20251122_220631.mp4
+  - **썸네일**: output/thumbnails/thumb_20251122_220936.jpg
+  - **업로드 시간**: 2025-11-23T00:01:56.927945
+
+- **2025-11-23 - 영상 업로드 완료**
+  - **제목**: The 5-Minute Morning Routine That Doubled My Income #Shorts
+  - **주제**: The 5-Minute Morning Routine That Doubled My Income
+  - **콘텐츠 타입**: auto
+  - **Video ID**: CUmhC0l1eIE
+  - **URL**: https://www.youtube.com/watch?v=CUmhC0l1eIE
+  - **영상 파일**: output/videos/shorts_20251122_220239.mp4
+  - **썸네일**: output/thumbnails/thumb_20251122_220551.jpg
+  - **업로드 시간**: 2025-11-23T00:01:47.373702
+
+- **2025-11-23 - 영상 업로드 완료**
+  - **제목**: How I Cut My Monthly Bills by 40% in 30 Days #Shorts
+  - **주제**: How I Cut My Monthly Bills by 40% in 30 Days
+  - **콘텐츠 타입**: auto
+  - **Video ID**: AHoVY5_0oIg
+  - **URL**: https://www.youtube.com/watch?v=AHoVY5_0oIg
+  - **영상 파일**: output/videos/shorts_20251122_215912.mp4
+  - **썸네일**: output/thumbnails/thumb_20251122_220203.jpg
+  - **업로드 시간**: 2025-11-23T00:01:36.529674
+
+- **2025-11-23 - 영상 업로드 완료**
+  - **제목**: The Side Hustle That Made Me $500 in January Alone #Shorts
+  - **주제**: The Side Hustle That Made Me $500 in January Alone
+  - **콘텐츠 타입**: auto
+  - **Video ID**: TIRNqdikhbU
+  - **URL**: https://www.youtube.com/watch?v=TIRNqdikhbU
+  - **영상 파일**: output/videos/shorts_20251122_215530.mp4
+  - **썸네일**: output/thumbnails/thumb_20251122_215827.jpg
+  - **업로드 시간**: 2025-11-23T00:01:21.936569
+
+- **2025-11-23 - 영상 업로드 완료**
+  - **제목**: Why Your December Credit Card Statement Is Lying to You #Shorts
+  - **주제**: Why Your December Credit Card Statement Is Lying to You
+  - **콘텐츠 타입**: auto
+  - **Video ID**: j9lULl6fUyI
+  - **URL**: https://www.youtube.com/watch?v=j9lULl6fUyI
+  - **영상 파일**: output/videos/shorts_20251122_215158.mp4
+  - **썸네일**: output/thumbnails/thumb_20251122_215453.jpg
+  - **업로드 시간**: 2025-11-23T00:01:06.201545
+
 **YouTube Shorts 자동 업로드 봇**: AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하고 수익화를 추적하는 봇
 
 **최근 업데이트 (2025-11-22)**:
