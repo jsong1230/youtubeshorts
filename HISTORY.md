@@ -4,6 +4,88 @@
 
 ## 프로젝트 개요
 
+### 2025-11-25 - 겨울/연말 재태크 주제 영상 일괄 생성 및 업로드
+
+**작업 내용**:
+- 겨울/연말 시즌에 맞는 재태크 주제 5개 영상 생성 및 업로드
+- 이전에 생성된 영상 1개 추가 업로드
+- 총 6개 영상이 YouTube Shorts로 업로드 완료
+
+**생성 및 업로드된 영상**:
+1. Black Friday Regret: The $500 Mistake I Made Last Year and How to Avoid It (8R8g-e-b-80, 50.60초)
+2. New Year Financial Reset: The 3 Numbers That Changed My Money Game (e-oqjbCya1A, 53.14초)
+3. Holiday Gift Budget Hack: How I Saved $300 Without Looking Cheap (oISKpLCxjZA, 45.84초)
+4. January Investment Strategy: Why Smart People Buy Stocks in the First Week (_pkdQrpFuwI, 55.13초)
+5. Year-End Expense Audit: The Hidden Subscription That Cost Me $1,200 (Pteq_ItjEHQ, 48.84초)
+6. The January Budget Reset: 5 Moves That Saved Me (WeoC6EB92Qc, 이전 생성 영상)
+
+**특징**:
+- 모든 영상이 영어로 생성 (스크립트, 자막, 썸네일)
+- 겨울/연말 시즌에 맞는 재태크/금융 주제 중심
+- 각 영상의 썸네일이 DALL-E 3로 생성되어 함께 업로드
+- 업로드 후 원본 영상 파일 및 메타데이터 파일 자동 삭제
+- 모든 업로드 기록이 데이터베이스 및 HISTORY.md에 저장됨
+
+- **2025-11-25 - 영상 업로드 완료**
+  - **제목**: The January Budget Reset: 5 Moves That Saved Me ,000 Last Year #Shorts
+  - **주제**: The January Budget Reset: 5 Moves That Saved Me ,000 Last Year
+  - **콘텐츠 타입**: auto
+  - **Video ID**: WeoC6EB92Qc
+  - **URL**: https://www.youtube.com/watch?v=WeoC6EB92Qc
+  - **영상 파일**: output/videos/shorts_20251122_214817.mp4
+  - **썸네일**: output/thumbnails/thumb_20251122_215121.jpg
+  - **업로드 시간**: 2025-11-25T00:38:29.393784
+
+- **2025-11-25 - 영상 업로드 완료**
+  - **제목**: Year-End Expense Audit: The Hidden Subscription That Cost Me $1,200 #Shorts
+  - **주제**: Year-End Expense Audit: The Hidden Subscription That Cost Me $1,200
+  - **콘텐츠 타입**: auto
+  - **Video ID**: Pteq_ItjEHQ
+  - **URL**: https://www.youtube.com/watch?v=Pteq_ItjEHQ
+  - **영상 파일**: output/videos/shorts_20251125_003157.mp4
+  - **썸네일**: output/thumbnails/thumb_20251125_003447.jpg
+  - **업로드 시간**: 2025-11-25T00:37:54.172694
+
+- **2025-11-25 - 영상 업로드 완료**
+  - **제목**: January Investment Strategy: Why Smart People Buy Stocks in the First Week #Shorts
+  - **주제**: January Investment Strategy: Why Smart People Buy Stocks in the First Week
+  - **콘텐츠 타입**: auto
+  - **Video ID**: _pkdQrpFuwI
+  - **URL**: https://www.youtube.com/watch?v=_pkdQrpFuwI
+  - **영상 파일**: output/videos/shorts_20251125_002731.mp4
+  - **썸네일**: output/thumbnails/thumb_20251125_003115.jpg
+  - **업로드 시간**: 2025-11-25T00:37:37.067776
+
+- **2025-11-25 - 영상 업로드 완료**
+  - **제목**: Holiday Gift Budget Hack: How I Saved $300 Without Looking Cheap #Shorts
+  - **주제**: Holiday Gift Budget Hack: How I Saved $300 Without Looking Cheap
+  - **콘텐츠 타입**: auto
+  - **Video ID**: oISKpLCxjZA
+  - **URL**: https://www.youtube.com/watch?v=oISKpLCxjZA
+  - **영상 파일**: output/videos/shorts_20251125_002348.mp4
+  - **썸네일**: output/thumbnails/thumb_20251125_002648.jpg
+  - **업로드 시간**: 2025-11-25T00:37:23.454412
+
+- **2025-11-25 - 영상 업로드 완료**
+  - **제목**: New Year Financial Reset: The 3 Numbers That Changed My Money Game #Shorts
+  - **주제**: New Year Financial Reset: The 3 Numbers That Changed My Money Game
+  - **콘텐츠 타입**: auto
+  - **Video ID**: e-oqjbCya1A
+  - **URL**: https://www.youtube.com/watch?v=e-oqjbCya1A
+  - **영상 파일**: output/videos/shorts_20251125_001927.mp4
+  - **썸네일**: output/thumbnails/thumb_20251125_002259.jpg
+  - **업로드 시간**: 2025-11-25T00:37:05.174273
+
+- **2025-11-25 - 영상 업로드 완료**
+  - **제목**: Black Friday Regret: The $500 Mistake I Made Last Year and How to Avoid It #Shorts
+  - **주제**: Black Friday Regret: The $500 Mistake I Made Last Year and How to Avoid It
+  - **콘텐츠 타입**: auto
+  - **Video ID**: 8R8g-e-b-80
+  - **URL**: https://www.youtube.com/watch?v=8R8g-e-b-80
+  - **영상 파일**: output/videos/shorts_20251125_001535.mp4
+  - **썸네일**: output/thumbnails/thumb_20251125_001851.jpg
+  - **업로드 시간**: 2025-11-25T00:36:50.762621
+
 - **2025-11-24 - 영상 업로드 완료**
   - **제목**: I automated emails with AI and finally slept. #Shorts
   - **주제**: I automated emails with AI and finally slept.

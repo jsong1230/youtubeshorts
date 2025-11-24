@@ -80,6 +80,14 @@
   - `yKQIb6o9_KM` → *January Financial Reset: The 30-Day Challenge That Built My Emergency Fund*
   - `rXCDiFxBL2Q` → *401k Deadline Alert: Why Contributing Before December 31st Changes Everything*
   - 총 업로드 영상: 36개, 총 조회수: 917회
+- **2025-11-25**: 겨울/연말 재태크 주제 영상 5개 생성 및 업로드
+  - `8R8g-e-b-80` → *Black Friday Regret: The $500 Mistake I Made Last Year and How to Avoid It* (50.60초)
+  - `e-oqjbCya1A` → *New Year Financial Reset: The 3 Numbers That Changed My Money Game* (53.14초)
+  - `oISKpLCxjZA` → *Holiday Gift Budget Hack: How I Saved $300 Without Looking Cheap* (45.84초)
+  - `_pkdQrpFuwI` → *January Investment Strategy: Why Smart People Buy Stocks in the First Week* (55.13초)
+  - `Pteq_ItjEHQ` → *Year-End Expense Audit: The Hidden Subscription That Cost Me $1,200* (48.84초)
+  - `WeoC6EB92Qc` → *The January Budget Reset: 5 Moves That Saved Me* (이전 생성 영상)
+  - 총 6개 영상 업로드 완료, 모든 영상 영어로 생성, 썸네일 DALL-E 3로 생성
 
 ## 🚀 단기 목표 (우선순위 높음)
 
