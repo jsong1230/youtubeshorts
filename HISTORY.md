@@ -4,6 +4,66 @@
 
 ## 프로젝트 개요
 
+- **2025-11-24 - 영상 업로드 완료**
+  - **제목**: I automated emails with AI and finally slept. #Shorts
+  - **주제**: I automated emails with AI and finally slept.
+  - **콘텐츠 타입**: auto
+  - **Video ID**: xfinnIPll8s
+  - **URL**: https://www.youtube.com/watch?v=xfinnIPll8s
+  - **영상 파일**: output/videos/shorts_20251123_235439.mp4
+  - **썸네일**: output/thumbnails/thumb_20251123_235620.jpg
+  - **업로드 시간**: 2025-11-24T00:00:38.518713
+
+- **2025-11-24 - 영상 업로드 완료**
+  - **제목**: Skipping a winter oil check can cost an engine replacement. #Shorts
+  - **주제**: Skipping a winter oil check can cost an engine replacement.
+  - **콘텐츠 타입**: auto
+  - **Video ID**: sXeekCuUT6E
+  - **URL**: https://www.youtube.com/watch?v=sXeekCuUT6E
+  - **영상 파일**: output/videos/shorts_20251123_235649.mp4
+  - **썸네일**: output/thumbnails/thumb_20251123_235841.jpg
+  - **업로드 시간**: 2025-11-24T00:00:18.050549
+
+- **2025-11-24 - 영상 업로드 완료**
+  - **제목**: Decluttered desks raise focus by 25%. #Shorts
+  - **주제**: Decluttered desks raise focus by 25%.
+  - **콘텐츠 타입**: auto
+  - **Video ID**: 7uiXBX449t0
+  - **URL**: https://www.youtube.com/watch?v=7uiXBX449t0
+  - **영상 파일**: output/videos/shorts_20251123_235222.mp4
+  - **썸네일**: output/thumbnails/thumb_20251123_235406.jpg
+  - **업로드 시간**: 2025-11-24T00:00:02.557644
+
+- **2025-11-23 - 영상 업로드 완료**
+  - **제목**: A five-minute evening review saved a burned-out manager. #Shorts
+  - **주제**: A five-minute evening review saved a burned-out manager.
+  - **콘텐츠 타입**: auto
+  - **Video ID**: crHDt--ftZk
+  - **URL**: https://www.youtube.com/watch?v=crHDt--ftZk
+  - **영상 파일**: output/videos/shorts_20251123_235004.mp4
+  - **썸네일**: output/thumbnails/thumb_20251123_235150.jpg
+  - **업로드 시간**: 2025-11-23T23:59:51.988647
+
+- **2025-11-23 - 영상 업로드 완료**
+  - **제목**: Preparing for winter is really about removing future discomfort. #Shorts
+  - **주제**: Preparing for winter is really about removing future discomfort.
+  - **콘텐츠 타입**: auto
+  - **Video ID**: eU9YwDbnyOI
+  - **URL**: https://www.youtube.com/watch?v=eU9YwDbnyOI
+  - **영상 파일**: output/videos/shorts_20251123_234745.mp4
+  - **썸네일**: output/thumbnails/thumb_20251123_234932.jpg
+  - **업로드 시간**: 2025-11-23T23:59:41.394912
+
+- **2025-11-23 - 영상 업로드 완료**
+  - **제목**: Declutter one room and watch your stress plummet #Shorts
+  - **주제**: Declutter one room and watch your stress plummet
+  - **콘텐츠 타입**: auto
+  - **Video ID**: LD-_METRnQ0
+  - **URL**: https://www.youtube.com/watch?v=LD-_METRnQ0
+  - **영상 파일**: output/videos/shorts_20251123_234514.mp4
+  - **썸네일**: output/thumbnails/thumb_20251123_234701.jpg
+  - **업로드 시간**: 2025-11-23T23:59:25.230665
+
 - **2025-11-23 - 영상 업로드 완료**
   - **제목**: The Hidden Cost of Free Shipping That's Costing You  a Year #Shorts
   - **주제**: The Hidden Cost of Free Shipping That's Costing You  a Year
