@@ -31,70 +31,124 @@ class TTSEngineBase(ABC):
     """TTS 엔진 기본 클래스"""
     
     @staticmethod
-    def _preprocess_text(text: str) -> str:
+    def _preprocess_text(text: str, lang: str = 'ko') -> str:
         """
         텍스트 전처리 (발음 정확도 향상)
-        - 숫자를 단어로 변환
+        - 숫자를 단어로 변환 (영어인 경우)
         - 약어 확장
         - 특수 문자 처리
         
         Args:
             text: 원본 텍스트
+            lang: 언어 코드 ('ko' 또는 'en')
         
         Returns:
             전처리된 텍스트
         """
-        # 숫자를 단어로 변환하는 헬퍼 함수 (0-99만 변환, 나머지는 TTS가 잘 처리)
-        def number_to_words_simple(num_str: str) -> str:
-            """0-99 사이의 숫자를 단어로 변환"""
+        # 공통 전처리: 특수 문자 정리
+        text = re.sub(r'\.{2,}', '.', text)  # 여러 점을 하나로
+        text = re.sub(r'\s+', ' ', text)  # 여러 공백을 하나로
+        text = text.strip()
+        
+        # 한국어인 경우: 영어 변환 로직 건너뛰기
+        if lang == 'ko':
+            # 한국어 전용 전처리 (필요시 추가)
+            # 예: 'AI' -> '에이아이' 등
+            abbreviations_ko = {
+                r'\bAI\b': '에이아이',
+                r'\bCEO\b': '씨이오',
+            }
+            for pattern, replacement in abbreviations_ko.items():
+                text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+            return text
+            
+        # 영어인 경우: 숫자 변환 및 약어 확장 수행
+        
+        # 숫자를 단어로 변환하는 헬퍼 함수 (확장 버전)
+        def number_to_words(num: int) -> str:
+            """숫자를 영어 단어로 변환"""
+            if num == 0:
+                return 'zero'
+            
+            # 1-19
+            ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+                   'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen']
+            
+            # 20-90
+            tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety']
+            
+            if num < 20:
+                return ones[num]
+            elif num < 100:
+                return tens[num // 10] + ('' if num % 10 == 0 else ' ' + ones[num % 10])
+            elif num < 1000:
+                return ones[num // 100] + ' hundred' + ('' if num % 100 == 0 else ' ' + number_to_words(num % 100))
+            elif num < 1000000:
+                # 100,000의 경우 "hundred thousand"로 읽히도록 특별 처리
+                if num == 100000:
+                    return 'hundred thousand'
+                elif num % 1000 == 0 and num // 1000 == 100:
+                    return 'hundred thousand'
+                return number_to_words(num // 1000) + ' thousand' + ('' if num % 1000 == 0 else ' ' + number_to_words(num % 1000))
+            elif num < 1000000000:
+                return number_to_words(num // 1000000) + ' million' + ('' if num % 1000000 == 0 else ' ' + number_to_words(num % 1000000))
+            else:
+                return number_to_words(num // 1000000000) + ' billion' + ('' if num % 1000000000 == 0 else ' ' + number_to_words(num % 1000000000))
+        
+        # 달러 금액 변환 ($30,000 → thirty thousand dollars, $100K → hundred thousand dollars)
+        def convert_dollar(match):
+            num_str = match.group(1).replace(',', '')  # 콤마 제거
+            
+            # K, M, B 단위 처리 (100K → 100000, 5M → 5000000, 2B → 2000000000)
+            multiplier = 1
+            if num_str.upper().endswith('K'):
+                multiplier = 1000
+                num_str = num_str[:-1]
+            elif num_str.upper().endswith('M'):
+                multiplier = 1000000
+                num_str = num_str[:-1]
+            elif num_str.upper().endswith('B'):
+                multiplier = 1000000000
+                num_str = num_str[:-1]
+            
+            # 빈 문자열이나 숫자가 없는 경우 원본 유지
+            if not num_str or not num_str.strip().replace('.', '').isdigit():
+                return match.group(0)
+            
+            try:
+                num = int(float(num_str)) * multiplier
+                return number_to_words(num) + ' dollars'
+            except:
+                return match.group(0)  # 변환 실패 시 원본 유지
+        
+        # 콤마를 포함한 달러 금액 매칭 ($100,000, $100K, $5M 등)
+        # 숫자로 시작해야 함 ($,000 같은 잘못된 형식 방지)
+        text = re.sub(r'\$(\d+(?:,\d{3})*(?:\.\d+)?[KMBkmb]?)', convert_dollar, text)
+        
+        # 퍼센트 변환 (30% → thirty percent)
+        def convert_percent(match):
+            num_str = match.group(1).replace(',', '')
             try:
                 num = int(float(num_str))
-                if num == 0:
-                    return 'zero'
-                elif num < 20:
-                    ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
-                           'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen']
-                    return ones[num]
-                elif num < 100:
-                    tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety']
-                    ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
-                    return tens[num // 10] + (' ' + ones[num % 10] if num % 10 > 0 else '')
+                if num < 100:
+                    return number_to_words(num) + ' percent'
                 else:
-                    # 100 이상은 그대로 유지 (TTS가 잘 처리함)
-                    return num_str
+                    return number_to_words(num) + ' percent'
             except:
-                return num_str
+                return match.group(0)
         
-        # 달러 금액 변환 ($500 → five hundred dollars, $30 → thirty dollars)
-        def convert_dollar(match):
-            num_str = match.group(1)
-            num = int(float(num_str))
-            if num < 100:
-                return number_to_words_simple(num_str) + ' dollars'
-            else:
-                # 큰 금액은 그대로 유지 (TTS가 잘 처리함)
-                return num_str + ' dollars'
+        text = re.sub(r'([\d,]+(?:\.\d+)?)%', convert_percent, text)
         
-        text = re.sub(r'\$(\d+(?:\.\d+)?)', convert_dollar, text)
-        
-        # 퍼센트 변환 (30% → thirty percent, 5% → five percent)
-        def convert_percent(match):
-            num_str = match.group(1)
-            num = int(float(num_str))
-            if num < 100:
-                return number_to_words_simple(num_str) + ' percent'
-            else:
-                return num_str + ' percent'
-        
-        text = re.sub(r'(\d+(?:\.\d+)?)%', convert_percent, text)
-        
-        # 작은 숫자 변환 (0-99만, 큰 숫자는 그대로 - TTS가 잘 처리함)
+        # 작은 숫자 변환 (0-99만)
         def convert_small_numbers(match):
             num_str = match.group(0)
-            num = int(float(num_str)) if '.' not in num_str else int(float(num_str))
-            if 0 <= num <= 99:
-                return number_to_words_simple(num_str)
-            else:
+            try:
+                num = int(num_str)
+                if 0 <= num <= 99:
+                    return number_to_words(num)
+                else:
+                    return num_str
+            except:
                 return num_str
         
         text = re.sub(r'\b(\d{1,2})\b', convert_small_numbers, text)
@@ -111,11 +165,6 @@ class TTSEngineBase(ABC):
         }
         for pattern, replacement in abbreviations.items():
             text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
-        
-        # 특수 문자 정리
-        text = re.sub(r'\.{2,}', '.', text)  # 여러 점을 하나로
-        text = re.sub(r'\s+', ' ', text)  # 여러 공백을 하나로
-        text = text.strip()
         
         return text
     
@@ -149,7 +198,7 @@ class GTTSEngine(TTSEngineBase):
         """gTTS로 음성 생성"""
         try:
             # 텍스트 전처리 (발음 정확도 향상)
-            processed_text = GTTSEngine._preprocess_text(text)
+            processed_text = GTTSEngine._preprocess_text(text, lang=lang)
             
             # gTTS는 voice와 speed 옵션이 제한적이므로 기본 설정 사용
             tts = gTTS(text=processed_text, lang=lang, slow=False)
@@ -176,7 +225,7 @@ class OpenAIEngine(TTSEngineBase):
         """OpenAI TTS로 음성 생성 (콘텐츠 타입별 voice/speed 최적화)"""
         try:
             # 텍스트 전처리 (발음 정확도 향상)
-            processed_text = OpenAIEngine._preprocess_text(text)
+            processed_text = OpenAIEngine._preprocess_text(text, lang=lang)
             
             # 콘텐츠 타입별 voice 및 speed 선택 (감정 표현 최적화)
             if voice is None:

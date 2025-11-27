@@ -2,7 +2,153 @@
 
 이 문서는 YouTube Shorts 자동 업로드 봇 프로젝트의 개발 히스토리를 기록합니다.
 
+## 최근 변경사항
+
+### 2025-11-28 - TTS 전처리 버그 수정
+
+**문제**: 제목에서 `$100,000`, `$50,000` 같은 금액이 `$,000`로 잘못 저장되는 버그 발생
+
+**원인**: TTS 전처리 정규식 `r'\$([\d,]+(?:\.\d+)?[KMBkmb]?)'`가 `$,000` 같은 잘못된 형식도 매칭하여 변환 시도
+
+**수정 내용**:
+- 정규식 개선: `r'\$(\d+(?:,\d{3})*(?:\.\d+)?[KMBkmb]?)'`로 변경하여 숫자로 시작하도록 강제
+- `convert_dollar` 함수에 검증 로직 추가: 빈 문자열이나 숫자가 없는 경우 원본 유지
+- `$,000` 같은 잘못된 형식은 매칭되지 않아 원본이 그대로 유지됨
+
+**파일**: `src/pipeline/tts_engine.py`
+
+**테스트 결과**:
+- `$100,000` → 정상 변환 (`hundred thousand dollars`)
+- `$50,000` → 정상 변환 (`fifty thousand dollars`)
+- `$,000` → 매칭되지 않아 원본 유지
+
 ## 프로젝트 개요
+
+- **2025-11-28 - 영상 업로드 완료**
+  - **제목**: It's Not That You're Lazy—It's Brain Fatigue #Shorts
+  - **주제**: It's Not That You're Lazy—It's Brain Fatigue
+  - **콘텐츠 타입**: auto
+  - **Video ID**: GTRn7Z9G2SU
+  - **URL**: https://www.youtube.com/watch?v=GTRn7Z9G2SU
+  - **영상 파일**: output/videos/shorts_20251127_224903.mp4
+  - **썸네일**: output/thumbnails/thumb_20251127_225410.jpg
+  - **업로드 시간**: 2025-11-28T00:03:42.261540
+
+- **2025-11-28 - 영상 업로드 완료**
+  - **제목**: I lost ,000 in one year because of this single mistake #Shorts
+  - **주제**: I lost ,000 in one year because of this single mistake
+  - **콘텐츠 타입**: auto
+  - **Video ID**: oshdynFnc0o
+  - **URL**: https://www.youtube.com/watch?v=oshdynFnc0o
+  - **영상 파일**: output/videos/shorts_20251127_231608.mp4
+  - **썸네일**: output/thumbnails/thumb_20251127_231931.jpg
+  - **업로드 시간**: 2025-11-28T00:03:28.904527
+
+- **2025-11-28 - 영상 업로드 완료**
+  - **제목**: I lost ,000 in Bitcoin because I made this one mistake #Shorts
+  - **주제**: I lost ,000 in Bitcoin because I made this one mistake
+  - **콘텐츠 타입**: auto
+  - **Video ID**: pSbpYa19HqA
+  - **URL**: https://www.youtube.com/watch?v=pSbpYa19HqA
+  - **영상 파일**: output/videos/shorts_20251127_235526.mp4
+  - **썸네일**: output/thumbnails/thumb_20251127_235841.jpg
+  - **업로드 시간**: 2025-11-28T00:02:43.663732
+
+- **2025-11-28 - 영상 업로드 완료**
+  - **제목**: I failed 100 times, then this one change made me successful #Shorts
+  - **주제**: I failed 100 times, then this one change made me successful
+  - **콘텐츠 타입**: auto
+  - **Video ID**: 60eCUtP-26w
+  - **URL**: https://www.youtube.com/watch?v=60eCUtP-26w
+  - **영상 파일**: output/videos/shorts_20251127_235131.mp4
+  - **썸네일**: output/thumbnails/thumb_20251127_235444.jpg
+  - **업로드 시간**: 2025-11-28T00:02:26.949738
+
+- **2025-11-28 - 영상 업로드 완료**
+  - **제목**: The morning routine that made me a millionaire #Shorts
+  - **주제**: The morning routine that made me a millionaire
+  - **콘텐츠 타입**: auto
+  - **Video ID**: 9IHclxN9LCs
+  - **URL**: https://www.youtube.com/watch?v=9IHclxN9LCs
+  - **영상 파일**: output/videos/shorts_20251127_234731.mp4
+  - **썸네일**: output/thumbnails/thumb_20251127_235046.jpg
+  - **업로드 시간**: 2025-11-28T00:02:09.750172
+
+- **2025-11-28 - 영상 업로드 완료**
+  - **제목**: Why 99% of people fail at their goals (and the 1% who don't) #Shorts
+  - **주제**: Why 99% of people fail at their goals (and the 1% who don't)
+  - **콘텐츠 타입**: auto
+  - **Video ID**: IUhqj5_yxyQ
+  - **URL**: https://www.youtube.com/watch?v=IUhqj5_yxyQ
+  - **영상 파일**: output/videos/shorts_20251127_234320.mp4
+  - **썸네일**: output/thumbnails/thumb_20251127_234636.jpg
+  - **업로드 시간**: 2025-11-28T00:01:55.756218
+
+- **2025-11-27 - 영상 업로드 완료**
+  - **제목**: I went from minimum wage to millionaire in 5 years—here's how. #Shorts
+  - **주제**: I went from minimum wage to millionaire in 5 years—here's how.
+  - **콘텐츠 타입**: auto
+  - **Video ID**: fzRECnj0zMo
+  - **URL**: https://www.youtube.com/watch?v=fzRECnj0zMo
+  - **영상 파일**: output/videos/shorts_20251126_223640.mp4
+  - **썸네일**: output/thumbnails/thumb_20251126_224026.jpg
+  - **업로드 시간**: 2025-11-27T01:16:00.688047
+
+- **2025-11-27 - 영상 업로드 완료**
+  - **제목**: He went from minimum wage to millionaire in 5 years with one strategy. #Shorts
+  - **주제**: He went from minimum wage to millionaire in 5 years with one strategy.
+  - **콘텐츠 타입**: auto
+  - **Video ID**: tRQsnQlfR1Y
+  - **URL**: https://www.youtube.com/watch?v=tRQsnQlfR1Y
+  - **영상 파일**: output/videos/shorts_20251126_222757.mp4
+  - **썸네일**: output/thumbnails/thumb_20251126_223200.jpg
+  - **업로드 시간**: 2025-11-27T01:15:59.682312
+
+- **2025-11-27 - 영상 업로드 완료**
+  - **제목**: He was rejected 100 times, then became a millionaire with one idea. #Shorts
+  - **주제**: He was rejected 100 times, then became a millionaire with one idea.
+  - **콘텐츠 타입**: auto
+  - **Video ID**: EWQ_CHSkFMg
+  - **URL**: https://www.youtube.com/watch?v=EWQ_CHSkFMg
+  - **영상 파일**: output/videos/shorts_20251126_222310.mp4
+  - **썸네일**: output/thumbnails/thumb_20251126_222721.jpg
+  - **업로드 시간**: 2025-11-27T01:15:58.907071
+
+- **2025-11-27 - 영상 업로드 완료**
+  - **제목**: The morning routine that made me a millionaire #Shorts
+  - **주제**: The morning routine that made me a millionaire
+  - **콘텐츠 타입**: auto
+  - **Video ID**: LBT8k3Vx1fg
+  - **URL**: https://www.youtube.com/watch?v=LBT8k3Vx1fg
+  - **영상 파일**: output/videos/shorts_20251126_221834.mp4
+  - **썸네일**: output/thumbnails/thumb_20251126_222233.jpg
+  - **업로드 시간**: 2025-11-27T01:15:58.211000
+
+- **2025-11-27 - 영상 업로드 완료**
+  - **제목**: Why 99% of people fail at their goals (and the 1% who don't) #Shorts
+  - **주제**: Why 99% of people fail at their goals (and the 1% who don't)
+  - **콘텐츠 타입**: auto
+  - **Video ID**: VLH3q4iDboU
+  - **URL**: https://www.youtube.com/watch?v=VLH3q4iDboU
+  - **영상 파일**: output/videos/shorts_20251126_221428.mp4
+  - **썸네일**: output/thumbnails/thumb_20251126_221757.jpg
+  - **업로드 시간**: 2025-11-27T01:15:41.630599
+
+### 2025-11-25 - 주제 리스트 개선: 더 자극적이고 클릭을 유도하는 주제로 교체
+
+**작업 내용**:
+- 모든 콘텐츠 타입(HOOK, QUOTE, STORY, FACT, SHORT_STORY)의 주제 리스트를 더 자극적이고 클릭을 유도하는 주제로 전면 교체
+- 구체적인 금액($500, $1,200, $10,000 등)과 충격적인 숫자를 포함한 주제 추가
+- 강한 감정 키워드(regret, mistake, destroyed, ruined 등) 활용
+- 개인적 경험("I lost", "I made", "My mistake" 등)을 강조한 주제 추가
+- 계절별 주제도 더 자극적이고 구체적인 내용으로 교체
+
+**개선된 주제 특징**:
+- HOOK: "I lost $50,000 in one year because of this single mistake", "The $500 purchase that destroyed my credit score" 등
+- QUOTE: "Your mess is costing you more than you think", "Debt is modern slavery. Freedom is being debt-free." 등
+- STORY: "She lost $20,000 in one year, then made it back in 6 months", "His credit score was 450. One year later, it's 780." 등
+- FACT: "The average person wastes $1,200 per year on unused subscriptions", "One financial mistake in your 20s can cost you $100,000 by retirement" 등
+- SHORT_STORY: "I lost $15,000 in one year and here's exactly how I got it back", "I found $12,000 in hidden subscriptions I forgot I had" 등
 
 ### 2025-11-25 - 겨울/연말 재태크 주제 영상 일괄 생성 및 업로드
 
