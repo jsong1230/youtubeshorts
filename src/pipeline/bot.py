@@ -394,11 +394,17 @@ class ShortsBot:
         )
         
         # 반환값 처리
+        # generate_video는 (video_path, thumbnail_path, topic, script)를 반환
         if len(result) == 4:
-            video_path, script, generated_topic, topic_source = result
-        else:
-            video_path, script, generated_topic = result
+            video_path, thumbnail_path, generated_topic, script = result
             topic_source = None
+        elif len(result) == 3:
+            video_path, script, generated_topic = result
+            thumbnail_path = None
+            topic_source = None
+        else:
+            video_path, thumbnail_path, generated_topic, script = result[:4] if len(result) >= 4 else (result[0], None, result[2] if len(result) > 2 else topic, result[1] if len(result) > 1 else None)
+            topic_source = result[4] if len(result) > 4 else None
         
         if not video_path:
             raise Exception("영상 생성 실패")
@@ -422,7 +428,7 @@ class ShortsBot:
         # 썸네일 임베딩 (이미 generate_video에서 생성됨)
         if thumbnail_path:
             print("\n🎞️ 썸네일 이미지를 영상 첫 프레임에 삽입합니다...")
-            self.video_generator.embed_thumbnail_frame(video_path, thumbnail_path)
+            self.video_generator.image_generator.embed_thumbnail_frame(video_path, thumbnail_path)
             print(f"✅ 썸네일 생성 완료: {thumbnail_path}")
         else:
             print("   ⚠️ 경고: 썸네일 생성 실패 (None 반환)")
@@ -839,17 +845,25 @@ class ShortsBot:
         except Exception as e:
             print(f"⚠️ 알림 전송 실패: {e}")
     
-    def _map_topic_source(self, source: str) -> str:
+    def _map_topic_source(self, source) -> str:
         """
         주제 출처 문자열을 TopicSource enum 값으로 매핑
         
         Args:
-            source: 주제 출처 문자열 ('seasonal', 'performance', 'exploration', 'ai_generated', 'ai_seasonal', 'youtube_trend', 'global_trend' 등)
+            source: 주제 출처 문자열 또는 리스트 ('seasonal', 'performance', 'exploration', 'ai_generated', 'ai_seasonal', 'youtube_trend', 'global_trend' 등)
         
         Returns:
             TopicSource enum 값
         """
         from src.pipeline.topic_database import TopicSource
+        
+        # source가 리스트인 경우 첫 번째 요소 사용
+        if isinstance(source, list):
+            source = source[0] if source else None
+        
+        # source가 None이거나 빈 문자열인 경우
+        if not source:
+            return TopicSource.MANUAL.value
         
         mapping = {
             'seasonal': TopicSource.SEASONAL.value,
