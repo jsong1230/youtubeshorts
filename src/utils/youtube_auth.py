@@ -5,6 +5,9 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 SCOPES = [
     'https://www.googleapis.com/auth/youtube.upload',
@@ -41,11 +44,11 @@ def get_authenticated_service():
             with open('token.json', 'w') as token:
                 token.write(creds.to_json())
             
-            print("✅ 환경 변수에서 인증 정보를 사용하여 인증 완료")
+            logger.info("✅ 환경 변수에서 인증 정보를 사용하여 인증 완료")
             
         except Exception as e:
-            print(f"⚠️ 환경 변수 인증 실패: {e}")
-            print("기존 token.json 파일을 사용합니다...")
+            logger.warning(f"⚠️ 환경 변수 인증 실패: {e}")
+            logger.info("기존 token.json 파일을 사용합니다...")
             creds = None
     
     # 환경 변수 인증 실패 시 기존 token.json 사용
@@ -61,9 +64,9 @@ def get_authenticated_service():
                         token.write(creds.to_json())
                 
                 if creds and creds.valid:
-                    print("✅ token.json 파일에서 인증 완료")
+                    logger.info("✅ token.json 파일에서 인증 완료")
             except Exception as e:
-                print(f"⚠️ token.json 인증 실패: {e}")
+                logger.warning(f"⚠️ token.json 인증 실패: {e}")
                 creds = None
     
     # 모든 인증 방법 실패 시 - OAuth2 flow 실행
@@ -71,7 +74,7 @@ def get_authenticated_service():
         # client_secrets.json이 없으면 환경 변수로 생성 시도
         if not os.path.exists('client_secrets.json'):
             if config.YOUTUBE_CLIENT_ID and config.YOUTUBE_CLIENT_SECRET:
-                print("📝 client_secrets.json 파일을 생성합니다...")
+                logger.info("📝 client_secrets.json 파일을 생성합니다...")
                 client_secrets = {
                     "installed": {
                         "client_id": config.YOUTUBE_CLIENT_ID,
@@ -89,7 +92,7 @@ def get_authenticated_service():
                 }
                 with open('client_secrets.json', 'w') as f:
                     json.dump(client_secrets, f, indent=2)
-                print("✅ client_secrets.json 파일 생성 완료")
+                logger.info("✅ client_secrets.json 파일 생성 완료")
             else:
                 raise FileNotFoundError(
                     "인증 정보가 필요합니다. 다음 중 하나를 설정하세요:\n"
@@ -97,24 +100,24 @@ def get_authenticated_service():
                     "2. client_secrets.json 파일을 프로젝트 루트에 배치"
                 )
         
-        print("\n🌐 브라우저에서 인증을 진행하세요...")
-        print("   (브라우저가 자동으로 열립니다)\n")
+        logger.info("\n🌐 브라우저에서 인증을 진행하세요...")
+        logger.info("   (브라우저가 자동으로 열립니다)\n")
         flow = InstalledAppFlow.from_client_secrets_file(
             'client_secrets.json', SCOPES)
         
         try:
             creds = flow.run_local_server(port=8080, prompt='consent', open_browser=True)
         except Exception as e1:
-            print(f"⚠️ 포트 8080 실패: {e1}")
+            logger.warning(f"⚠️ 포트 8080 실패: {e1}")
             try:
-                print("랜덤 포트로 재시도 중...")
+                logger.info("랜덤 포트로 재시도 중...")
                 creds = flow.run_local_server(port=0, prompt='consent', open_browser=True)
             except Exception as e2:
-                print(f"⚠️ 랜덤 포트 실패: {e2}")
-                print("\n📋 수동 인증 코드 입력 방식으로 전환합니다...")
+                logger.warning(f"⚠️ 랜덤 포트 실패: {e2}")
+                logger.info("\n📋 수동 인증 코드 입력 방식으로 전환합니다...")
                 auth_url, _ = flow.authorization_url(prompt='consent')
-                print(f"\n다음 URL을 브라우저에서 열어주세요:\n{auth_url}\n")
-                print("인증 후 표시되는 코드를 복사하여 아래에 붙여넣으세요:")
+                logger.info(f"\n다음 URL을 브라우저에서 열어주세요:\n{auth_url}\n")
+                logger.info("인증 후 표시되는 코드를 복사하여 아래에 붙여넣으세요:")
                 code = input("인증 코드: ").strip()
                 flow.fetch_token(code=code)
                 creds = flow.credentials
@@ -122,6 +125,6 @@ def get_authenticated_service():
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
         
-        print("✅ 인증 완료! token.json 파일이 저장되었습니다.")
+        logger.info("✅ 인증 완료! token.json 파일이 저장되었습니다.")
     
     return build(API_SERVICE_NAME, API_VERSION, credentials=creds)

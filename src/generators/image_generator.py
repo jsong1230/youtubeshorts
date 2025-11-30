@@ -14,6 +14,9 @@ from moviepy.editor import VideoFileClip, ImageClip, concatenate_videoclips
 import config
 from .video_constants import VideoConstants
 from src.utils.retry_decorator import retry
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 class ImageGenerator:
     """이미지 생성 및 관리 클래스"""
@@ -71,7 +74,7 @@ class ImageGenerator:
             canvas.save(temp_path, 'JPEG')
             return temp_path
         except Exception as e:
-            print(f"⚠️ 썸네일 캔버스 생성 실패: {e}")
+            logger.warning(f"⚠️ 썸네일 캔버스 생성 실패: {e}")
             return None
 
     def embed_thumbnail_frame(
@@ -82,10 +85,10 @@ class ImageGenerator:
     ) -> str:
         """생성된 썸네일을 영상의 첫 프레임으로 삽입."""
         if not video_path or not os.path.exists(video_path):
-            print("⚠️ 영상 파일을 찾을 수 없어 썸네일 프레임을 삽입하지 않습니다.")
+            logger.warning("⚠️ 영상 파일을 찾을 수 없어 썸네일 프레임을 삽입하지 않습니다.")
             return video_path
         if not thumbnail_path or not os.path.exists(thumbnail_path):
-            print("⚠️ 썸네일 파일이 없어 썸네일 프레임을 삽입하지 않습니다.")
+            logger.warning("⚠️ 썸네일 파일이 없어 썸네일 프레임을 삽입하지 않습니다.")
             return video_path
 
         intro_clip = None
@@ -128,9 +131,9 @@ class ImageGenerator:
             video_clip.close()
 
             os.replace(temp_output, video_path)
-            print("✅ 썸네일 이미지를 영상 첫 프레임으로 삽입했습니다.")
+            logger.info("✅ 썸네일 이미지를 영상 첫 프레임으로 삽입했습니다.")
         except Exception as e:
-            print(f"⚠️ 썸네일 프레임 삽입 실패: {e}")
+            logger.warning(f"⚠️ 썸네일 프레임 삽입 실패: {e}")
         finally:
             for clip in (combined_clip, intro_clip, video_clip):
                 try:
@@ -200,8 +203,8 @@ class ImageGenerator:
             prompt += "\n- ABSOLUTELY NO TEXT, NO LETTERS, NO NUMBERS, NO WATERMARKS in the image. The image must be text-free."
             prompt += "\n- Make it emotionally engaging and click-worthy."
 
-            print(f"🎨 DALL-E 3로 썸네일 이미지 생성 중...")
-            print(f"   프롬프트: {prompt[:100]}...")
+            logger.info(f"🎨 DALL-E 3로 썸네일 이미지 생성 중...")
+            logger.debug(f"   프롬프트: {prompt[:100]}...")
 
             # DALL-E 3 API 호출 (with retry)
             response = self._api_call_with_retry(
@@ -226,11 +229,11 @@ class ImageGenerator:
             # 1080x1920으로 리사이즈
             img = img.resize((1080, 1920), Image.Resampling.LANCZOS)
 
-            print(f"✅ DALL-E 3 썸네일 이미지 생성 완료")
+            logger.info(f"✅ DALL-E 3 썸네일 이미지 생성 완료")
             return img
 
         except Exception as e:
-            print(f"⚠️ DALL-E 3 썸네일 생성 실패: {e}")
+            logger.warning(f"⚠️ DALL-E 3 썸네일 생성 실패: {e}")
             # import traceback
             # traceback.print_exc()
             return None
@@ -266,11 +269,11 @@ class ImageGenerator:
             # DALL-E 3로 생성된 이미지 사용
             img = dalle_img
             img.save(thumbnail_path, 'JPEG', quality=95)
-            print(f"✅ 썸네일 저장 완료: {thumbnail_path}")
+            logger.info(f"✅ 썸네일 저장 완료: {thumbnail_path}")
             return thumbnail_path
         else:
             # DALL-E 3 실패 시 기존 방식 (영상 프레임에서 추출)
-            print(f"📹 영상 프레임에서 썸네일 추출 중...")
+            logger.info(f"📹 영상 프레임에서 썸네일 추출 중...")
             try:
                 # 영상에서 여러 프레임 중 가장 좋은 프레임 선택 (중간 부분)
                 # 자막이 없는 원본 배경을 사용하기 위해 영상에서 프레임 추출 후 자막 영역 제거
@@ -284,8 +287,8 @@ class ImageGenerator:
                 img.save(thumbnail_path, 'JPEG', quality=95)
                 
                 video.close()
-                print(f"✅ 영상 프레임 썸네일 저장 완료: {thumbnail_path}")
+                logger.info(f"✅ 영상 프레임 썸네일 저장 완료: {thumbnail_path}")
                 return thumbnail_path
             except Exception as e:
-                print(f"⚠️ 영상 프레임 썸네일 추출 실패: {e}")
+                logger.warning(f"⚠️ 영상 프레임 썸네일 추출 실패: {e}")
                 return None

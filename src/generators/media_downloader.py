@@ -11,6 +11,9 @@ from moviepy.editor import VideoFileClip
 
 import config
 from src.utils.retry_decorator import retry, retry_on_rate_limit
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class MediaDownloader:
@@ -62,10 +65,10 @@ class MediaDownloader:
                 # 영어가 아닌 것 제거
                 keywords = [k for k in keywords if k.isascii() and len(k) > 2]
                 if keywords:
-                    print(f"   AI 키워드 추출: {keywords}")
+                    logger.debug(f"   AI 키워드 추출: {keywords}")
                     return keywords[:5]  # 최대 5개로 증가 (다양성 확보)
             except Exception as e:
-                print(f"   AI 키워드 추출 실패, 기본 방법 사용: {e}")
+                logger.debug(f"   AI 키워드 추출 실패, 기본 방법 사용: {e}")
         
         # AI 실패 시 기본 키워드 매핑 사용
         keywords = []
@@ -204,7 +207,7 @@ class MediaDownloader:
                             selected_photo = photo
                             break
                     if not selected_photo:
-                        print(f"   ⚠️ 주제 관련 이미지 없음, 이미지 다운로드 건너뜀")
+                        logger.debug(f"   ⚠️ 주제 관련 이미지 없음, 이미지 다운로드 건너뜀")
                         return None
 
                     image_url = selected_photo['src']['large']
@@ -217,10 +220,10 @@ class MediaDownloader:
                         if img.mode != 'RGB':
                             img = img.convert('RGB')
                         img = self.resize_and_crop(img, 1080, 1920)
-                        print(f"✅ Pexels 이미지 다운로드 성공: {english_keyword}")
+                        logger.debug(f"✅ Pexels 이미지 다운로드 성공: {english_keyword}")
                         return img
         except Exception as e:
-            print(f"   Pexels API 실패: {e}")
+            logger.warning(f"   Pexels API 실패: {e}")
         return None
     
     def try_unsplash_api(
@@ -249,7 +252,7 @@ class MediaDownloader:
                             selected_photo = photo
                             break
                     if not selected_photo:
-                        print(f"   ⚠️ 주제 관련 이미지 없음, 이미지 다운로드 건너뜀")
+                        logger.debug(f"   ⚠️ 주제 관련 이미지 없음, 이미지 다운로드 건너뜀")
                         return None
 
                     image_url = selected_photo['urls']['regular']
@@ -260,9 +263,9 @@ class MediaDownloader:
                         if img.mode != 'RGB':
                             img = img.convert('RGB')
                         img = self.resize_and_crop(img, 1080, 1920)
-                        print(f"✅ Unsplash 이미지 다운로드 성공: {english_keyword}")
+                        logger.debug(f"✅ Unsplash 이미지 다운로드 성공: {english_keyword}")
                         return img
         except Exception as e:
-            print(f"   Unsplash API 실패: {e}")
+            logger.warning(f"   Unsplash API 실패: {e}")
         return None
 

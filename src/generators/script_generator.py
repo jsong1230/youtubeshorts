@@ -24,6 +24,9 @@ except ImportError:
 import config
 from .content_type import ContentType
 from src.pipeline.topic_database import TopicDatabase
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class ScriptGenerator:
@@ -96,7 +99,7 @@ class ScriptGenerator:
         
         # AI 생성이 성공하지 못한 경우
         if not self.openai_client and not self.claude_client:
-            print(f"⚠️ AI 클라이언트가 없어 기본 스크립트를 사용합니다.")
+            logger.warning("⚠️ AI 클라이언트가 없어 기본 스크립트를 사용합니다.")
             return self._build_default_script(topic, language=language)
         
         # 이 코드는 실행되지 않아야 하지만 안전을 위해 추가
@@ -112,7 +115,7 @@ class ScriptGenerator:
     ) -> List[str]:
         """Claude API로 영상 스크립트 생성"""
         if not self.claude_client:
-            print(f"⚠️ Claude 클라이언트가 없습니다.")
+            logger.warning("⚠️ Claude 클라이언트가 없습니다.")
             return self._build_default_script(topic, language=language)
         
         try:
@@ -168,32 +171,30 @@ class ScriptGenerator:
                     # 반복 구절 제거
                     filtered_sentences = self._remove_repetitive_phrases(filtered_sentences)
                     
-                    print(f"📝 Claude API로 생성된 문장 수: {len(filtered_sentences)}개 (목표: {max_sentences}개)")
+                    logger.info(f"📝 Claude API로 생성된 문장 수: {len(filtered_sentences)}개 (목표: {max_sentences}개)")
                     return filtered_sentences[:max_sentences]
                 except Exception as e:
                     last_error = e
-                    print(f"⚠️ Claude 모델 {model} 실패: {e}")
+                    logger.warning(f"⚠️ Claude 모델 {model} 실패: {e}")
                     continue
             
             # 모든 모델 실패 시
             if not response:
                 error_to_raise = last_error if last_error else Exception("모든 Claude 모델 접근 실패")
-                print(f"⚠️ 모든 Claude 모델 실패, 마지막 오류: {error_to_raise}")
+                logger.error(f"⚠️ 모든 Claude 모델 실패, 마지막 오류: {error_to_raise}")
                 raise error_to_raise
         
         except Exception as e:
-            print(f"⚠️ Claude API 스크립트 생성 실패: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"⚠️ Claude API 스크립트 생성 실패: {e}", exc_info=True)
             
             # Claude API 실패 시 OpenAI로 폴백
             if self.openai_client:
-                print(f"⚠️ Claude API 실패, OpenAI로 폴백합니다.")
+                logger.warning("⚠️ Claude API 실패, OpenAI로 폴백합니다.")
                 return self._generate_script_with_openai(
                     topic, performance_prompt, content_type, language)
             
             # AI 생성 실패 시 기본 스크립트 반환
-            print(f"⚠️ AI 스크립트 생성 실패로 기본 스크립트를 사용합니다.")
+            logger.warning("⚠️ AI 스크립트 생성 실패로 기본 스크립트를 사용합니다.")
             return self._build_default_script(topic, language=language)
     
     def _generate_script_with_openai(
@@ -265,15 +266,15 @@ class ScriptGenerator:
                     
                     # 스크립트 중복 검사
                     if self._is_script_unique(filtered_sentences):
-                        print(f"📝 OpenAI API로 생성된 문장 수: {len(filtered_sentences)}개 (목표: {max_sentences}개)")
+                        logger.info(f"📝 OpenAI API로 생성된 문장 수: {len(filtered_sentences)}개 (목표: {max_sentences}개)")
                         return filtered_sentences[:max_sentences]
                     else:
-                        print(f"⚠️ 중복 스크립트 감지, 재생성 시도 중...")
+                        logger.warning("⚠️ 중복 스크립트 감지, 재생성 시도 중...")
                         # 중복이면 다음 모델로 시도하거나 재생성
                         continue
                 except Exception as e:
                     last_error = e
-                    print(f"⚠️ OpenAI 모델 {model} 실패: {e}")
+                    logger.warning(f"⚠️ OpenAI 모델 {model} 실패: {e}")
                     continue
             
             # 모든 모델 실패 시
@@ -282,16 +283,14 @@ class ScriptGenerator:
         
         except Exception as e:
             error_msg = str(e)
-            print(f"⚠️ OpenAI API 스크립트 생성 실패: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"⚠️ OpenAI API 스크립트 생성 실패: {e}", exc_info=True)
             
             if "does not have access" in error_msg or "model_not_found" in error_msg:
-                print(f"⚠️ OpenAI API 키가 모델에 접근할 수 없습니다.")
-                print(f"   OpenAI Platform에서 모델 접근 권한을 확인하세요.")
+                logger.warning("⚠️ OpenAI API 키가 모델에 접근할 수 없습니다.")
+                logger.warning("   OpenAI Platform에서 모델 접근 권한을 확인하세요.")
         
         # AI 생성 실패 시 기본 스크립트 반환
-        print(f"⚠️ AI 스크립트 생성 실패로 기본 스크립트를 사용합니다.")
+        logger.warning("⚠️ AI 스크립트 생성 실패로 기본 스크립트를 사용합니다.")
         return self._build_default_script(topic, language=language)
     
     def _get_system_prompt(
@@ -650,7 +649,7 @@ class ScriptGenerator:
         
         # 최소 문장 수 확인
         if len(filtered_sentences) < 12:
-            print(f"⚠️ 생성된 문장이 부족합니다 ({len(filtered_sentences)}개). 원본 스크립트를 다시 확인합니다.")
+            logger.warning(f"⚠️ 생성된 문장이 부족합니다 ({len(filtered_sentences)}개). 원본 스크립트를 다시 확인합니다.")
             # 원본 텍스트에서 더 많은 문장 추출 시도
             all_sentences = re.split(r'[.!?。！？]\s+', script_text)
             for sent in all_sentences:
@@ -694,7 +693,7 @@ class ScriptGenerator:
                              if count >= 3 and phrase}  # 3회 이상 반복되는 구절
         
         if repetitive_phrases:
-            print(f"⚠️ 반복 구절 감지: {list(repetitive_phrases)[:2]}")  # 처음 2개만 출력
+            logger.debug(f"⚠️ 반복 구절 감지: {list(repetitive_phrases)[:2]}")  # 처음 2개만 출력
             
             # 반복 구절 제거
             cleaned_sentences = []
@@ -713,7 +712,7 @@ class ScriptGenerator:
                 else:
                     cleaned_sentences.append(sent)
             
-            print(f"✅ 반복 구절 제거 완료: {len(repetitive_phrases)}개 패턴")
+            logger.info(f"✅ 반복 구절 제거 완료: {len(repetitive_phrases)}개 패턴")
             return cleaned_sentences
         
         return sentences
@@ -756,18 +755,18 @@ class ScriptGenerator:
                 
                 # 해시가 동일하면 중복
                 if current_hash == recent_hash:
-                    print(f"⚠️ 중복 스크립트 발견: {current_preview[:100]}...")
+                    logger.warning(f"⚠️ 중복 스크립트 발견: {current_preview[:100]}...")
                     return False
                 
                 # 유사도 검사 (간단한 문자열 비교)
                 similarity = self._calculate_similarity(current_preview, recent_preview)
                 if similarity > 0.8:  # 80% 이상 유사하면 중복으로 간주
-                    print(f"⚠️ 유사한 스크립트 발견 (유사도: {similarity:.2%})")
+                    logger.warning(f"⚠️ 유사한 스크립트 발견 (유사도: {similarity:.2%})")
                     return False
             
             return True
         except Exception as e:
-            print(f"⚠️ 스크립트 중복 검사 실패: {e}")
+            logger.warning(f"⚠️ 스크립트 중복 검사 실패: {e}")
             return True  # 에러 시 통과
     
     def _calculate_similarity(self, text1: str, text2: str) -> float:
@@ -891,10 +890,10 @@ class ScriptGenerator:
                 if book_topics:
                     # 랜덤으로 하나 선택
                     selected_topic = random.choice(book_topics)
-                    print(f"🎯 최종 선택 주제: '{selected_topic}' (출처: book_review, 타입: {content_type.value})")
+                    logger.info(f"🎯 최종 선택 주제: '{selected_topic}' (출처: book_review, 타입: {content_type.value})")
                     return selected_topic, 'book_review'
             except Exception as e:
-                print(f"⚠️ 책 리뷰 주제 생성 실패: {e}")
+                logger.warning(f"⚠️ 책 리뷰 주제 생성 실패: {e}")
                 # 실패 시 일반 주제 생성으로 폴백
                 content_type = ContentType.AUTO
         
@@ -916,9 +915,9 @@ class ScriptGenerator:
             )
             if reddit_topics:
                 all_topics.extend([(topic, 'reddit') for topic in reddit_topics])
-                print(f"✅ Reddit에서 {len(reddit_topics)}개 주제 수집")
+                logger.info(f"✅ Reddit에서 {len(reddit_topics)}개 주제 수집")
         except Exception as e:
-            print(f"⚠️ Reddit 주제 수집 실패: {e}")
+            logger.warning(f"⚠️ Reddit 주제 수집 실패: {e}")
         
         # 2. Google Trends 주제
         try:
@@ -932,9 +931,9 @@ class ScriptGenerator:
             )
             if trends_topics:
                 all_topics.extend([(topic, 'google_trends') for topic in trends_topics])
-                print(f"✅ Google Trends에서 {len(trends_topics)}개 주제 수집")
+                logger.info(f"✅ Google Trends에서 {len(trends_topics)}개 주제 수집")
         except Exception as e:
-            print(f"⚠️ Google Trends 주제 수집 실패: {e}")
+            logger.warning(f"⚠️ Google Trends 주제 수집 실패: {e}")
         
         # 3. YouTube 트렌드 주제
         youtube_trending_topics = []
@@ -942,9 +941,9 @@ class ScriptGenerator:
             youtube_trending_topics = self.get_youtube_trending_topics()
             if youtube_trending_topics:
                 all_topics.extend([(topic, 'youtube_trend') for topic in youtube_trending_topics])
-                print(f"✅ YouTube 트렌드에서 {len(youtube_trending_topics)}개 주제 수집")
+                logger.info(f"✅ YouTube 트렌드에서 {len(youtube_trending_topics)}개 주제 수집")
         except Exception as e:
-            print(f"⚠️ YouTube 트렌드 주제 수집 실패: {e}")
+            logger.warning(f"⚠️ YouTube 트렌드 주제 수집 실패: {e}")
         
         # 4. 계절별 AI 생성 주제
         try:
@@ -953,9 +952,9 @@ class ScriptGenerator:
             )
             if ai_seasonal_topics:
                 all_topics.extend([(topic, 'ai_seasonal') for topic in ai_seasonal_topics])
-                print(f"✅ 계절별 AI 주제 {len(ai_seasonal_topics)}개 생성")
+                logger.info(f"✅ 계절별 AI 주제 {len(ai_seasonal_topics)}개 생성")
         except Exception as e:
-            print(f"⚠️ 계절별 AI 주제 생성 실패: {e}")
+            logger.warning(f"⚠️ 계절별 AI 주제 생성 실패: {e}")
         
         # 5. 일반 AI 생성 주제
         try:
@@ -964,15 +963,15 @@ class ScriptGenerator:
             )
             if ai_trend_topics:
                 all_topics.extend([(topic, 'ai_generated') for topic in ai_trend_topics])
-                print(f"✅ AI 생성 주제 {len(ai_trend_topics)}개 생성")
+                logger.info(f"✅ AI 생성 주제 {len(ai_trend_topics)}개 생성")
         except Exception as e:
-            print(f"⚠️ AI 주제 생성 실패: {e}")
+            logger.warning(f"⚠️ AI 주제 생성 실패: {e}")
         
         # 6. 성과 기반 주제
         performance_topics = self._get_high_performing_topics(content_type)
         if performance_topics:
             all_topics.extend([(topic, 'performance') for topic in performance_topics])
-            print(f"✅ 성과 기반 주제 {len(performance_topics)}개 수집")
+            logger.info(f"✅ 성과 기반 주제 {len(performance_topics)}개 수집")
         
         # 7. 채널 히스토리 기반 중복 체크
         try:
@@ -990,13 +989,13 @@ class ScriptGenerator:
             
             # 필터링된 주제만 유지
             all_topics = [(topic, source) for topic, source in all_topics if topic in filtered_topics]
-            print(f"✅ 채널 히스토리 기반 중복 체크 완료: {len(all_topics)}개 주제 남음")
+            logger.info(f"✅ 채널 히스토리 기반 중복 체크 완료: {len(all_topics)}개 주제 남음")
         except Exception as e:
-            print(f"⚠️ 채널 히스토리 중복 체크 실패: {e}")
+            logger.warning(f"⚠️ 채널 히스토리 중복 체크 실패: {e}")
         
         # 주제가 없으면 AI로 즉시 생성
         if not all_topics:
-            print("⚠️ 수집된 주제가 없어 AI로 즉시 생성합니다...")
+            logger.warning("⚠️ 수집된 주제가 없어 AI로 즉시 생성합니다...")
             try:
                 # AI로 주제 즉시 생성
                 if self.openai_client:
@@ -1021,7 +1020,7 @@ Return only the topic, no numbering or bullets."""
                     if fallback_topic:
                         all_topics = [(fallback_topic, 'ai_fallback')]
             except Exception as e:
-                print(f"⚠️ AI 주제 생성 실패: {e}")
+                logger.warning(f"⚠️ AI 주제 생성 실패: {e}")
         
         # 주제 선택 (랜덤 또는 가중치 기반)
         if all_topics:
@@ -1047,9 +1046,9 @@ Return only the topic, no numbering or bullets."""
             # 최후의 수단
             selected_topic = "Financial tips for success"
             source = "hardcoded_fallback"
-            print("⚠️ 모든 주제 수집 실패, 기본 주제 사용")
+            logger.warning("⚠️ 모든 주제 수집 실패, 기본 주제 사용")
         
-        print(f"🎯 주제 선택: '{selected_topic}' (출처: {source}, 타입: {content_type.value})")
+        logger.info(f"🎯 주제 선택: '{selected_topic}' (출처: {source}, 타입: {content_type.value})")
         
         return selected_topic, source
 
@@ -1090,7 +1089,7 @@ Return only the topic, no numbering or bullets."""
                     if time.time() - cache_time < cache_duration:
                         topics = cache_data.get('topics', [])
                         if topics:
-                            print(f"📊 캐시된 트렌드 주제 {len(topics)}개 사용")
+                            logger.debug(f"📊 캐시된 트렌드 주제 {len(topics)}개 사용")
                             return topics
             
             # 트렌드 수집
@@ -1110,11 +1109,11 @@ Return only the topic, no numbering or bullets."""
                         'timestamp': time.time(),
                         'topics': topics
                     }, f, ensure_ascii=False, indent=2)
-                print(f"✅ 트렌드 주제 {len(topics)}개 수집 및 캐시 저장")
+                logger.info(f"✅ 트렌드 주제 {len(topics)}개 수집 및 캐시 저장")
             
             return topics
         except Exception as e:
-            print(f"⚠️ YouTube 트렌드 주제 수집 실패: {e}")
+            logger.warning(f"⚠️ YouTube 트렌드 주제 수집 실패: {e}")
             return []
 
     def generate_seasonal_topics_from_trends(
@@ -1147,7 +1146,7 @@ Return only the topic, no numbering or bullets."""
                     if time.time() - cache_time < cache_duration:
                         topics = cache_data.get('topics', [])
                         if topics:
-                            print(f"📊 캐시된 {season} 계절 AI 생성 주제 {len(topics)}개 사용")
+                            logger.debug(f"📊 캐시된 {season} 계절 AI 생성 주제 {len(topics)}개 사용")
                             return topics
             
             # 계절별 트렌드 키워드 수집
@@ -1160,7 +1159,7 @@ Return only the topic, no numbering or bullets."""
             )
             
             if not keywords:
-                print(f"⚠️ {season} 계절 트렌드 키워드가 없어 AI 주제 생성을 건너뜁니다.")
+                logger.warning(f"⚠️ {season} 계절 트렌드 키워드가 없어 AI 주제 생성을 건너뜁니다.")
                 return []
             
             # AI로 계절별 주제 생성
@@ -1186,7 +1185,7 @@ Return only the topic, no numbering or bullets."""
                 if validation['is_valid']:
                     validated_topics.append(topic)
                 else:
-                    print(f"   ❌ {season} 계절 주제 검증 실패: {topic[:50]}... (점수: {validation['score']})")
+                    logger.debug(f"   ❌ {season} 계절 주제 검증 실패: {topic[:50]}... (점수: {validation['score']})")
             
             # 캐시 저장
             if validated_topics:
@@ -1198,12 +1197,12 @@ Return only the topic, no numbering or bullets."""
                         'timestamp': time.time(),
                         'topics': validated_topics
                     }, f, ensure_ascii=False, indent=2)
-                print(f"✅ {season} 계절 AI 생성 주제 {len(validated_topics)}개 검증 완료 및 캐시 저장")
+                logger.info(f"✅ {season} 계절 AI 생성 주제 {len(validated_topics)}개 검증 완료 및 캐시 저장")
             
             return validated_topics
             
         except Exception as e:
-            print(f"⚠️ {season} 계절 AI 주제 생성 실패: {e}")
+            logger.warning(f"⚠️ {season} 계절 AI 주제 생성 실패: {e}")
             return []
 
     def get_seasonal_topics_for_season(
@@ -1312,7 +1311,7 @@ Return only the topic, no numbering or bullets."""
             return validated_topics
             
         except Exception as e:
-            print(f"⚠️ AI 주제 생성 실패: {e}")
+            logger.warning(f"⚠️ AI 주제 생성 실패: {e}")
             return []
 
     def _get_high_performing_topics(self, content_type: ContentType) -> List[str]:
@@ -1331,7 +1330,7 @@ Return only the topic, no numbering or bullets."""
             )
             topics.extend(db_topics)
         except Exception as e:
-            print(f"⚠️ 주제 데이터베이스에서 성과 주제 가져오기 실패: {e}")
+            logger.warning(f"⚠️ 주제 데이터베이스에서 성과 주제 가져오기 실패: {e}")
         
         if content_type == ContentType.AUTO:
             for key, values in self.HIGH_PERFORMING_TOPICS.items():
@@ -1402,7 +1401,7 @@ Return only the topic, no numbering or bullets."""
                         selected_topic = random.choices(selected_pool, weights=topic_weights, k=1)[0]
                         return selected_topic, source
                 except Exception as e:
-                    print(f"⚠️ CPM 기반 선택 실패, 랜덤 선택으로 폴백: {e}")
+                    logger.warning(f"⚠️ CPM 기반 선택 실패, 랜덤 선택으로 폴백: {e}")
                 
                 return random.choice(selected_pool), source
 

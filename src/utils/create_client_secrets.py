@@ -3,6 +3,9 @@ client_secrets.json 파일 생성 스크립트
 """
 import json
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 client_secrets = {
     "installed": {
@@ -23,5 +26,5 @@ client_secrets = {
 with open('client_secrets.json', 'w') as f:
     json.dump(client_secrets, f, indent=2)
 
-print("✅ client_secrets.json 파일이 생성되었습니다!")
+logger.info("✅ client_secrets.json 파일이 생성되었습니다!")
 

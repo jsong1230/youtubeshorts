@@ -7,6 +7,9 @@ import re
 from abc import ABC, abstractmethod
 from enum import Enum
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     from gtts import gTTS
@@ -205,7 +208,7 @@ class GTTSEngine(TTSEngineBase):
             tts.save(output_path)
             return True
         except Exception as e:
-            print(f"⚠️ gTTS 음성 생성 실패: {e}")
+            logger.warning(f"⚠️ gTTS 음성 생성 실패: {e}")
             return False
 
 
@@ -246,10 +249,10 @@ class OpenAIEngine(TTSEngineBase):
             
             # 응답을 파일로 저장
             response.stream_to_file(output_path)
-            print(f"   🔊 TTS 생성: voice={voice}, speed={speed:.2f}, content_type={content_type}")
+            logger.debug(f"   🔊 TTS 생성: voice={voice}, speed={speed:.2f}, content_type={content_type}")
             return True
         except Exception as e:
-            print(f"⚠️ OpenAI TTS 음성 생성 실패: {e}")
+            logger.warning(f"⚠️ OpenAI TTS 음성 생성 실패: {e}")
             return False
     
     def _select_voice_for_content_type(self, content_type: str, lang: str) -> str:

@@ -8,6 +8,9 @@ import os
 from datetime import datetime
 from typing import Dict, Optional
 from pathlib import Path
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class PerformanceTracker:
@@ -50,7 +53,7 @@ class PerformanceTracker:
             with open(self.storage_path, 'w') as f:
                 json.dump(self.metrics, f, indent=2)
         except Exception as e:
-            print(f"Failed to save metrics: {e}")
+            logger.warning(f"Failed to save metrics: {e}")
     
     def track_video_generation(
         self,
@@ -212,29 +215,29 @@ class PerformanceTracker:
         """Print performance summary to console."""
         summary = self.get_summary(last_n_days)
         
-        print(f"\n📊 Performance Summary (Last {last_n_days} Days)")
-        print("=" * 60)
+        logger.info(f"\n📊 Performance Summary (Last {last_n_days} Days)")
+        logger.info("=" * 60)
         
         # Video generation stats
         vg = summary['video_generation']
-        print(f"\n🎬 Video Generation:")
-        print(f"  Total: {vg['total']}")
-        print(f"  Successful: {vg['successful']} ({vg['success_rate']*100:.1f}%)")
-        print(f"  Avg Duration: {vg['avg_duration']:.1f}s")
-        print(f"  Avg API Calls: {vg['avg_api_calls']:.1f}")
+        logger.info(f"\n🎬 Video Generation:")
+        logger.info(f"  Total: {vg['total']}")
+        logger.info(f"  Successful: {vg['successful']} ({vg['success_rate']*100:.1f}%)")
+        logger.info(f"  Avg Duration: {vg['avg_duration']:.1f}s")
+        logger.info(f"  Avg API Calls: {vg['avg_api_calls']:.1f}")
         
         # API call stats
         api = summary['api_calls']
-        print(f"\n🔌 API Calls:")
-        print(f"  Total: {api['total']}")
-        print(f"  Successful: {api['successful']} ({api['success_rate']*100:.1f}%)")
+        logger.info(f"\n🔌 API Calls:")
+        logger.info(f"  Total: {api['total']}")
+        logger.info(f"  Successful: {api['successful']} ({api['success_rate']*100:.1f}%)")
         
         # Error stats
         err = summary['errors']
-        print(f"\n❌ Errors:")
-        print(f"  Total: {err['total']}")
+        logger.info(f"\n❌ Errors:")
+        logger.info(f"  Total: {err['total']}")
         
-        print("\n" + "=" * 60)
+        logger.info("\n" + "=" * 60)
 
 
 # Global performance tracker instance

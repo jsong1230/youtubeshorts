@@ -20,6 +20,9 @@ from .video_constants import VideoConstants
 from .content_type import ContentType
 from .audio_generator import AudioGenerator
 from src.utils.retry_decorator import retry
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 class VideoCompositor:
     """영상 합성 및 편집 클래스"""
@@ -68,8 +71,8 @@ class VideoCompositor:
         sentence_audio_durations = []
         audio_clips = []
         
-        print(f"📊 영상 구성: {len(script)}개 문장")
-        print("🔊 음성 생성 및 길이 측정 중...")
+        logger.info(f"📊 영상 구성: {len(script)}개 문장")
+        logger.info("🔊 음성 생성 및 길이 측정 중...")
         
         for i, sentence in enumerate(script):
             content_type_str = content_type.value if content_type else None
@@ -79,24 +82,21 @@ class VideoCompositor:
                 actual_duration = audio_clip.duration
                 sentence_audio_durations.append(actual_duration)
                 audio_clips.append(audio_clip)
-                print(
-                    f"   문장 {i+1}: {actual_duration:.2f}초 - {sentence[:30]}...")
+                logger.debug(f"   문장 {i+1}: {actual_duration:.2f}초 - {sentence[:30]}...")
             else:
                 # 음성 생성 실패 시 기본 duration 사용
                 default_duration = duration / len(script)
                 sentence_audio_durations.append(default_duration)
-                print(
-                    f"   문장 {i+1}: 음성 생성 실패, 기본 길이 사용 ({default_duration:.2f}초)")
+                logger.warning(f"   문장 {i+1}: 음성 생성 실패, 기본 길이 사용 ({default_duration:.2f}초)")
         
         # 실제 음성 길이 합계
         total_audio_duration = sum(sentence_audio_durations)
-        print(f"📏 실제 음성 총 길이: {total_audio_duration:.2f}초")
+        logger.info(f"📏 실제 음성 총 길이: {total_audio_duration:.2f}초")
         
         # 음성 길이를 기준으로 영상 길이 조정 (60초 초과 방지)
         max_safe_duration = 58  # 60초 초과 방지를 위한 안전 마진
         if total_audio_duration > max_safe_duration:
-            print(
-                f"⚠️ 음성 길이가 {max_safe_duration}초를 초과합니다. 마지막 문장들을 제거하여 {max_safe_duration}초 이내로 맞춥니다.")
+            logger.warning(f"⚠️ 음성 길이가 {max_safe_duration}초를 초과합니다. 마지막 문장들을 제거하여 {max_safe_duration}초 이내로 맞춥니다.")
             
             # 마지막 문장부터 제거하여 58초 이내로 맞추기
             removed_count = 0
@@ -112,21 +112,17 @@ class VideoCompositor:
                     audio_clips.pop()
                 total_audio_duration -= removed_audio_duration
                 removed_count += 1
-                print(
-                    f"   문장 제거: '{removed_sentence[:30]}...' ({removed_audio_duration:.2f}초)")
+                logger.debug(f"   문장 제거: '{removed_sentence[:30]}...' ({removed_audio_duration:.2f}초)")
             
             duration = min(total_audio_duration, max_safe_duration)
-            print(
-                f"   최종 음성 길이: {total_audio_duration:.2f}초 ({removed_count}개 문장 제거됨)")
+            logger.info(f"   최종 음성 길이: {total_audio_duration:.2f}초 ({removed_count}개 문장 제거됨)")
         elif total_audio_duration > duration:
             # duration이 max_safe_duration 이하인 경우에만 조정
             duration = min(total_audio_duration, max_safe_duration)
-            print(
-                f"   영상 길이를 음성 길이에 맞춤: {duration:.2f}초 (최대 {max_safe_duration}초)")
+            logger.debug(f"   영상 길이를 음성 길이에 맞춤: {duration:.2f}초 (최대 {max_safe_duration}초)")
         elif abs(total_audio_duration - duration) > 1.0:
             # 목표 duration과 차이가 있더라도 실제 음성 길이를 그대로 사용
-            print(
-                f"   duration 정보: 실제 음성 {total_audio_duration:.2f}초, 목표 {duration}초 (스케일링하지 않음)")
+            logger.debug(f"   duration 정보: 실제 음성 {total_audio_duration:.2f}초, 목표 {duration}초 (스케일링하지 않음)")
 
         # 배경 미디어 그룹핑: 여러 배경 영상을 스크립트와 연동
         background_groups = []
@@ -204,10 +200,10 @@ class VideoCompositor:
                         downloaded_video_ids.add(video_id)  # 영상 ID 추가
                         break
                     elif retry_idx < len(retry_keywords) - 1:
-                        print(f"   ⚠️ 배경 영상 다운로드 실패 ({keyword}), 다음 키워드 시도...")
+                        logger.warning(f"   ⚠️ 배경 영상 다운로드 실패 ({keyword}), 다음 키워드 시도...")
                 
                 if not bg_video_path:
-                    print(f"   ⚠️ 배경 영상 다운로드 최종 실패 (모든 키워드 시도 완료)")
+                    logger.warning(f"   ⚠️ 배경 영상 다운로드 최종 실패 (모든 키워드 시도 완료)")
                     # 배경 영상이 없으면 에러 발생 (임의 이미지 생성 금지)
                     raise ValueError(f"그룹 {i+1}-{group_end}에 대한 배경 영상을 다운로드할 수 없습니다. 모든 키워드 시도 실패.")
             
@@ -217,8 +213,7 @@ class VideoCompositor:
             
             background_groups.append((i, group_end, bg_video_path, None))  # bg_image는 항상 None
             media_type = "영상" if bg_video_path else "이미지"
-            print(
-                f"   배경 미디어 그룹 {len(background_groups)}: 문장 {i+1}-{group_end} ({media_type}) - {group_sentence[:30]}...)")
+            logger.debug(f"   배경 미디어 그룹 {len(background_groups)}: 문장 {i+1}-{group_end} ({media_type}) - {group_sentence[:30]}...)")
 
         # 배경 영상 준비: 각 그룹의 배경 영상을 시간에 맞춰서 하나의 연속된 클립으로 합성
         total_video_duration = sum(sentence_audio_durations)
@@ -234,10 +229,10 @@ class VideoCompositor:
             
             if bg_video_path and os.path.exists(bg_video_path):
                 try:
-                    print(f"   📹 배경 영상 로드 (그룹 {gs+1}-{ge}): {bg_video_path}")
+                    logger.debug(f"   📹 배경 영상 로드 (그룹 {gs+1}-{ge}): {bg_video_path}")
                     source_video = VideoFileClip(bg_video_path)
                     source_duration = source_video.duration
-                    print(f"   원본 영상 길이: {source_duration:.2f}초, 그룹 길이: {group_duration:.2f}초")
+                    logger.debug(f"   원본 영상 길이: {source_duration:.2f}초, 그룹 길이: {group_duration:.2f}초")
                     
                     # 배경 영상을 리사이즈
                     source_video = source_video.resize((VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
@@ -258,18 +253,16 @@ class VideoCompositor:
                         # 배경 영상과 마지막 프레임 연결
                         group_clip = concatenate_videoclips([source_video, last_frame_clip])
                         source_video.close()
-                        print(f"   ✅ 배경 영상 + 마지막 프레임 확장: {source_duration:.2f}초 + {remaining_duration:.2f}초 = {group_duration:.2f}초")
+                        logger.debug(f"   ✅ 배경 영상 + 마지막 프레임 확장: {source_duration:.2f}초 + {remaining_duration:.2f}초 = {group_duration:.2f}초")
                     else:
                         # 배경 영상이 충분히 긴 경우
                         group_clip = source_video.subclip(0, group_duration)
                         source_video.close()
-                        print(f"   ✅ 배경 영상 준비 완료: {group_duration:.2f}초")
+                        logger.debug(f"   ✅ 배경 영상 준비 완료: {group_duration:.2f}초")
                     
                     background_clips.append(group_clip)
                 except Exception as e:
-                    print(f"   ❌ 배경 영상 사용 실패: {e}")
-                    import traceback
-                    traceback.print_exc()
+                    logger.error(f"   ❌ 배경 영상 사용 실패: {e}", exc_info=True)
                     raise ValueError(f"그룹 {gs+1}-{ge}의 배경 영상을 로드할 수 없습니다: {e}")
             
             # 배경 영상이 없으면 에러 발생 (임의 이미지 생성 금지)
@@ -284,7 +277,7 @@ class VideoCompositor:
                 base_video_clip = background_clips[0]
             else:
                 base_video_clip = concatenate_videoclips(background_clips)
-            print(f"   ✅ 모든 배경 영상 합성 완료: {total_video_duration:.2f}초 ({len(background_clips)}개 그룹)")
+            logger.info(f"   ✅ 모든 배경 영상 합성 완료: {total_video_duration:.2f}초 ({len(background_clips)}개 그룹)")
         else:
             # 배경이 전혀 없는 경우 (예외 상황) - 에러 발생
             raise ValueError("배경 영상이 하나도 없습니다. 배경 영상 다운로드가 필요합니다.")
@@ -295,7 +288,7 @@ class VideoCompositor:
             actual_audio_duration = sentence_audio_durations[i] if i < len(sentence_audio_durations) else sentence_audio_durations[0] if sentence_audio_durations else 3.0
             
             try:
-                print(f"   문장 {i+1} 자막 생성: {sentence[:30]}... (시작: {current_time:.2f}초)")
+                logger.debug(f"   문장 {i+1} 자막 생성: {sentence[:30]}... (시작: {current_time:.2f}초)")
                 subtitle_clip = self._create_subtitle_clip(
                     sentence, actual_audio_duration, language=language)
                 if subtitle_clip:
@@ -304,18 +297,16 @@ class VideoCompositor:
                         subtitle_clip = subtitle_clip.set_position(('center', 'bottom'))
                     subtitle_clip = subtitle_clip.set_start(current_time)
                     subtitle_clips.append(subtitle_clip)
-                    print(f"   ✅ 자막 추가: {current_time:.2f}초~{current_time + actual_audio_duration:.2f}초")
+                    logger.debug(f"   ✅ 자막 추가: {current_time:.2f}초~{current_time + actual_audio_duration:.2f}초")
                 else:
-                    print(f"   ⚠️ 자막 클립이 None입니다")
+                    logger.warning(f"   ⚠️ 자막 클립이 None입니다")
             except Exception as e:
-                print(f"   ❌ 자막 생성 실패 (계속 진행): {e}")
-                import traceback
-                traceback.print_exc()
+                logger.warning(f"   ❌ 자막 생성 실패 (계속 진행): {e}", exc_info=True)
             
             current_time += actual_audio_duration
         
         # 하나의 CompositeVideoClip으로 합성
-        print(f"🎬 하나의 연속된 영상으로 합성 중... (배경: {total_video_duration:.2f}초, 자막: {len(subtitle_clips)}개)")
+        logger.info(f"🎬 하나의 연속된 영상으로 합성 중... (배경: {total_video_duration:.2f}초, 자막: {len(subtitle_clips)}개)")
         if subtitle_clips:
             final_video = CompositeVideoClip([base_video_clip] + subtitle_clips)
         else:
@@ -329,7 +320,7 @@ class VideoCompositor:
             final_video = final_video.fx(fadein, fade_duration).fx(fadeout, fade_duration)
             final_video = final_video.set_duration(total_video_duration)
 
-        print(f"✅ 최종 영상 길이: {final_video.duration:.2f}초 (목표: {total_video_duration:.2f}초)")
+        logger.info(f"✅ 최종 영상 길이: {final_video.duration:.2f}초 (목표: {total_video_duration:.2f}초)")
         
         # 음성 추가
         if audio_clips:
@@ -340,18 +331,16 @@ class VideoCompositor:
                 actual_audio_duration = final_audio.duration
                 actual_video_duration = final_video.duration
 
-                print(
-                    f"🎵 음성 총 길이: {actual_audio_duration:.2f}초, 영상 총 길이: {actual_video_duration:.2f}초")
+                logger.debug(f"🎵 음성 총 길이: {actual_audio_duration:.2f}초, 영상 총 길이: {actual_video_duration:.2f}초")
 
                 if abs(actual_video_duration - actual_audio_duration) > 0.01:
-                    print(
-                        f"   영상 길이를 음성 길이에 맞춤: {actual_video_duration:.2f}초 -> {actual_audio_duration:.2f}초")
+                    logger.debug(f"   영상 길이를 음성 길이에 맞춤: {actual_video_duration:.2f}초 -> {actual_audio_duration:.2f}초")
                     if actual_video_duration > actual_audio_duration:
                         final_video = final_video.subclip(
                             0, actual_audio_duration)
                     else:
                         extension_needed = actual_audio_duration - actual_video_duration
-                        print(f"   영상 확장 필요: {extension_needed:.2f}초")
+                        logger.debug(f"   영상 확장 필요: {extension_needed:.2f}초")
                         extension_source = final_video.subclip(
                             max(0, actual_video_duration - VideoConstants.EXTENSION_DURATION), actual_video_duration)
                         extension_clips = []
@@ -390,19 +379,14 @@ class VideoCompositor:
                                 final_audio, background_music_path, actual_audio_duration
                             )
                     except Exception as e:
-                        print(f"⚠️ 배경 음악 추가 실패 (계속 진행): {e}")
-                        import traceback
-                        traceback.print_exc()
+                        logger.warning(f"⚠️ 배경 음악 추가 실패 (계속 진행): {e}", exc_info=True)
                 
                 final_video = final_video.set_audio(final_audio)
                 final_video = final_video.set_duration(actual_audio_duration)
                 
-                print(
-                    f"✅ 음성-영상 동기화 완료: 영상 {actual_video_duration:.2f}초, 음성 {actual_audio_duration:.2f}초 (정확히 일치)")
+                logger.info(f"✅ 음성-영상 동기화 완료: 영상 {actual_video_duration:.2f}초, 음성 {actual_audio_duration:.2f}초 (정확히 일치)")
             except Exception as e:
-                print(f"⚠️ 음성 추가 실패: {e}")
-                import traceback
-                traceback.print_exc()
+                logger.error(f"⚠️ 음성 추가 실패: {e}", exc_info=True)
         
         final_video = final_video.set_fps(VideoConstants.VIDEO_FPS)
         
@@ -427,7 +411,7 @@ class VideoCompositor:
                 final_video = final_video.subclip(0, actual_total_duration)
                 final_video = final_video.set_duration(actual_total_duration)
         
-        print(f"💾 영상 저장 중... (최종 duration: {final_video.duration:.2f}초)")
+        logger.info(f"💾 영상 저장 중... (최종 duration: {final_video.duration:.2f}초)")
         final_video.write_videofile(
             output_path,
             codec='libx264',
@@ -455,9 +439,9 @@ class VideoCompositor:
             temp_cleaner = TempCleaner(max_age_hours=1)  # 1시간 이상 된 파일만 삭제
             stats = temp_cleaner.clean_old_files(dry_run=False)
             if stats['deleted'] > 0:
-                print(f"🧹 임시 파일 자동 정리: {stats['deleted']}개 파일 삭제 ({stats['size_freed'] / 1024 / 1024:.2f} MB 해제)")
+                logger.info(f"🧹 임시 파일 자동 정리: {stats['deleted']}개 파일 삭제 ({stats['size_freed'] / 1024 / 1024:.2f} MB 해제)")
         except Exception as e:
-            print(f"   ⚠️ 임시 파일 정리 실패 (무시): {e}")
+            logger.warning(f"   ⚠️ 임시 파일 정리 실패 (무시): {e}")
         
         return output_path
 
@@ -486,7 +470,7 @@ class VideoCompositor:
             if force_keyword:
                 keyword = force_keyword
                 english_keyword = self.media_downloader.translate_keyword_to_english(force_keyword)
-                print(f"🔄 대체 키워드 사용: {force_keyword} -> {english_keyword}")
+                logger.debug(f"🔄 대체 키워드 사용: {force_keyword} -> {english_keyword}")
             else:
                 # 주제에서 키워드 추출 (우선 사용)
                 topic_keyword = None
@@ -496,8 +480,7 @@ class VideoCompositor:
                         topic_keyword = topic_keywords[0]
                         topic_english = self.media_downloader.translate_keyword_to_english(
                             topic_keyword)
-                        print(
-                            f"🎯 주제 키워드 우선 사용: {topic} -> {topic_keyword} -> {topic_english}")
+                        logger.debug(f"🎯 주제 키워드 우선 사용: {topic} -> {topic_keyword} -> {topic_english}")
 
                 # 문장에서 키워드 추출
                 sentence_keywords = self.media_downloader.extract_keywords(sentence)
@@ -506,11 +489,11 @@ class VideoCompositor:
                 if sentence_keyword:
                     keyword = sentence_keyword
                     english_keyword = self.media_downloader.translate_keyword_to_english(sentence_keyword)
-                    print(f"🎯 문장 키워드 우선 사용: {sentence} -> {keyword} -> {english_keyword}")
+                    logger.debug(f"🎯 문장 키워드 우선 사용: {sentence} -> {keyword} -> {english_keyword}")
                 elif topic_keyword:
                     keyword = topic_keyword
                     english_keyword = self.media_downloader.translate_keyword_to_english(topic_keyword)
-                    print(f"⚠️ 문장 키워드 없음, 주제 키워드 사용: {topic} -> {keyword}")
+                    logger.debug(f"⚠️ 문장 키워드 없음, 주제 키워드 사용: {topic} -> {keyword}")
                 else:
                     if topic:
                         keyword = topic
@@ -519,7 +502,7 @@ class VideoCompositor:
                         keyword = "nature"
                         english_keyword = "nature"
             
-            print(f"🎬 배경 영상 다운로드 시도: {keyword} -> {english_keyword}")
+            logger.debug(f"🎬 배경 영상 다운로드 시도: {keyword} -> {english_keyword}")
             
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' }
@@ -596,14 +579,14 @@ class VideoCompositor:
                                         for chunk in video_response.iter_content(chunk_size=1024):
                                             if chunk:
                                                 f.write(chunk)
-                                    print(f"✅ Pexels 배경 영상 다운로드 성공: {english_keyword} (ID: {video_id})")
+                                    logger.info(f"✅ Pexels 배경 영상 다운로드 성공: {english_keyword} (ID: {video_id})")
                                     return bg_video_path, video_id
                 except Exception as e:
-                    print(f"   Pexels API 실패: {e}")
+                    logger.warning(f"   Pexels API 실패: {e}")
             
             return None, None
         except Exception as e:
-            print(f"⚠️ 배경 영상 다운로드 실패: {e}")
+            logger.warning(f"⚠️ 배경 영상 다운로드 실패: {e}")
             return None, None
 
     def _draw_text_on_image(
@@ -772,10 +755,10 @@ class VideoCompositor:
                 words = key_words.split()
                 key_words = ' '.join(words[:3])
                 if key_words:
-                    print(f"   핵심 단어 추출: {sentence[:30]}... -> {key_words}")
+                    logger.debug(f"   핵심 단어 추출: {sentence[:30]}... -> {key_words}")
                     return key_words
         except Exception as e:
-            print(f"   핵심 단어 추출 실패, 기본 사용: {e}")
+            logger.debug(f"   핵심 단어 추출 실패, 기본 사용: {e}")
 
         words = sentence.split()
         if language == 'en':
@@ -865,11 +848,10 @@ class VideoCompositor:
                         if duration > fade_duration * 2:
                             txt_clip = txt_clip.fx(fadein, fade_duration).fx(fadeout, fade_duration)
                             txt_clip = txt_clip.set_duration(duration)
-                        print(
-                            f"   ✅ ImageMagick 자막 생성 성공: duration={txt_clip.duration:.2f}초, start={txt_clip.start:.2f}초 (목표: {duration:.2f}초)")
+                        logger.debug(f"   ✅ ImageMagick 자막 생성 성공: duration={txt_clip.duration:.2f}초, start={txt_clip.start:.2f}초 (목표: {duration:.2f}초)")
                         return txt_clip
                     except Exception as e1:
-                        print(f"   ImageMagick TextClip 실패, PIL로 대체: {e1}")
+                        logger.debug(f"   ImageMagick TextClip 실패, PIL로 대체: {e1}")
 
                 # PIL Fallback
                 subtitle_height = 300
@@ -977,13 +959,12 @@ class VideoCompositor:
                     txt_clip = txt_clip.fx(fadein, fade_duration).fx(fadeout, fade_duration)
                     txt_clip = txt_clip.set_duration(duration)
                 
-                print(
-                    f"   ✅ PIL 자막 생성 성공: 높이={subtitle_height}px, duration={txt_clip.duration:.2f}초, start={txt_clip.start:.2f}초 (목표: {duration:.2f}초)")
+                logger.debug(f"   ✅ PIL 자막 생성 성공: 높이={subtitle_height}px, duration={txt_clip.duration:.2f}초, start={txt_clip.start:.2f}초 (목표: {duration:.2f}초)")
                 return txt_clip
                 
             except Exception as e:
-                print(f"   ❌ 자막 생성 실패: {e}")
+                logger.warning(f"   ❌ 자막 생성 실패: {e}")
                 return None
         except Exception as e:
-            print(f"   ❌ 자막 생성 중 오류: {e}")
+            logger.error(f"   ❌ 자막 생성 중 오류: {e}", exc_info=True)
             return None

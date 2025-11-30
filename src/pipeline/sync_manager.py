@@ -9,6 +9,9 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class SyncManager:
@@ -34,7 +37,7 @@ class SyncManager:
                 with open(self.state_file, 'r', encoding='utf-8') as f:
                     self.state = json.load(f)
             except Exception as e:
-                print(f"⚠️ 상태 파일 로드 실패: {e}")
+                logger.warning(f"⚠️ 상태 파일 로드 실패: {e}")
                 self.state = {}
         else:
             self.state = {}
@@ -45,7 +48,7 @@ class SyncManager:
             with open(self.state_file, 'w', encoding='utf-8') as f:
                 json.dump(self.state, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            print(f"⚠️ 상태 파일 저장 실패: {e}")
+            logger.warning(f"⚠️ 상태 파일 저장 실패: {e}")
     
     def get_computer_id(self) -> str:
         """
@@ -156,22 +159,22 @@ class SyncManager:
     def print_sync_status(self):
         """동기화 상태 출력"""
         status = self.get_sync_status()
-        print(f"\n{'='*60}")
-        print(f"🔄 동기화 상태")
-        print(f"{'='*60}")
-        print(f"현재 컴퓨터: {status['current_computer']}")
-        print(f"오늘 업로드 여부: {'✅ 예' if status['today_uploaded'] else '❌ 아니오'}")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"🔄 동기화 상태")
+        logger.info(f"{'='*60}")
+        logger.info(f"현재 컴퓨터: {status['current_computer']}")
+        logger.info(f"오늘 업로드 여부: {'✅ 예' if status['today_uploaded'] else '❌ 아니오'}")
         
         if status['last_upload']:
             last = status['last_upload']
-            print(f"\n마지막 업로드:")
-            print(f"  - 영상 ID: {last.get('video_id', 'N/A')}")
-            print(f"  - 제목: {last.get('title', 'N/A')}")
-            print(f"  - 주제: {last.get('topic', 'N/A')}")
-            print(f"  - 컴퓨터: {last.get('computer_id', 'N/A')}")
-            print(f"  - 시간: {last.get('upload_time', 'N/A')}")
+            logger.info(f"\n마지막 업로드:")
+            logger.info(f"  - 영상 ID: {last.get('video_id', 'N/A')}")
+            logger.info(f"  - 제목: {last.get('title', 'N/A')}")
+            logger.info(f"  - 주제: {last.get('topic', 'N/A')}")
+            logger.info(f"  - 컴퓨터: {last.get('computer_id', 'N/A')}")
+            logger.info(f"  - 시간: {last.get('upload_time', 'N/A')}")
         else:
-            print(f"\n마지막 업로드: 없음")
+            logger.info(f"\n마지막 업로드: 없음")
         
-        print(f"{'='*60}\n")
+        logger.info(f"{'='*60}\n")
 

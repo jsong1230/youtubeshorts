@@ -4,6 +4,82 @@
 
 ## 최근 변경사항
 
+### 2025-11-30 - 로깅 시스템 전면 적용 및 Phase 3-4 테스트 작성 완료
+
+**주요 변경사항**:
+
+1. **로깅 시스템 전면 적용 완료**
+   - 약 200개 이상의 `print` 문을 `logger`로 교체
+   - 20개 파일에 logger import 추가 및 print 문 교체
+   - 로그 레벨 적절히 분리 (INFO, DEBUG, WARNING, ERROR)
+   - 파일 로그와 콘솔 로그 이원화 완료
+   - 교체된 파일:
+     - `src/generators/script_generator.py` (51개)
+     - `src/generators/video_compositor.py` (49개)
+     - `main.py` (35개)
+     - `src/pipeline/batch_generator.py` (24개)
+     - `src/generators/media_downloader.py` (7개)
+     - `src/utils/youtube_auth.py` (15개)
+     - `src/utils/performance_tracker.py` (14개)
+     - `src/pipeline/sync_manager.py` (15개)
+     - `src/pipeline/database.py` (10개)
+     - `src/pipeline/topic_database.py` (11개)
+     - `src/generators/audio_generator.py` (15개)
+     - `src/generators/image_generator.py` (12개)
+     - `src/pipeline/tts_engine.py` (3개)
+     - `src/generators/series_generator.py` (5개)
+     - `src/generators/user_request_handler.py` (6개)
+     - `src/utils/temp_cleaner.py` (3개)
+     - `src/web/notifications.py` (2개)
+     - `src/web/dashboard.py` (1개)
+     - `src/utils/quota_manager.py` (7개)
+     - `src/utils/create_client_secrets.py` (1개)
+   - `src/pipeline/bot.py`의 사용자 입력용 print 문 2개는 유지 (사용자 상호작용용)
+
+2. **Phase 3: Analytics 테스트 작성 완료**
+   - `test_ab_testing.py` 작성 완료 (11개 테스트 통과)
+     - A/B 테스트 데이터베이스 초기화 및 관리
+     - 테스트 항목 추가/업데이트
+     - 통계 업데이트 및 참여율 계산
+     - 최적 스타일 선택 및 성과 조회
+   - `test_monetization.py` 작성 완료 (12개 테스트 통과)
+     - 수익화 추적 초기화 및 영상 관리
+     - 통계 업데이트 및 수익 계산
+     - 전체 통계 및 월별 수익 계산
+     - 진행 상황 리포트
+   - `test_trend_collector.py` 작성 완료 (16개 테스트 통과)
+     - 트렌드 수집기 초기화
+     - YouTube 인기 Shorts 수집
+     - 키워드 추출 및 정제
+     - AI 기반 키워드 정제
+
+3. **Phase 4: Pipeline 테스트 작성 완료**
+   - `test_bot_pipeline.py` 작성 완료 (22개 테스트 통과)
+     - ShortsBot 초기화 (일반/멀티 플랫폼 모드)
+     - 성과 기반 프롬프트 생성
+     - 업로드 제약 조건 확인
+     - 영상 파라미터 결정 및 설명 생성
+     - 영상 생성 및 업로드 플로우
+     - 데이터베이스 업데이트 및 알림 전송
+     - 통계 업데이트
+
+**파일**:
+- 로깅 시스템 적용: 20개 파일 수정
+- `tests/test_ab_testing.py`: 새로 작성
+- `tests/test_monetization.py`: 새로 작성
+- `tests/test_trend_collector.py`: 새로 작성
+- `tests/test_bot_pipeline.py`: 새로 작성
+
+**테스트 결과**:
+- Phase 3: 총 39개 테스트 모두 통과
+- Phase 4: 총 22개 테스트 모두 통과
+- 전체 테스트 현황: Phase 1-4 총 89개 이상의 테스트 통과
+
+**기대 효과**:
+- 로깅 시스템으로 디버깅 및 모니터링 용이성 대폭 향상
+- 테스트 커버리지 확대로 코드 안정성 향상
+- 체계적인 로그 관리로 운영 효율성 개선
+
 ### 2025-11-30 - Phase 2: Uploaders 테스트 완료 및 전체 시스템 검증
 
 **주요 변경사항**:
@@ -157,6 +233,26 @@
 - `$,000` → 매칭되지 않아 원본 유지
 
 ## 프로젝트 개요
+
+- **2025-11-30 - 영상 업로드 완료**
+  - **제목**: Test Video
+  - **주제**: Test Topic
+  - **콘텐츠 타입**: hook
+  - **Video ID**: test_video_123
+  - **URL**: https://www.youtube.com/watch?v=test_video_123
+  - **영상 파일**: None
+  - **썸네일**: None
+  - **업로드 시간**: 2025-11-30T22:51:25.494692
+
+- **2025-11-30 - 영상 업로드 완료**
+  - **제목**: Test Topic #Shorts
+  - **주제**: Test Topic
+  - **콘텐츠 타입**: auto
+  - **Video ID**: test_video_id_123
+  - **URL**: https://www.youtube.com/watch?v=test_video_id_123
+  - **영상 파일**: /private/var/folders/zb/w2ldjmt504jcjsjhvfytbxlr0000gn/T/pytest-of-jsong/pytest-16/test_create_and_upload_success0/test_video.mp4
+  - **썸네일**: /private/var/folders/zb/w2ldjmt504jcjsjhvfytbxlr0000gn/T/pytest-of-jsong/pytest-16/test_create_and_upload_success0/test_thumbnail.jpg
+  - **업로드 시간**: 2025-11-30T22:51:25.476261
 
 - **2025-11-30 - 영상 업로드 완료**
   - **제목**: A messy closet is a money leak in disguise. #Shorts

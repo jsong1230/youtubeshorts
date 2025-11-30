@@ -276,8 +276,8 @@ class QuotaManager:
         """Print usage statistics to console."""
         stats = self.get_usage_stats()
         
-        print("\n📊 API Quota Usage Statistics")
-        print("=" * 60)
+        logger.info("\n📊 API Quota Usage Statistics")
+        logger.info("=" * 60)
         
         for service, data in stats.items():
             service_name = service.upper()
@@ -295,12 +295,12 @@ class QuotaManager:
             else:
                 status = "🟢 OK"
             
-            print(f"\n{service_name}:")
-            print(f"  Status: {status}")
-            print(f"  Current: {current}/{limit} per {window} ({percentage:.1f}%)")
-            print(f"  Total (all time): {total:,}")
+            logger.info(f"\n{service_name}:")
+            logger.info(f"  Status: {status}")
+            logger.info(f"  Current: {current}/{limit} per {window} ({percentage:.1f}%)")
+            logger.info(f"  Total (all time): {total:,}")
         
-        print("\n" + "=" * 60)
+        logger.info("\n" + "=" * 60)
 
 
 # Global quota manager instance

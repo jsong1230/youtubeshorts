@@ -7,6 +7,9 @@ import time
 from pathlib import Path
 from datetime import datetime, timedelta
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class TempCleaner:
@@ -62,11 +65,11 @@ class TempCleaner:
                             stats['size_freed'] += file_size
                             
                             if dry_run:
-                                print(f"   [DRY RUN] 삭제 예정: {file_path} ({file_size / 1024 / 1024:.2f} MB)")
+                                logger.debug(f"   [DRY RUN] 삭제 예정: {file_path} ({file_size / 1024 / 1024:.2f} MB)")
                     except Exception as e:
                         stats['errors'] += 1
                         if not dry_run:
-                            print(f"   ⚠️ 파일 삭제 실패 ({file_path}): {e}")
+                            logger.warning(f"   ⚠️ 파일 삭제 실패 ({file_path}): {e}")
             
             # 빈 디렉토리 삭제
             if not dry_run:
@@ -80,7 +83,7 @@ class TempCleaner:
                             pass
         
         except Exception as e:
-            print(f"⚠️ 임시 파일 정리 중 오류: {e}")
+            logger.warning(f"⚠️ 임시 파일 정리 중 오류: {e}")
             stats['errors'] += 1
         
         return stats

@@ -21,6 +21,9 @@ import config
 from .video_constants import VideoConstants
 from .content_type import ContentType
 from src.utils.retry_decorator import retry
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 # TTS Engine Import
 try:
@@ -35,7 +38,7 @@ class AudioGenerator:
     def __init__(self, tts_provider=None, tts_engine=None):
         if tts_engine:
             self.tts_engine = tts_engine
-            print(f"✅ TTS 엔진 주입됨: {self.tts_engine.get_provider().value}")
+            logger.info(f"✅ TTS 엔진 주입됨: {self.tts_engine.get_provider().value}")
         else:
             self.tts_engine = None
             if NEW_TTS_AVAILABLE:
@@ -47,10 +50,10 @@ class AudioGenerator:
                             tts_provider = TTSProvider(tts_provider_str.lower())
                     
                     self.tts_engine = TTSEngine(provider=tts_provider)
-                    print(f"✅ TTS 엔진 초기화: {self.tts_engine.get_provider().value}")
+                    logger.info(f"✅ TTS 엔진 초기화: {self.tts_engine.get_provider().value}")
                 except Exception as e:
-                    print(f"⚠️ TTS 엔진 초기화 실패: {e}")
-                    print("   기본 gTTS를 사용합니다.")
+                    logger.warning(f"⚠️ TTS 엔진 초기화 실패: {e}")
+                    logger.info("   기본 gTTS를 사용합니다.")
                     self.tts_engine = None
             else:
                 self.tts_engine = None
@@ -74,9 +77,9 @@ class AudioGenerator:
                 if self.tts_engine.generate(text, audio_path, lang=lang_code, content_type=content_type):
                     return audio_path
                 else:
-                    print(f"⚠️ TTS 엔진 음성 생성 실패, 기본 gTTS 시도")
+                    logger.warning(f"⚠️ TTS 엔진 음성 생성 실패, 기본 gTTS 시도")
             except Exception as e:
-                print(f"⚠️ TTS 엔진 오류: {e}, 기본 gTTS 시도")
+                logger.warning(f"⚠️ TTS 엔진 오류: {e}, 기본 gTTS 시도")
         
         # 기본 gTTS 사용 (폴백)
         if TTS_AVAILABLE:
@@ -85,10 +88,10 @@ class AudioGenerator:
                 tts.save(audio_path)
                 return audio_path
             except Exception as e:
-                print(f"⚠️ gTTS 음성 생성 실패 ({text[:20]}...): {e}")
+                logger.warning(f"⚠️ gTTS 음성 생성 실패 ({text[:20]}...): {e}")
                 return None
         else:
-            print(f"⚠️ 사용 가능한 TTS 엔진이 없습니다.")
+            logger.warning(f"⚠️ 사용 가능한 TTS 엔진이 없습니다.")
             return None
 
     def select_music_category_for_content_type(self, content_type: ContentType) -> str:
@@ -133,7 +136,7 @@ class AudioGenerator:
         try:
             # 콘텐츠 타입에 맞는 음악 카테고리 선택
             music_category = self.select_music_category_for_content_type(content_type)
-            print(f"🎵 배경 음악 선택: {music_category} (콘텐츠 타입: {content_type.value})")
+            logger.debug(f"🎵 배경 음악 선택: {music_category} (콘텐츠 타입: {content_type.value})")
             
             # 방법 1: 로컬 음악 라이브러리 확인 (우선)
             # BASE_DIR을 config에서 가져오거나 상대 경로로 계산해야 함.
@@ -161,7 +164,7 @@ class AudioGenerator:
                 
                 if music_files:
                     selected_music = random.choice(music_files)
-                    print(f"✅ 로컬 음악 라이브러리에서 선택: {os.path.basename(selected_music)}")
+                    logger.debug(f"✅ 로컬 음악 라이브러리에서 선택: {os.path.basename(selected_music)}")
                     return selected_music
             
             # 방법 2: Freesound.org API 사용 (API 키가 있는 경우)
@@ -187,19 +190,17 @@ class AudioGenerator:
                                 if music_response.status_code == 200:
                                     with open(music_path, 'wb') as f:
                                         f.write(music_response.content)
-                                    print(f"✅ Freesound에서 배경 음악 다운로드: {sound.get('name', 'Unknown')}")
+                                    logger.debug(f"✅ Freesound에서 배경 음악 다운로드: {sound.get('name', 'Unknown')}")
                                     return music_path
                 except Exception as e:
-                    print(f"   Freesound API 실패: {e}")
+                    logger.warning(f"   Freesound API 실패: {e}")
             
             # 방법 3: YouTube Audio Library 스타일의 무료 음악 (로컬 파일)
-            print(f"⚠️ 배경 음악을 찾을 수 없습니다. 로컬 음악 라이브러리(data/music/)에 음악 파일을 추가하거나 Freesound API 키를 설정하세요.")
+            logger.debug(f"⚠️ 배경 음악을 찾을 수 없습니다. 로컬 음악 라이브러리(data/music/)에 음악 파일을 추가하거나 Freesound API 키를 설정하세요.")
             return None
             
         except Exception as e:
-            print(f"⚠️ 배경 음악 다운로드 실패: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.warning(f"⚠️ 배경 음악 다운로드 실패: {e}", exc_info=True)
             return None
 
     def mix_background_music(
@@ -253,7 +254,7 @@ class AudioGenerator:
             
             # 믹싱
             final_audio = CompositeAudioClip([voice_clip, bg_music])
-            print(f"🎵 배경 음악 추가 완료 (볼륨: {music_volume*100:.0f}%)")
+            logger.debug(f"🎵 배경 음악 추가 완료 (볼륨: {music_volume*100:.0f}%)")
             
             # 원본 클립 닫기 (메모리 관리)
             # bg_music.close() # CompositeAudioClip에서 사용 중이므로 닫으면 안됨
@@ -261,5 +262,5 @@ class AudioGenerator:
             return final_audio
             
         except Exception as e:
-            print(f"⚠️ 배경 음악 믹싱 실패: {e}")
+            logger.warning(f"⚠️ 배경 음악 믹싱 실패: {e}")
             return voice_clip

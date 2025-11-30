@@ -7,6 +7,9 @@ import os
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from enum import Enum
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class TopicSource(Enum):
@@ -160,7 +163,7 @@ class TopicDatabase:
                 # 이미 존재하는 경우 기존 ID 반환
                 return self.get_topic_id(topic)
         except Exception as e:
-            print(f"⚠️ 주제 추가 실패: {e}")
+            logger.warning(f"⚠️ 주제 추가 실패: {e}")
             return None
     
     def get_topic_id(self, topic: str) -> Optional[int]:
@@ -175,7 +178,7 @@ class TopicDatabase:
             
             return row[0] if row else None
         except Exception as e:
-            print(f"⚠️ 주제 ID 조회 실패: {e}")
+            logger.warning(f"⚠️ 주제 ID 조회 실패: {e}")
             return None
     
     def update_topic(
@@ -239,7 +242,7 @@ class TopicDatabase:
             conn.close()
             return True
         except Exception as e:
-            print(f"⚠️ 주제 업데이트 실패: {e}")
+            logger.warning(f"⚠️ 주제 업데이트 실패: {e}")
             return False
     
     def delete_topic(self, topic_id: int) -> bool:
@@ -262,7 +265,7 @@ class TopicDatabase:
             conn.close()
             return True
         except Exception as e:
-            print(f"⚠️ 주제 삭제 실패: {e}")
+            logger.warning(f"⚠️ 주제 삭제 실패: {e}")
             return False
     
     def link_topic_to_video(
@@ -324,7 +327,7 @@ class TopicDatabase:
             conn.close()
             return True
         except Exception as e:
-            print(f"⚠️ 주제-영상 연결 실패: {e}")
+            logger.warning(f"⚠️ 주제-영상 연결 실패: {e}")
             return False
     
     def _update_topic_stats(self, topic_id: int, conn, cursor):
@@ -430,7 +433,7 @@ class TopicDatabase:
             
             return [dict(row) for row in rows]
         except Exception as e:
-            print(f"⚠️ 주제 조회 실패: {e}")
+            logger.warning(f"⚠️ 주제 조회 실패: {e}")
             return []
     
     def get_topics_by_cpm(
@@ -483,7 +486,7 @@ class TopicDatabase:
             
             return [dict(row) for row in rows]
         except Exception as e:
-            print(f"⚠️ CPM 기준 주제 조회 실패: {e}")
+            logger.warning(f"⚠️ CPM 기준 주제 조회 실패: {e}")
             return []
     
     def get_high_performing_topics(
@@ -585,7 +588,7 @@ class TopicDatabase:
             
             return [dict(row) for row in rows]
         except Exception as e:
-            print(f"⚠️ 주제별 영상 조회 실패: {e}")
+            logger.warning(f"⚠️ 주제별 영상 조회 실패: {e}")
             return []
     
     def get_low_performing_topics(
@@ -639,7 +642,7 @@ class TopicDatabase:
             
             return [dict(row) for row in rows]
         except Exception as e:
-            print(f"⚠️ 성과 낮은 주제 조회 실패: {e}")
+            logger.warning(f"⚠️ 성과 낮은 주제 조회 실패: {e}")
             return []
     
     def filter_low_performing_topics(
@@ -672,10 +675,10 @@ class TopicDatabase:
         for topic in low_performing:
             if self.update_topic(topic['id'], status=TopicStatus.FILTERED.value):
                 filtered_count += 1
-                print(f"   🔽 주제 필터링: {topic['topic'][:50]}... (참여율: {topic['avg_engagement_rate']:.2f}%)")
+                logger.debug(f"   🔽 주제 필터링: {topic['topic'][:50]}... (참여율: {topic['avg_engagement_rate']:.2f}%)")
         
         if filtered_count > 0:
-            print(f"✅ 성과 낮은 주제 {filtered_count}개 필터링 완료")
+            logger.info(f"✅ 성과 낮은 주제 {filtered_count}개 필터링 완료")
         
         return filtered_count
     
@@ -700,6 +703,6 @@ class TopicDatabase:
             
             return dict(row) if row else None
         except Exception as e:
-            print(f"⚠️ 주제 통계 조회 실패: {e}")
+            logger.warning(f"⚠️ 주제 통계 조회 실패: {e}")
             return None
 

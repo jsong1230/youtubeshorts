@@ -8,6 +8,9 @@ import json
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from enum import Enum
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class RequestStatus(Enum):
@@ -107,10 +110,10 @@ class UserRequestHandler:
             conn.commit()
             conn.close()
             
-            print(f"✅ 사용자 요청 추가: {topic} (우선순위: {priority})")
+            logger.info(f"✅ 사용자 요청 추가: {topic} (우선순위: {priority})")
             return request_id
         except Exception as e:
-            print(f"⚠️ 사용자 요청 추가 실패: {e}")
+            logger.warning(f"⚠️ 사용자 요청 추가 실패: {e}")
             return None
     
     def get_pending_requests(
@@ -145,7 +148,7 @@ class UserRequestHandler:
             
             return [dict(row) for row in rows]
         except Exception as e:
-            print(f"⚠️ 대기 중인 요청 조회 실패: {e}")
+            logger.warning(f"⚠️ 대기 중인 요청 조회 실패: {e}")
             return []
     
     def approve_request(self, request_id: int) -> bool:
@@ -174,7 +177,7 @@ class UserRequestHandler:
             conn.close()
             return True
         except Exception as e:
-            print(f"⚠️ 요청 승인 실패: {e}")
+            logger.warning(f"⚠️ 요청 승인 실패: {e}")
             return False
     
     def mark_in_progress(self, request_id: int) -> bool:
@@ -203,7 +206,7 @@ class UserRequestHandler:
             conn.close()
             return True
         except Exception as e:
-            print(f"⚠️ 요청 상태 업데이트 실패: {e}")
+            logger.warning(f"⚠️ 요청 상태 업데이트 실패: {e}")
             return False
     
     def mark_completed(self, request_id: int, video_id: str = None) -> bool:
@@ -233,7 +236,7 @@ class UserRequestHandler:
             conn.close()
             return True
         except Exception as e:
-            print(f"⚠️ 요청 완료 표시 실패: {e}")
+            logger.warning(f"⚠️ 요청 완료 표시 실패: {e}")
             return False
     
     def get_next_request(self) -> Optional[Dict]:

@@ -10,6 +10,9 @@ import config
 from src.generators.video_generator import AIVideoGenerator
 from src.generators.content_type import ContentType
 from src.pipeline.topic_database import TopicDatabase, TopicSource
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class SeriesType(Enum):
@@ -58,7 +61,7 @@ class SeriesGenerator:
             else:
                 return self._generate_sequential_series(main_topic, num_episodes, content_type)
         except Exception as e:
-            print(f"⚠️ 시리즈 주제 생성 실패: {e}")
+            logger.warning(f"⚠️ 시리즈 주제 생성 실패: {e}")
             return []
     
     def _generate_sequential_series(
@@ -138,7 +141,7 @@ Number of episodes: {num_episodes}"""
                     for i in range(num_episodes)
                 ]
         except Exception as e:
-            print(f"⚠️ 순차적 시리즈 생성 실패: {e}")
+            logger.warning(f"⚠️ 순차적 시리즈 생성 실패: {e}")
             return [
                 {
                     'topic': f"{main_topic} - Part {i+1}",
@@ -222,7 +225,7 @@ Number of episodes: {num_episodes}"""
                     for i in range(num_episodes)
                 ]
         except Exception as e:
-            print(f"⚠️ 주제별 시리즈 생성 실패: {e}")
+            logger.warning(f"⚠️ 주제별 시리즈 생성 실패: {e}")
             perspectives = ['Basics', 'Advanced Tips', 'Common Mistakes', 'Success Stories']
             return [
                 {
@@ -308,7 +311,7 @@ Number of episodes: {num_episodes}"""
                     for i in range(num_episodes)
                 ]
         except Exception as e:
-            print(f"⚠️ 튜토리얼 시리즈 생성 실패: {e}")
+            logger.warning(f"⚠️ 튜토리얼 시리즈 생성 실패: {e}")
             return [
                 {
                     'topic': f"Step {i+1}: {main_topic}",
@@ -393,7 +396,7 @@ Number of episodes: {num_episodes}"""
                     for i in range(num_episodes)
                 ]
         except Exception as e:
-            print(f"⚠️ 챌린지 시리즈 생성 실패: {e}")
+            logger.warning(f"⚠️ 챌린지 시리즈 생성 실패: {e}")
             return [
                 {
                     'topic': f"Day {i+1}: {main_topic} Challenge",

@@ -276,21 +276,26 @@
 
 ### 7. 엔지니어링 및 코드 품질 개선
 
-- [ ] **병렬 처리 시스템 도입**
-  - [ ] `ThreadPoolExecutor` 또는 `ProcessPoolExecutor`를 사용하여 여러 영상 동시 생성 (현재 순차 처리)
-  - [ ] 영상 생성과 업로드 프로세스 분리 (Producer-Consumer 패턴)
-- [ ] **로깅 시스템 전면 적용**
-  - [ ] 모든 `print` 문을 `logger`로 교체하여 체계적인 로그 관리
-  - [ ] 로그 레벨(INFO, DEBUG, ERROR) 적절히 분리
-  - [ ] 파일 로그와 콘솔 로그 이원화 (이미 구현됨, 적용 필요)
+- [x] **병렬 처리 시스템 도입** ❌ 취소됨 (2025-11-30)
+  - [x] 병렬 처리는 구현하지 않기로 결정 (순차 처리 유지)
+- [x] **로깅 시스템 전면 적용** ✅ (2025-11-30)
+  - [x] 주요 파일의 `print` 문을 `logger`로 교체 완료 (script_generator, video_compositor, main, batch_generator, media_downloader, youtube_auth, performance_tracker, sync_manager, database, topic_database, audio_generator, image_generator, tts_engine, series_generator, user_request_handler, temp_cleaner, notifications, quota_manager, create_client_secrets) ✅
+  - [x] 로그 레벨(INFO, DEBUG, WARNING, ERROR) 적절히 분리 ✅
+  - [x] 파일 로그와 콘솔 로그 이원화 (이미 구현됨, 적용 완료) ✅
+  - [x] 약 200개 이상의 print 문을 logger로 교체 완료 ✅
+  - [ ] bot.py의 사용자 입력용 print 문 2개는 유지 (사용자 상호작용용)
 - [x] **테스트 코드 작성** ✅ (진행 중)
   - [x] Phase 1: Core Utilities 테스트 완료 (`test_logger.py`) ✅
   - [x] Phase 2: Uploaders 테스트 완료 ✅ (2025-11-30)
     - [x] `test_youtube_uploader.py` 수정 완료 (12개 테스트 통과) ✅
     - [x] `test_multi_platform_uploader.py` 작성 완료 (9개 테스트 통과) ✅
     - [x] `test_social_upload.py` 업데이트 완료 (7개 테스트 통과) ✅
-  - [ ] Phase 3: Analytics 테스트 (`test_ab_testing.py`, `test_monetization.py`, `test_trend_collector.py`)
-  - [ ] Phase 4: Pipeline 테스트 (`test_bot_pipeline.py`)
+  - [x] Phase 3: Analytics 테스트 완료 ✅ (2025-11-30)
+    - [x] `test_ab_testing.py` 작성 완료 (11개 테스트 통과) ✅
+    - [x] `test_monetization.py` 작성 완료 (12개 테스트 통과) ✅
+    - [x] `test_trend_collector.py` 작성 완료 (16개 테스트 통과) ✅
+  - [x] Phase 4: Pipeline 테스트 완료 ✅ (2025-11-30)
+    - [x] `test_bot_pipeline.py` 작성 완료 (22개 테스트 통과) ✅
   - [ ] Phase 5: Integration 테스트 (`test_end_to_end.py`)
   - [ ] CI/CD 파이프라인 구축 (GitHub Actions)
 - [ ] **코드 리팩토링**
@@ -320,10 +325,8 @@
 
 ### 기술 관련
 
-### 기술 관련
-
-- [ ] 영상 생성 속도 최적화 (병렬 처리 도입 예정)
-- [ ] 병렬 처리로 여러 영상 동시 생성 (섹션 7로 이동됨)
+- [x] 영상 생성 속도 최적화 (병렬 처리 도입 예정) ❌ 취소됨 (2025-11-30)
+- [x] 병렬 처리로 여러 영상 동시 생성 ❌ 취소됨 (2025-11-30)
 - [x] 캐싱 시스템으로 API 호출 최소화 (주제 및 트렌드 캐싱 구현 완료) ✅
 - [x] 에러 복구 및 자동 재시도 개선 (Retry Decorator 구현 완료) ✅
 - [ ] FFmpeg 기반 무음 제거 + CFR 고정 파이프라인 검토 (GPT 제안 사항)
@@ -372,6 +375,6 @@
 
 ---
 
-**마지막 업데이트**: 2025-11-22 (배경 음악 추가, A/B 테스트 시스템, 썸네일 최적화 완료)
+**마지막 업데이트**: 2025-11-30 (로깅 시스템 전면 적용 완료, Phase 3-4 테스트 작성 완료)
 
 **다음 리뷰 예정일**: 작업 진행에 따라 업데이트

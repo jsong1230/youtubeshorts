@@ -11,6 +11,9 @@ from datetime import datetime
 from typing import Dict, List, Optional
 import requests
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class NotificationService:
@@ -66,7 +69,7 @@ class NotificationService:
             
             return True
         except Exception as e:
-            print(f"⚠️ 이메일 전송 실패: {e}")
+            logger.warning(f"⚠️ 이메일 전송 실패: {e}")
             return False
     
     def send_slack(
@@ -103,7 +106,7 @@ class NotificationService:
             
             return True
         except Exception as e:
-            print(f"⚠️ Slack 전송 실패: {e}")
+            logger.warning(f"⚠️ Slack 전송 실패: {e}")
             return False
     
     def notify_video_uploaded(

@@ -5,6 +5,9 @@ import time
 from typing import List, Optional, Dict, Any
 
 from src.pipeline.bot import ShortsBot
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class BatchVideoGenerator:
@@ -37,12 +40,12 @@ class BatchVideoGenerator:
         Returns:
             결과 딕셔너리 (성공/실패 개수, 소요 시간 등)
         """
-        print(f"\n{'='*60}")
-        print(f"🚀 순차 영상 생성 시작")
-        print(f"{'='*60}")
-        print(f"📊 생성할 영상 개수: {count}")
-        print(f"📤 업로드 여부: {'예' if upload else '아니오'}")
-        print(f"{'='*60}\n")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"🚀 순차 영상 생성 시작")
+        logger.info(f"{'='*60}")
+        logger.info(f"📊 생성할 영상 개수: {count}")
+        logger.info(f"📤 업로드 여부: {'예' if upload else '아니오'}")
+        logger.info(f"{'='*60}\n")
         
         start_time = time.time()
         self.results = []
@@ -50,7 +53,7 @@ class BatchVideoGenerator:
         # 주제 준비
         if topics:
             if len(topics) < count:
-                print(f"⚠️ 주제가 부족합니다 ({len(topics)} < {count}). 나머지는 자동 생성됩니다.")
+                logger.warning(f"⚠️ 주제가 부족합니다 ({len(topics)} < {count}). 나머지는 자동 생성됩니다.")
                 topics = topics + [None] * (count - len(topics))
         else:
             topics = [None] * count
@@ -70,17 +73,17 @@ class BatchVideoGenerator:
                 self.results.append(result)
                 
                 if result['success']:
-                    print(f"\n✅ [{index}/{count}] 영상 #{index} 생성 완료")
+                    logger.info(f"\n✅ [{index}/{count}] 영상 #{index} 생성 완료")
                     if result.get('video_path'):
-                        print(f"   📹 경로: {result['video_path']}")
+                        logger.info(f"   📹 경로: {result['video_path']}")
                     if result.get('video_id'):
-                        print(f"   🎬 YouTube ID: {result['video_id']}")
+                        logger.info(f"   🎬 YouTube ID: {result['video_id']}")
                 else:
-                    print(f"\n❌ [{index}/{count}] 영상 #{index} 생성 실패")
-                    print(f"   오류: {result.get('error', 'Unknown error')}")
+                    logger.error(f"\n❌ [{index}/{count}] 영상 #{index} 생성 실패")
+                    logger.error(f"   오류: {result.get('error', 'Unknown error')}")
                     
             except Exception as e:
-                print(f"\n❌ [{index}/{count}] 영상 #{index} 예외 발생: {e}")
+                logger.error(f"\n❌ [{index}/{count}] 영상 #{index} 예외 발생: {e}", exc_info=True)
                 self.results.append({
                     'index': index,
                     'success': False,
@@ -95,21 +98,21 @@ class BatchVideoGenerator:
         failure_count = count - success_count
         
         # 결과 출력
-        print(f"\n{'='*60}")
-        print(f"📊 순차 생성 완료")
-        print(f"{'='*60}")
-        print(f"✅ 성공: {success_count}/{count}")
-        print(f"❌ 실패: {failure_count}/{count}")
-        print(f"⏱️  총 소요 시간: {duration:.1f}초 ({duration/60:.1f}분)")
-        print(f"⚡ 평균 시간/영상: {duration/count:.1f}초")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"📊 순차 생성 완료")
+        logger.info(f"{'='*60}")
+        logger.info(f"✅ 성공: {success_count}/{count}")
+        logger.info(f"❌ 실패: {failure_count}/{count}")
+        logger.info(f"⏱️  총 소요 시간: {duration:.1f}초 ({duration/60:.1f}분)")
+        logger.info(f"⚡ 평균 시간/영상: {duration/count:.1f}초")
         
         if success_count > 0:
-            print(f"\n생성된 영상:")
+            logger.info(f"\n생성된 영상:")
             for r in self.results:
                 if r['success'] and r.get('video_path'):
-                    print(f"  - {r['video_path']}")
+                    logger.info(f"  - {r['video_path']}")
         
-        print(f"{'='*60}\n")
+        logger.info(f"{'='*60}\n")
         
         return {
             'total': count,
@@ -139,7 +142,7 @@ class BatchVideoGenerator:
             결과 딕셔너리
         """
         try:
-            print(f"\n🎬 영상 #{index} 생성 시작... (주제: {topic or '자동 생성'})")
+            logger.info(f"\n🎬 영상 #{index} 생성 시작... (주제: {topic or '자동 생성'})")
             
             # ShortsBot 인스턴스 생성
             bot = ShortsBot()
@@ -174,7 +177,7 @@ class BatchVideoGenerator:
         except Exception as e:
             import traceback
             error_msg = f"{str(e)}\n{traceback.format_exc()}"
-            print(f"\n❌ 영상 #{index} 생성 중 오류: {e}")
+            logger.error(f"\n❌ 영상 #{index} 생성 중 오류: {e}", exc_info=True)
             return {
                 'index': index,
                 'success': False,

@@ -7,6 +7,9 @@ import os
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from pathlib import Path
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class VideoDatabase:
@@ -100,15 +103,15 @@ class VideoDatabase:
             # 스크립트 저장 확인 로깅
             if script:
                 script_preview = script[:100] if len(script) > 100 else script
-                print(f"✅ 스크립트 저장됨 (길이: {len(script)}자): {script_preview}...")
+                logger.debug(f"✅ 스크립트 저장됨 (길이: {len(script)}자): {script_preview}...")
             else:
-                print(f"⚠️ 스크립트가 비어있습니다 (video_id: {video_id})")
+                logger.debug(f"⚠️ 스크립트가 비어있습니다 (video_id: {video_id})")
             
             conn.commit()
             conn.close()
             return True
         except Exception as e:
-            print(f"⚠️ 영상 추가 실패: {e}")
+            logger.warning(f"⚠️ 영상 추가 실패: {e}")
             return False
     
     def get_recent_scripts(self, limit: int = 10) -> List[str]:
@@ -137,7 +140,7 @@ class VideoDatabase:
             
             return [row[0] for row in rows if row[0]]
         except Exception as e:
-            print(f"⚠️ 최근 스크립트 조회 실패: {e}")
+            logger.warning(f"⚠️ 최근 스크립트 조회 실패: {e}")
             return []
     
     def update_video_stats(
@@ -191,7 +194,7 @@ class VideoDatabase:
                 conn.close()
                 return False
         except Exception as e:
-            print(f"⚠️ 통계 업데이트 실패: {e}")
+            logger.warning(f"⚠️ 통계 업데이트 실패: {e}")
             return False
     
     def get_top_performing_videos(
@@ -231,7 +234,7 @@ class VideoDatabase:
             
             return [dict(row) for row in rows]
         except Exception as e:
-            print(f"⚠️ 성과 좋은 영상 조회 실패: {e}")
+            logger.warning(f"⚠️ 성과 좋은 영상 조회 실패: {e}")
             return []
     
     def get_all_videos(
@@ -284,7 +287,7 @@ class VideoDatabase:
             
             return [dict(row) for row in rows]
         except Exception as e:
-            print(f"⚠️ 모든 영상 조회 실패: {e}")
+            logger.warning(f"⚠️ 모든 영상 조회 실패: {e}")
             return []
     
     def get_top_topics(
@@ -329,7 +332,7 @@ class VideoDatabase:
             
             return [dict(row) for row in rows]
         except Exception as e:
-            print(f"⚠️ 인기 주제 조회 실패: {e}")
+            logger.warning(f"⚠️ 인기 주제 조회 실패: {e}")
             return []
     
     def get_top_prompts(
@@ -369,7 +372,7 @@ class VideoDatabase:
             
             return [row[0] for row in rows if row[0]]
         except Exception as e:
-            print(f"⚠️ 성과 좋은 프롬프트 조회 실패: {e}")
+            logger.warning(f"⚠️ 성과 좋은 프롬프트 조회 실패: {e}")
             return []
     
     def get_video_by_id(self, video_id: str) -> Optional[Dict]:
@@ -393,6 +396,6 @@ class VideoDatabase:
             
             return dict(row) if row else None
         except Exception as e:
-            print(f"⚠️ 영상 조회 실패: {e}")
+            logger.warning(f"⚠️ 영상 조회 실패: {e}")
             return None
 

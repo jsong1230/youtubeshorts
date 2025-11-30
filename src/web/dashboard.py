@@ -424,7 +424,9 @@ os.makedirs(static_dir, exist_ok=True)
 
 if __name__ == '__main__':
     # 개발 서버 실행
+    from src.utils.logger import get_logger
+    logger = get_logger(__name__)
     port = int(os.getenv('DASHBOARD_PORT', '5001'))
-    print(f"🚀 대시보드 서버 시작: http://localhost:{port}")
+    logger.info(f"🚀 대시보드 서버 시작: http://localhost:{port}")
     app.run(host='0.0.0.0', port=port, debug=True)
 
