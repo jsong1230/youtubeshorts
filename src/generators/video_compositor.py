@@ -160,9 +160,31 @@ class VideoCompositor:
                     if topic_keywords and topic_keywords[0] not in retry_keywords:
                         retry_keywords.append(topic_keywords[0])
                 
-                # 3차: 일반 키워드 (winter, home, lifestyle 등)
-                general_keywords = ["home", "lifestyle", "indoor", "cozy", "warm"]
-                retry_keywords.extend(general_keywords)
+                # 3차: 주제 카테고리별 특화 키워드
+                topic_lower = (topic or "").lower()
+                category_keywords = []
+                
+                # 재태크 관련 키워드
+                if any(word in topic_lower for word in ["money", "save", "invest", "budget", "finance", "wealth", "spending", "expense", "subscription", "emergency", "fund", "401k", "roth", "ira"]):
+                    category_keywords.extend(["money", "finance", "investment", "savings", "budget", "wealth", "business"])
+                
+                # 생산성 관련 키워드
+                elif any(word in topic_lower for word in ["routine", "productivity", "focus", "workspace", "morning", "habit", "automate", "ai"]):
+                    category_keywords.extend(["productivity", "workspace", "morning", "routine", "focus", "office", "desk"])
+                
+                # 자기계발 관련 키워드
+                elif any(word in topic_lower for word in ["growth", "motivation", "success", "achievement", "goal", "mindset", "transform", "change"]):
+                    category_keywords.extend(["growth", "motivation", "success", "achievement", "goal", "inspiration", "mindset"])
+                
+                # 생활/정리 관련 키워드
+                elif any(word in topic_lower for word in ["declutter", "organize", "closet", "minimalism", "home", "lifestyle", "clean"]):
+                    category_keywords.extend(["home", "lifestyle", "minimalism", "organization", "declutter", "interior"])
+                
+                # 기본 키워드 (카테고리 매칭 실패 시)
+                if not category_keywords:
+                    category_keywords = ["home", "lifestyle", "indoor", "cozy", "warm", "nature", "abstract", "cinematic"]
+                
+                retry_keywords.extend(category_keywords)
                 
                 for retry_idx, keyword in enumerate(retry_keywords[:5]):  # 최대 5개 키워드 시도
                     bg_video_path, video_id = self._download_video_for_sentence(

@@ -4,6 +4,45 @@
 
 ## 최근 변경사항
 
+### 2025-11-30 - 주제 개선 및 업로드 전 확인 기능 추가
+
+**주요 변경사항**:
+
+1. **HOOK 타입 주제 10개 추가**
+   - 제목과 첫 문장이 눈에 띄는 강력한 HOOK 주제 추가
+   - Mindset Flip, Shocking Number, Contrarian Statement, Personal Revelation 패턴 포함
+   - CPM 점수 1.3~1.7로 설정
+   - 예시: "The $100 you save today becomes $1,000 in 10 years." (CPM: 1.7)
+
+2. **배경 영상 다양성 개선**
+   - 주제 카테고리별 특화 키워드 시스템 도입
+   - 재태크: money, finance, investment, savings, budget, wealth, business
+   - 생산성: productivity, workspace, morning, routine, focus, office, desk
+   - 자기계발: growth, motivation, success, achievement, goal, inspiration, mindset
+   - 생활/정리: home, lifestyle, minimalism, organization, declutter, interior
+   - 각 주제가 다른 카테고리 키워드를 사용하여 배경 영상 다양성 확보
+
+3. **업로드 전 사용자 확인 기능 추가**
+   - `create_and_upload` 메서드에 `auto_upload` 파라미터 추가 (기본값: False)
+   - 영상 생성 후 업로드 전에 사용자 확인 요청
+   - 제목, 주제, 영상 파일 경로, 썸네일 경로 표시 후 y/n 입력 요청
+   - 스케줄러나 명시적 업로드 명령어(`python main.py upload`)는 자동 업로드 모드 유지
+
+4. **유사성 최소화 주제 선정 시스템**
+   - 이전 업로드 영상과의 유사성 체크 로직 추가
+   - 서로 다른 카테고리(재태크, 생산성, 정리/생활) 주제 선정
+   - 최근 30일간 업로드된 영상과 비교하여 유사하지 않은 주제만 선택
+
+**파일**:
+- `src/pipeline/bot.py`: 업로드 전 확인 로직 추가
+- `src/generators/video_compositor.py`: 주제 카테고리별 키워드 시스템
+- `src/pipeline/topic_database.py`: HOOK 주제 추가
+
+**테스트 결과**:
+- 3개 영상 생성 및 업로드 성공 (재태크, 생산성, 정리/생활 각 1개)
+- 배경 영상 다양성 확인
+- 업로드 전 확인 기능 정상 동작
+
 ### 2025-11-28 - TTS 전처리 버그 수정
 
 **문제**: 제목에서 `$100,000`, `$50,000` 같은 금액이 `$,000`로 잘못 저장되는 버그 발생
@@ -23,6 +62,136 @@
 - `$,000` → 매칭되지 않아 원본 유지
 
 ## 프로젝트 개요
+
+- **2025-11-30 - 영상 업로드 완료**
+  - **제목**: A messy closet is a money leak in disguise. #Shorts
+  - **주제**: A messy closet is a money leak in disguise.
+  - **콘텐츠 타입**: hook
+  - **Video ID**: _MtYtTPwpx0
+  - **URL**: https://www.youtube.com/watch?v=_MtYtTPwpx0
+  - **영상 파일**: output/videos/shorts_20251130_120010.mp4
+  - **썸네일**: output/thumbnails/thumb_20251130_120249.jpg
+  - **업로드 시간**: 2025-11-30T12:04:15.857254
+
+- **2025-11-30 - 영상 업로드 완료**
+  - **제목**: Morning routine tips #Shorts
+  - **주제**: Morning routine tips
+  - **콘텐츠 타입**: quote
+  - **Video ID**: bqJkrhcdNzs
+  - **URL**: https://www.youtube.com/watch?v=bqJkrhcdNzs
+  - **영상 파일**: output/videos/shorts_20251130_115611.mp4
+  - **썸네일**: output/thumbnails/thumb_20251130_115836.jpg
+  - **업로드 시간**: 2025-11-30T12:00:04.456622
+
+- **2025-11-30 - 영상 업로드 완료**
+  - **제목**: The $100 you save today becomes $1,000 in 10 years. #Shorts
+  - **주제**: The $100 you save today becomes $1,000 in 10 years.
+  - **콘텐츠 타입**: hook
+  - **Video ID**: l8cB8AK-9z8
+  - **URL**: https://www.youtube.com/watch?v=l8cB8AK-9z8
+  - **영상 파일**: output/videos/shorts_20251130_115221.mp4
+  - **썸네일**: output/thumbnails/thumb_20251130_115452.jpg
+  - **업로드 시간**: 2025-11-30T11:56:07.071038
+
+- **2025-11-29 - 영상 업로드 완료**
+  - **제목**: Why Smart Investors Buy Index Funds in December #Shorts
+  - **주제**: Why Smart Investors Buy Index Funds in December
+  - **콘텐츠 타입**: auto
+  - **Video ID**: W85xa0RxETo
+  - **URL**: https://www.youtube.com/watch?v=W85xa0RxETo
+  - **영상 파일**: output/videos/shorts_20251129_221649.mp4
+  - **썸네일**: output/thumbnails/thumb_20251129_221836.jpg
+  - **업로드 시간**: 2025-11-29T22:19:26.673472
+
+- **2025-11-29 - 영상 업로드 완료**
+  - **제목**: The Hidden Tax Deduction That Could Save You $500 This Year #Shorts
+  - **주제**: The Hidden Tax Deduction That Could Save You $500 This Year
+  - **콘텐츠 타입**: auto
+  - **Video ID**: DzOOz9dGUg0
+  - **URL**: https://www.youtube.com/watch?v=DzOOz9dGUg0
+  - **영상 파일**: output/videos/shorts_20251129_221419.mp4
+  - **썸네일**: output/thumbnails/thumb_20251129_221557.jpg
+  - **업로드 시간**: 2025-11-29T22:16:43.472398
+
+- **2025-11-29 - 영상 업로드 완료**
+  - **제목**: Emergency Fund Challenge: How to Save $1,000 in 90 Days Without a Second Job #Shorts
+  - **주제**: Emergency Fund Challenge: How to Save $1,000 in 90 Days Without a Second Job
+  - **콘텐츠 타입**: auto
+  - **Video ID**: DEnaIwOiRvs
+  - **URL**: https://www.youtube.com/watch?v=DEnaIwOiRvs
+  - **영상 파일**: output/videos/shorts_20251129_221156.mp4
+  - **썸네일**: output/thumbnails/thumb_20251129_221333.jpg
+  - **업로드 시간**: 2025-11-29T22:14:15.578658
+
+- **2025-11-29 - 영상 업로드 완료**
+  - **제목**: The 30-Day No-Spend Challenge That Changed My Relationship With Money #Shorts
+  - **주제**: The 30-Day No-Spend Challenge That Changed My Relationship With Money
+  - **콘텐츠 타입**: auto
+  - **Video ID**: TTLLyJoX2jw
+  - **URL**: https://www.youtube.com/watch?v=TTLLyJoX2jw
+  - **영상 파일**: output/videos/shorts_20251129_220850.mp4
+  - **썸네일**: output/thumbnails/thumb_20251129_221035.jpg
+  - **업로드 시간**: 2025-11-29T22:11:26.616078
+
+- **2025-11-29 - 영상 업로드 완료**
+  - **제목**: 401k vs Roth IRA: The One Choice That Determines Your Retirement #Shorts
+  - **주제**: 401k vs Roth IRA: The One Choice That Determines Your Retirement
+  - **콘텐츠 타입**: auto
+  - **Video ID**: j223jh6mrog
+  - **URL**: https://www.youtube.com/watch?v=j223jh6mrog
+  - **영상 파일**: output/videos/shorts_20251129_220609.mp4
+  - **썸네일**: output/thumbnails/thumb_20251129_220751.jpg
+  - **업로드 시간**: 2025-11-29T22:08:46.049657
+
+- **2025-11-29 - 영상 업로드 완료**
+  - **제목**: The Subscription Trap: How I Saved $2,400 by Canceling These 5 Services #Shorts
+  - **주제**: The Subscription Trap: How I Saved $2,400 by Canceling These 5 Services
+  - **콘텐츠 타입**: auto
+  - **Video ID**: sKGaSFp47MI
+  - **URL**: https://www.youtube.com/watch?v=sKGaSFp47MI
+  - **영상 파일**: output/videos/shorts_20251129_220334.mp4
+  - **썸네일**: output/thumbnails/thumb_20251129_220517.jpg
+  - **업로드 시간**: 2025-11-29T22:06:04.502970
+
+- **2025-11-29 - 영상 업로드 완료**
+  - **제목**: Why Smart Investors Buy Index Funds in December #Shorts
+  - **주제**: Why Smart Investors Buy Index Funds in December
+  - **콘텐츠 타입**: auto
+  - **Video ID**: cLvEiaE0H8U
+  - **URL**: https://www.youtube.com/watch?v=cLvEiaE0H8U
+  - **영상 파일**: output/videos/shorts_20251129_220101.mp4
+  - **썸네일**: output/thumbnails/thumb_20251129_220241.jpg
+  - **업로드 시간**: 2025-11-29T22:03:29.204870
+
+- **2025-11-29 - 영상 업로드 완료**
+  - **제목**: The Hidden Tax Deduction That Could Save You $500 This Year #Shorts
+  - **주제**: The Hidden Tax Deduction That Could Save You $500 This Year
+  - **콘텐츠 타입**: auto
+  - **Video ID**: jCJ5DGge5l0
+  - **URL**: https://www.youtube.com/watch?v=jCJ5DGge5l0
+  - **영상 파일**: output/videos/shorts_20251129_215832.mp4
+  - **썸네일**: output/thumbnails/thumb_20251129_220008.jpg
+  - **업로드 시간**: 2025-11-29T22:00:56.851025
+
+- **2025-11-29 - 영상 업로드 완료**
+  - **제목**: Emergency Fund Challenge: How to Save $1,000 in 90 Days Without a Second Job #Shorts
+  - **주제**: Emergency Fund Challenge: How to Save $1,000 in 90 Days Without a Second Job
+  - **콘텐츠 타입**: auto
+  - **Video ID**: ZWpxDTlairM
+  - **URL**: https://www.youtube.com/watch?v=ZWpxDTlairM
+  - **영상 파일**: output/videos/shorts_20251129_215557.mp4
+  - **썸네일**: output/thumbnails/thumb_20251129_215737.jpg
+  - **업로드 시간**: 2025-11-29T21:58:25.604438
+
+- **2025-11-29 - 영상 업로드 완료**
+  - **제목**: Emergency Fund Challenge: How to Save $1,000 in 90 Days Without a Second Job #Shorts
+  - **주제**: Emergency Fund Challenge: How to Save $1,000 in 90 Days Without a Second Job
+  - **콘텐츠 타입**: auto
+  - **Video ID**: 4jIBbg2r5ww
+  - **URL**: https://www.youtube.com/watch?v=4jIBbg2r5ww
+  - **영상 파일**: output/videos/shorts_20251129_215312.mp4
+  - **썸네일**: output/thumbnails/thumb_20251129_215451.jpg
+  - **업로드 시간**: 2025-11-29T21:55:38.499020
 
 - **2025-11-28 - 영상 업로드 완료**
   - **제목**: It's Not That You're Lazy—It's Brain Fatigue #Shorts

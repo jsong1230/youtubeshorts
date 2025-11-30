@@ -95,7 +95,8 @@ def main():
             else:
                 # 주제로 새로 생성 및 업로드
                 topic = args[0] if args else None
-                bot.create_and_upload(topic=topic, force=force)
+                # upload 명령어는 자동 업로드 (사용자가 명시적으로 업로드를 요청)
+                bot.create_and_upload(topic=topic, force=force, auto_upload=True)
 
         elif command == 'stats':
             # 통계 업데이트 및 리포트
@@ -106,7 +107,7 @@ def main():
             bot.monetization.print_report()
 
         elif command == 'schedule':
-            # 스케줄러 시작
+            # 스케줄러 시작 (자동 업로드 모드)
             bot.schedule_daily_upload()
             bot.run_scheduler()
 
@@ -196,8 +197,8 @@ def main():
             print(f"  python main.py analyze        - YouTube Shorts 성과 분석 리포트 출력")
             print(f"  python main.py quota-status   - API 할당량 사용 현황 확인")
     else:
-        # 기본: 즉시 업로드
-        bot.create_and_upload()
+        # 기본: 영상 생성 후 업로드 전 확인 요청
+        bot.create_and_upload(auto_upload=False)
 
 
 if __name__ == '__main__':

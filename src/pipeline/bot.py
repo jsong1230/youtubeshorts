@@ -202,7 +202,7 @@ class ShortsBot:
             traceback.print_exc()
             return None
     
-    def create_and_upload(self, topic: str = None, content_type: ContentType = None, force: bool = False, language: str = None):
+    def create_and_upload(self, topic: str = None, content_type: ContentType = None, force: bool = False, language: str = None, auto_upload: bool = False):
         """
         영상 생성 및 업로드 (Refactored)
         
@@ -211,6 +211,7 @@ class ShortsBot:
             content_type: 콘텐츠 타입 (None이면 자동 선택)
             force: True이면 중복 체크를 건너뛰고 강제 업로드
             language: 언어 코드 ('ko' 또는 'en', None이면 주제로 자동 감지)
+            auto_upload: True이면 자동 업로드, False이면 업로드 전 사용자 확인 요청
         """
         try:
             content_type_name = content_type.value if content_type else "자동"
@@ -237,10 +238,45 @@ class ShortsBot:
             # 4. 영상 콘텐츠 생성
             video_assets = self._generate_video_content(topic, content_type, language, performance_prompt)
             
-            # 5. 플랫폼 업로드
+            # 5. 업로드 전 사용자 확인 (auto_upload가 False인 경우)
+            if not auto_upload:
+                print(f"\n{'='*60}")
+                print("📋 영상 생성 완료! 업로드 전 확인이 필요합니다.")
+                print(f"{'='*60}")
+                print(f"제목: {video_assets.get('title', 'N/A')}")
+                print(f"주제: {video_assets.get('actual_topic', topic)}")
+                print(f"영상 파일: {video_assets.get('video_path', 'N/A')}")
+                if video_assets.get('thumbnail_path'):
+                    print(f"썸네일: {video_assets.get('thumbnail_path', 'N/A')}")
+                print(f"\n이 영상을 YouTube에 업로드하시겠습니까? (y/n): ", end='', flush=True)
+                
+                try:
+                    user_input = input().strip().lower()
+                    if user_input not in ['y', 'yes', '예']:
+                        print("❌ 업로드가 취소되었습니다.")
+                        print(f"📁 영상 파일은 다음 경로에 저장되어 있습니다: {video_assets.get('video_path')}")
+                        return {
+                            'video_path': video_assets.get('video_path'),
+                            'thumbnail_path': video_assets.get('thumbnail_path'),
+                            'title': video_assets.get('title'),
+                            'topic': video_assets.get('actual_topic', topic),
+                            'uploaded': False
+                        }
+                except (EOFError, KeyboardInterrupt):
+                    print("\n❌ 업로드가 취소되었습니다.")
+                    return {
+                        'video_path': video_assets.get('video_path'),
+                        'thumbnail_path': video_assets.get('thumbnail_path'),
+                        'title': video_assets.get('title'),
+                        'topic': video_assets.get('actual_topic', topic),
+                        'uploaded': False
+                    }
+                print("✅ 업로드를 진행합니다...\n")
+            
+            # 6. 플랫폼 업로드
             upload_results = self._upload_to_platforms(video_assets)
             
-            # 6. 데이터베이스 및 상태 업데이트
+            # 7. 데이터베이스 및 상태 업데이트
             self._update_databases(video_assets, upload_results, request_id, content_type, performance_prompt)
             
             video_id = upload_results.get('youtube')
@@ -248,7 +284,7 @@ class ShortsBot:
                 print(f"\n✅ 완료! 영상 ID: {video_id}")
                 print(f"🔗 https://www.youtube.com/watch?v={video_id}\n")
                 
-                # 7. 알림 전송
+                # 8. 알림 전송
                 self._send_notifications(video_assets, video_id)
             
             # 리포트 출력
@@ -877,7 +913,7 @@ class ShortsBot:
         
         return mapping.get(source, TopicSource.MANUAL.value)
     
-    def create_and_upload_all_types(self):
+    def create_and_upload_all_types(self, auto_upload: bool = True):
         """모든 콘텐츠 타입에 대해 영상 생성 및 업로드 (6개)"""
         content_types = [
             ContentType.HOOK,
@@ -891,6 +927,8 @@ class ShortsBot:
         print(f"\n{'='*60}")
         print(f"🎬 모든 콘텐츠 타입 영상 생성 시작 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"📊 총 {len(content_types)}개 타입 생성 예정")
+        if auto_upload:
+            print(f"⚠️ 자동 업로드 모드: 업로드 전 확인 없이 자동으로 업로드됩니다")
         print(f"{'='*60}\n")
         
         results = []
@@ -900,7 +938,7 @@ class ShortsBot:
                 print(f"📹 [{i}/{len(content_types)}] {content_type.value.upper()} 타입 영상 생성 중...")
                 print(f"{'─'*60}\n")
                 
-                video_id = self.create_and_upload(topic=None, content_type=content_type)
+                video_id = self.create_and_upload(topic=None, content_type=content_type, auto_upload=auto_upload)
                 if video_id:
                     results.append({
                         'content_type': content_type.value,
