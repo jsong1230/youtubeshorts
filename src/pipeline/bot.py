@@ -472,6 +472,16 @@ class ShortsBot:
         # 4. 설명 및 태그 생성
         description = self._generate_description(language, topic, actual_topic)
         
+        # 영상 생성 후 임시 파일 자동 정리
+        try:
+            from src.utils.temp_cleaner import TempCleaner
+            temp_cleaner = TempCleaner(max_age_hours=1)  # 1시간 이상 된 파일만 삭제
+            stats = temp_cleaner.clean_old_files(dry_run=False)
+            if stats['deleted'] > 0:
+                print(f"🧹 임시 파일 자동 정리: {stats['deleted']}개 파일 삭제 ({stats['size_freed'] / 1024 / 1024:.2f} MB 해제)")
+        except Exception as e:
+            print(f"   ⚠️ 임시 파일 정리 실패 (무시): {e}")
+        
         return {
             'video_path': video_path,
             'thumbnail_path': thumbnail_path,

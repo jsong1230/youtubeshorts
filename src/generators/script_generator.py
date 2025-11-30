@@ -467,6 +467,44 @@ class ScriptGenerator:
 - Make it relatable: your situation should mirror viewers' challenges
 - End with a clear, actionable takeaway that viewers can implement""", 16),
             
+            ContentType.BOOK_REVIEW: (f"""You are an expert YouTube Shorts script writer for book review videos specializing in finance, productivity, and self-improvement books.
+
+**BOOK REVIEW STRUCTURE ({target_duration} seconds total):**
+- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
+- Each sentence should be 3-4 seconds long
+- The number of books to review depends on the video length:
+  * 5 books for shorter videos (45-50 seconds)
+  * 7 books for standard videos (50-55 seconds)
+  * 10 books for longer videos (55-60 seconds)
+
+**OPENING (0-8 seconds)**
+- Start with a compelling hook about the book selection (e.g., "These 7 books changed how I think about money")
+- Mention the source/authority (e.g., "New York Times bestsellers", "Amazon's top picks", "Pulitzer Prize winners")
+- Create curiosity about why these specific books matter
+
+**BODY (8-{target_duration-7} seconds)**
+- For each book, provide:
+  * Book title and author (briefly)
+  * One key insight or lesson from the book
+  * Why it's relevant to finance/productivity/self-improvement
+  * A practical takeaway viewers can apply
+- Keep each book review concise (2-3 sentences per book)
+- Vary the structure to avoid repetition
+- Connect books to each other when possible (themes, complementary ideas)
+
+**CLOSING ({target_duration-7}-{target_duration} seconds)**
+- Summarize the common theme or lesson across all books
+- End with a thought-provoking question about reading or learning
+- Include a natural subscription CTA
+
+**WRITING STYLE:**
+- Use specific book titles and author names
+- Focus on actionable insights, not just summaries
+- Make connections between books when relevant
+- Create a sense of urgency or importance about reading these books
+- Use power words: "transform", "reveal", "discover", "master", "unlock"
+- Create a "loop" structure where the ending connects back to the opening""", 16),
+            
             ContentType.AUTO: (f"""You are an expert YouTube Shorts script writer specializing in finance, productivity, and self-improvement content.
 - Write in sufficient detail with clear explanations
 - **Important: Write all sentences in English only. Do not include any Korean sentences or words**
@@ -529,6 +567,18 @@ class ScriptGenerator:
 - 목표는 약 55초 분량이며, 스토리를 충분히 전개하세요
 - 스토리 구조: Hook → 사건 전개 → 세부 설명 → 교훈 → 마무리
 - 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요""", 16),
+            
+            ContentType.BOOK_REVIEW: ("""당신은 YouTube Shorts용 책 리뷰 영상 스크립트 작성 전문가입니다.
+- 첫 문장에 강력한 Hook으로 시작하세요 (예: "이 7권의 책이 내 돈 관리 방식을 바꿨습니다")
+- 기관 선정/추천/수상 도서를 소개하세요 (예: "뉴욕타임스 베스트셀러", "아마존 추천 도서", "퓰리처상 수상작")
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+- 목표는 약 55초 분량이며, 영상 길이에 따라 책 권수 조절:
+  * 짧은 영상(45-50초): 5권
+  * 표준 영상(50-55초): 7권
+  * 긴 영상(55-60초): 10권
+- 각 책마다: 제목과 작가, 핵심 인사이트, 실용적 적용법을 간결하게 제시
+- 각 문장은 3-4초 분량이며, 총 12-16개 문장으로 작성하세요
+- 마지막에 모든 책의 공통 주제를 요약하고 독서에 대한 질문으로 마무리하세요""", 16),
             
             ContentType.AUTO: ("""당신은 YouTube Shorts용 영상 스크립트 작성 전문가입니다.
 - 설명이 충분하도록 자세하게 작성하세요
@@ -809,10 +859,11 @@ class ScriptGenerator:
 
     def generate_topic(self, content_type: ContentType = None) -> tuple:
         """
-        AI로 인기 주제 생성 (콘텐츠 타입별, 계절 고려)
+        검색 기반으로 주제 생성 (Reddit, Google Trends, YouTube 트렌드 활용)
+        하드코딩된 주제 제거, 항상 검색 기반으로 주제 선정
         
         Returns:
-            (topic, content_type) 튜플
+            (topic, source) 튜플
         """
         if content_type is None:
             content_type_str = getattr(config, 'CONTENT_TYPE', 'auto')
@@ -825,184 +876,179 @@ class ScriptGenerator:
         if content_type == ContentType.AUTO:
             content_type = random.choice([
                 ContentType.HOOK, ContentType.QUOTE, ContentType.STORY,
-                ContentType.FACT, ContentType.SHORT_STORY
+                ContentType.FACT, ContentType.SHORT_STORY, ContentType.BOOK_REVIEW
             ])
+        
+        # BOOK_REVIEW 타입이면 책 리뷰 주제 생성
+        if content_type == ContentType.BOOK_REVIEW:
+            try:
+                from src.analytics.book_collector import BookCollector
+                book_collector = BookCollector()
+                book_topics = book_collector.generate_book_review_topics(
+                    num_topics=10,
+                    language='en'
+                )
+                if book_topics:
+                    # 랜덤으로 하나 선택
+                    selected_topic = random.choice(book_topics)
+                    print(f"🎯 최종 선택 주제: '{selected_topic}' (출처: book_review, 타입: {content_type.value})")
+                    return selected_topic, 'book_review'
+            except Exception as e:
+                print(f"⚠️ 책 리뷰 주제 생성 실패: {e}")
+                # 실패 시 일반 주제 생성으로 폴백
+                content_type = ContentType.AUTO
         
         # 현재 계절 확인
         current_season = self._get_season()
         
-        # 타입별 주제 생성
-        if content_type == ContentType.HOOK:
-            topics = [
-                # 💸 Money / Investing Hooks
-                "Why your salary alone will never make you wealthy",
-                "Top earners share the same exact bank account structure",
-                "Rich people refuse to make this one impulse purchase",
-                "Feel richer without earning more: the invisible income trick",
-                "The single habit every maxed-out credit-card user shares",
-                "Disciplined savers always do this first on payday",
-                "How some people grow assets faster than their paycheck",
-                "The most realistic investing path for busy professionals",
-                "Money vanishes in patterns, not accidents.",
-                "Structure builds wealth faster than motivation ever could.",
-                # 🧠 Self-improvement / Routine Hooks
-                "Ten minutes of routine that completely reroutes your life",
-                "The morning behaviors high performers never skip",
-                "The exact moment weak follow-through collapses",
-                "Why top performers rely on systems, not motivation",
-                "Why late-night work rarely turns into real results",
-                "Routines decide your life long before you do.",
-                "Tiny routines create massive peace.",
-                # 🏠 Lifestyle / Declutter Hooks
-                "The simple rule people with tidy homes follow every day",
-                "Why you keep buying clothes but feel you have nothing to wear",
-                "A chaotic fridge usually signals chaotic money habits",
-                "Declutter one room and watch your stress plummet",
-                "Only 20% of your closet actually leaves the house.",
-                # 🚨 Risk / Downside Protection Hooks
-                "One accident that can erase years of savings overnight",
-                "Why insurance alone can’t keep you from bankruptcy",
-                "How some people turn crises into opportunities while others crumble",
-                "Skipping winter maintenance is the most expensive gamble.",
-                # 🤖 AI / Automation Hooks
-                "AI automation frees the 30 minutes you keep losing.",
-                "Treat your calendar like code and it stops breaking.",
-            ]
-            # 계절별 우선 주제
-            seasonal_topics = {
-                'spring': [
-        "Why new-year plans keep collapsing by March",
-        "How people who reset each season look five years later",
-        "Why your salary alone will never make you wealthy",
-        "The simple rule people with tidy homes follow every day",
-    ],
-                'summer': [
-            "One vacation drained your bank account—here’s why",
-            "The real culprit eating more power than your AC",
-            "The single habit every maxed-out credit-card user shares",
-            "Disciplined savers always do this first on payday",
-        ],
-                'autumn': [
-                "Half the year is gone—here’s why your goals still aren’t done",
-                "People who flip their year in Q3 are decluttering right now",
-                "How some people grow assets faster than their paycheck",
-                "Declutter one room and watch your stress plummet",
-            ],
-                'winter': [
-                    "Why money vanishes the moment the holidays arrive",
-                    "The winter expense scarier than heating bills",
-                    "One accident that can erase years of savings overnight",
-                    "Rich people refuse to make this one impulse purchase",
-        ]}
-        elif content_type == ContentType.QUOTE:
-            topics = [
-                # 🌤 Lifestyle / Routine Quotes
-                "Decluttering a room calms your mind, and a calm mind cuts anxiety.",
-                "When seasons change, your priorities must be reorganized too.",
-                "A clean home is a shortcut to a rested mind.",
-                "Tiny routines create massive peace.",
-                "Preparing for winter is really about removing future discomfort.",
-                "Simplicity is the cheat code for focus.",
-                # 💸 Money / Investing Quotes
-                "Wealth is built by structure, not random savings.",
-                "Time in the market beats timing the market.",
-                "The moment you track spending, new opportunities appear.",
-                "Money is measurement; direction is wealth.",
-                "Consistency outruns talent every single time.",
-            ]
-            seasonal_topics = {
-                'spring': ["When seasons change, your priorities must be reorganized too."],
-                'summer': ["Summer is not just a season; it's a financial opportunity."],
-                'autumn': ["Fall is the season of preparation, not just celebration."],
-                'winter': ["Winter is the season of reflection, not just spending."]
-            }
-        elif content_type == ContentType.STORY:
-            topics = [
-                # 📖 Transformation Stories
-                "He cleared one closet and reset his entire routine.",
-                "A 30-day expense log rebuilt her bank balance.",
-                "A five-minute evening review saved a burned-out manager.",
-                "An AI micro-routine gave him back an hour every morning.",
-                "She stopped buying coffee and bought freedom instead.",
-            ]
-            seasonal_topics = {
-                'spring': ["The messy closet that turned into a seasonal reset routine"],
-                'summer': ["How one family finally killed the summer mold problem"],
-                'autumn': ["The messy closet that turned into a seasonal reset routine"],
-                'winter': ["The winter their heating bill dropped in half"]
-            }
-        elif content_type == ContentType.FACT:
-            topics = [
-                # 📊 Surprising Facts
-                "Tracking spend for 30 days cuts impulse buys by 15%.",
-                "Decluttered desks raise focus by 25%.",
-                "Skipping a winter oil check can cost an engine replacement.",
-                "AI batching saves at least 30 minutes per day.",
-                "Most millionaires have 7 streams of income, not one.",
-            ]
-            seasonal_topics = {
-                'spring': ["Homes get dirtiest during seasonal transitions because humidity spikes"],
-                'summer': ["Summer spending increases by 30% on average"],
-                'autumn': ["Holiday spending starts in September, not December"],
-                'winter': ["Heating costs can double during cold winters"]
-            }
-        elif content_type == ContentType.SHORT_STORY:
-            topics = [
-                # 📜 Short Personal Narratives
-                "Logging expenses for 30 days changed my bank balance.",
-                "Ten minutes of routine completely rerouted her life.",
-                "Preparing for winter once cut our heating bill in half.",
-                "I automated emails with AI and finally slept.",
-                "My credit score jumped 50 points after this one change.",
-            ]
-            seasonal_topics = {
-                'spring': ["Decluttering one closet erased my morning panic"],
-                'summer': ["How a summer budget saved my fall"],
-                'autumn': ["The autumn decision that saved my year"],
-                'winter': ["The winter routine that transformed my spring"]
-            }
-        else:
-            topics = ["Success habits", "Money management", "Productivity hacks"]
-            seasonal_topics = {}
-
-        # 계절별 주제 추가
-        current_seasonal_topics = seasonal_topics.get(current_season, [])
+        # 검색 기반 주제 수집
+        all_topics = []
         
-        # 성과 기반 주제 가져오기
-        performance_topics = self._get_high_performing_topics(content_type)
+        # 1. Reddit 트렌드 주제
+        try:
+            from src.analytics.reddit_collector import RedditCollector
+            reddit_collector = RedditCollector()
+            reddit_topics = reddit_collector.get_trending_topics(
+                content_type=content_type.value,
+                num_topics=15,
+                categories=['finance', 'productivity', 'lifestyle'],
+                language='en'
+            )
+            if reddit_topics:
+                all_topics.extend([(topic, 'reddit') for topic in reddit_topics])
+                print(f"✅ Reddit에서 {len(reddit_topics)}개 주제 수집")
+        except Exception as e:
+            print(f"⚠️ Reddit 주제 수집 실패: {e}")
         
-        # YouTube 트렌드 주제 가져오기 (TREND_MODE일 때만)
+        # 2. Google Trends 주제
+        try:
+            from src.analytics.google_trends_collector import GoogleTrendsCollector
+            trends_collector = GoogleTrendsCollector()
+            trends_topics = trends_collector.get_trending_topics(
+                content_type=content_type.value,
+                num_topics=15,
+                categories=['finance', 'productivity', 'lifestyle'],
+                language='en'
+            )
+            if trends_topics:
+                all_topics.extend([(topic, 'google_trends') for topic in trends_topics])
+                print(f"✅ Google Trends에서 {len(trends_topics)}개 주제 수집")
+        except Exception as e:
+            print(f"⚠️ Google Trends 주제 수집 실패: {e}")
+        
+        # 3. YouTube 트렌드 주제
         youtube_trending_topics = []
-        if getattr(config, 'TREND_MODE', False):
+        try:
             youtube_trending_topics = self.get_youtube_trending_topics()
-            
-            # 계절별 트렌드 AI 생성 주제 가져오기
+            if youtube_trending_topics:
+                all_topics.extend([(topic, 'youtube_trend') for topic in youtube_trending_topics])
+                print(f"✅ YouTube 트렌드에서 {len(youtube_trending_topics)}개 주제 수집")
+        except Exception as e:
+            print(f"⚠️ YouTube 트렌드 주제 수집 실패: {e}")
+        
+        # 4. 계절별 AI 생성 주제
+        try:
             ai_seasonal_topics = self.generate_seasonal_topics_from_trends(
-                current_season, content_type, language='en' # 기본값 영어
+                current_season, content_type, language='en'
             )
             if ai_seasonal_topics:
-                current_seasonal_topics.extend(ai_seasonal_topics)
-                
-            # 일반 트렌드 AI 생성 주제 가져오기
+                all_topics.extend([(topic, 'ai_seasonal') for topic in ai_seasonal_topics])
+                print(f"✅ 계절별 AI 주제 {len(ai_seasonal_topics)}개 생성")
+        except Exception as e:
+            print(f"⚠️ 계절별 AI 주제 생성 실패: {e}")
+        
+        # 5. 일반 AI 생성 주제
+        try:
             ai_trend_topics = self.generate_ai_topics_from_trends(
-                content_type, language='en' # 기본값 영어
+                content_type, language='en'
             )
             if ai_trend_topics:
-                youtube_trending_topics.extend(ai_trend_topics)
+                all_topics.extend([(topic, 'ai_generated') for topic in ai_trend_topics])
+                print(f"✅ AI 생성 주제 {len(ai_trend_topics)}개 생성")
+        except Exception as e:
+            print(f"⚠️ AI 주제 생성 실패: {e}")
         
-        # 전략적 주제 선택
-        selected_topic, source = self.select_topic_with_strategy(
-            global_topics=topics,
-            seasonal_topics=current_seasonal_topics,
-            performance_topics=performance_topics,
-            youtube_trending_topics=youtube_trending_topics
-        )
+        # 6. 성과 기반 주제
+        performance_topics = self._get_high_performing_topics(content_type)
+        if performance_topics:
+            all_topics.extend([(topic, 'performance') for topic in performance_topics])
+            print(f"✅ 성과 기반 주제 {len(performance_topics)}개 수집")
         
-        # 주제가 없으면 기본값 사용
-        if not selected_topic:
-            selected_topic = random.choice(topics) if topics else "Success habits"
-            source = "fallback"
+        # 7. 채널 히스토리 기반 중복 체크
+        try:
+            from src.analytics.channel_history_collector import ChannelHistoryCollector
+            channel_collector = ChannelHistoryCollector()
             
+            # 주제만 추출
+            topic_list = [topic for topic, _ in all_topics]
+            
+            # 중복 필터링
+            filtered_topics = channel_collector.filter_duplicate_topics(
+                new_topics=topic_list,
+                days=90
+            )
+            
+            # 필터링된 주제만 유지
+            all_topics = [(topic, source) for topic, source in all_topics if topic in filtered_topics]
+            print(f"✅ 채널 히스토리 기반 중복 체크 완료: {len(all_topics)}개 주제 남음")
+        except Exception as e:
+            print(f"⚠️ 채널 히스토리 중복 체크 실패: {e}")
+        
+        # 주제가 없으면 AI로 즉시 생성
+        if not all_topics:
+            print("⚠️ 수집된 주제가 없어 AI로 즉시 생성합니다...")
+            try:
+                # AI로 주제 즉시 생성
+                if self.openai_client:
+                    prompt = f"""Generate one engaging YouTube Shorts topic for {content_type.value} content type.
+The topic should be about finance, productivity, or lifestyle.
+Return only the topic, no numbering or bullets."""
+                    
+                    response = self.openai_client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": "You are an expert at creating engaging YouTube Shorts topics."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        max_tokens=100,
+                        temperature=0.8
+                    )
+                    
+                    fallback_topic = response.choices[0].message.content.strip()
+                    # 번호나 불릿 제거
+                    import re
+                    fallback_topic = re.sub(r'^[\d\.\-\*\•\s]+', '', fallback_topic)
+                    if fallback_topic:
+                        all_topics = [(fallback_topic, 'ai_fallback')]
+            except Exception as e:
+                print(f"⚠️ AI 주제 생성 실패: {e}")
+        
+        # 주제 선택 (랜덤 또는 가중치 기반)
+        if all_topics:
+            # 소스별 가중치 (Reddit, Google Trends 우선)
+            source_weights = {
+                'reddit': 3.0,
+                'google_trends': 3.0,
+                'youtube_trend': 2.5,
+                'ai_seasonal': 2.0,
+                'ai_generated': 2.0,
+                'performance': 1.5,
+                'ai_fallback': 1.0
+            }
+            
+            # 가중치 기반 선택
+            weighted_topics = []
+            for topic, source in all_topics:
+                weight = source_weights.get(source, 1.0)
+                weighted_topics.extend([(topic, source)] * int(weight * 10))  # 가중치를 정수로 변환
+            
+            selected_topic, source = random.choice(weighted_topics) if weighted_topics else all_topics[0]
+        else:
+            # 최후의 수단
+            selected_topic = "Financial tips for success"
+            source = "hardcoded_fallback"
+            print("⚠️ 모든 주제 수집 실패, 기본 주제 사용")
+        
         print(f"🎯 주제 선택: '{selected_topic}' (출처: {source}, 타입: {content_type.value})")
         
         return selected_topic, source

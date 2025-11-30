@@ -44,11 +44,11 @@ class MediaDownloader:
                     messages=[
                         {
                             "role": "system",
-                            "content": "당신은 이미지/비디오 검색 키워드 추출 전문가입니다. 주어진 문장에서 배경 영상 검색에 적합한 시각적이고 구체적인 영어 키워드 1-3개를 추출하세요. 추상적인 문장이라면 'abstract', 'cinematic', 'moody' 같은 분위기 키워드를 포함하세요."
+                            "content": "You are an expert at extracting visual keywords for video/image search. Extract 1-5 diverse, specific English keywords from the given sentence that are suitable for background video search. Include varied keywords (objects, actions, moods, settings) to maximize diversity. For abstract sentences, include mood keywords like 'abstract', 'cinematic', 'moody', 'minimal', 'dynamic'. Always provide multiple diverse options."
                         },
                         {
                             "role": "user",
-                            "content": f"다음 문장에서 배경 영상 검색에 적합한 영어 키워드를 추출하세요 (쉼표로 구분, 최대 3개):\n\n{sentence}"
+                            "content": f"Extract 3-5 diverse English keywords for background video search from this sentence (comma-separated, maximize variety):\n\n{sentence}\n\nProvide diverse keywords covering different aspects: objects, actions, moods, settings, etc."
                         }
                     ],
                     max_tokens=50,
@@ -63,7 +63,7 @@ class MediaDownloader:
                 keywords = [k for k in keywords if k.isascii() and len(k) > 2]
                 if keywords:
                     print(f"   AI 키워드 추출: {keywords}")
-                    return keywords[:3]
+                    return keywords[:5]  # 최대 5개로 증가 (다양성 확보)
             except Exception as e:
                 print(f"   AI 키워드 추출 실패, 기본 방법 사용: {e}")
         

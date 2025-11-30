@@ -16,7 +16,7 @@ AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하
 - **AI API 지원**: OpenAI GPT 또는 Claude API를 활용한 고품질 스크립트 생성
 - **API 자동 선택**: 설정에 따라 OpenAI 또는 Claude API 자동 사용
 - **API 폴백**: Claude API 실패 시 자동으로 OpenAI로 전환
-- **콘텐츠 타입 최적화**: Hook, 명언, 스토리, 팩트, 짧은 스토리 등 수익화 최적화된 콘텐츠 형태 지원
+- **콘텐츠 타입 최적화**: Hook, 명언, 스토리, 팩트, 짧은 스토리, 책 리뷰 등 수익화 최적화된 콘텐츠 형태 지원
 - **짧고 강한 Hook**: 첫 3초 안에 시청자 관심을 끄는 강력한 Hook 자동 생성
 - **자동 길이 조정**: 콘텐츠 타입별 최적 길이 (목표 55초, 최대 60초)
 - **영어 음성/자막 일관성**: OpenAI TTS(기본) 또는 Google TTS로 자연스러운 영어 음성 생성, 스크립트·자막·썸네일까지 영어 고정
@@ -44,7 +44,7 @@ AI로 자동 생성된 YouTube Shorts 영상을 매일 자동으로 업로드하
 ### 4. 스케줄링
 
 - **자동 스케줄러**: 매일 지정된 시간에 1개의 고품질 영상을 생성하여 업로드
-- **퀄리티 중심 생성**: 6가지 콘텐츠 타입(HOOK, QUOTE, STORY, FACT, SHORT_STORY, AUTO) 중 최적의 타입을 선택하여 고품질 영상 생성
+- **퀄리티 중심 생성**: 9가지 콘텐츠 타입(HOOK, QUOTE, STORY, FACT, SHORT_STORY, MEDITATION, BREATHING, BOOK_REVIEW, AUTO) 중 최적의 타입을 선택하여 고품질 영상 생성
 - **계절별 주제 선택**: 현재 날짜를 기반으로 계절에 맞는 주제를 우선적으로 선택 (25% 확률)
 - **백그라운드 실행**: 서버나 컴퓨터가 켜져 있는 동안 자동 실행
 - **macOS LaunchAgent 지원**: 재부팅 후에도 자동 시작
@@ -306,7 +306,7 @@ python main.py schedule
 ```
 
 스케줄러는 매일 지정된 시간(기본값: 09:00, 한국 시간)에 1개의 고품질 영상을 생성하여 업로드합니다.
-6가지 콘텐츠 타입(HOOK, QUOTE, STORY, FACT, SHORT_STORY, AUTO) 중 최적의 타입을 선택하고, 계절에 맞는 주제를 우선적으로 선택하여 퀄리티 높은 영상을 제작합니다.
+9가지 콘텐츠 타입(HOOK, QUOTE, STORY, FACT, SHORT_STORY, MEDITATION, BREATHING, BOOK_REVIEW, AUTO) 중 최적의 타입을 선택하고, 계절에 맞는 주제를 우선적으로 선택하여 퀄리티 높은 영상을 제작합니다.
 
 #### 백그라운드 실행 방법
 

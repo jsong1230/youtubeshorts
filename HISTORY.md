@@ -4,6 +4,60 @@
 
 ## 최근 변경사항
 
+### 2025-11-30 - 북리뷰 콘텐츠 타입 추가 및 시스템 개선
+
+**주요 변경사항**:
+
+1. **BOOK_REVIEW 콘텐츠 타입 추가**
+   - 기관 선정/추천/수상 도서를 소개하는 책 리뷰 영상 타입 추가
+   - New York Times, Amazon, Goodreads, Pulitzer Prize, Nobel Prize, Booker Prize 등 다양한 기관 지원
+   - 영상 길이에 따라 책 권수 자동 조절 (5권/7권/10권)
+   - 각 책마다 제목, 작가, 핵심 인사이트, 실용적 적용법 포함
+   - 영어/한국어 프롬프트 모두 지원
+
+2. **배경 영상 다양성 대폭 개선**
+   - Pexels API 검색 결과 증가: `per_page=20` → `per_page=80` (4배 증가)
+   - 랜덤 선택 시스템: 상위 10개 품질 좋은 영상 중 랜덤 선택
+   - AI 키워드 추출 개선: 최대 3개 → 최대 5개로 증가
+   - 키워드 재시도 확대: 최대 5개 → 최대 8개로 증가
+   - 키워드 셔플: 중복 제거 후 랜덤 순서로 섞기
+   - AI 프롬프트 개선: 다양한 키워드 요청 (객체, 액션, 분위기, 설정 등)
+
+3. **Temp 폴더 자동 정리 기능 추가**
+   - `TempCleaner` 클래스 생성 (`src/utils/temp_cleaner.py`)
+   - 영상 생성 후 자동으로 1시간 이상 된 임시 파일 삭제
+   - 삭제 통계 출력 (파일 수, 해제된 용량)
+   - 최근 생성된 파일은 보존하여 안전성 확보
+
+4. **Google Trends API Rate Limiting 추가**
+   - 요청 사이 최소 2초 간격 유지
+   - 배치 사이 1초 추가 지연
+   - Google의 rate limiting 정책 준수로 400 에러 방지
+
+5. **검색 기반 주제 생성 시스템 완성**
+   - 하드코딩된 주제 완전 제거
+   - Reddit RSS 피드 통합 (API 승인 불필요)
+   - Google Trends 통합 (pytrends 라이브러리)
+   - YouTube 트렌드 통합
+   - 채널 히스토리 기반 중복 체크
+   - 소스별 가중치 기반 주제 선택
+
+**파일**:
+- `src/generators/content_type.py`: BOOK_REVIEW 타입 추가
+- `src/generators/script_generator.py`: 북리뷰 프롬프트 및 주제 생성 로직 추가
+- `src/analytics/book_collector.py`: 책 리뷰 주제 수집 클래스 생성
+- `src/generators/video_compositor.py`: 배경 영상 다양성 개선 (per_page 증가, 랜덤 선택)
+- `src/generators/media_downloader.py`: AI 키워드 추출 개선 (최대 5개)
+- `src/utils/temp_cleaner.py`: 임시 파일 자동 정리 클래스 생성
+- `src/pipeline/bot.py`: temp 폴더 자동 정리 통합
+- `src/analytics/google_trends_collector.py`: Rate limiting 추가
+
+**테스트 결과**:
+- 북리뷰 영상 생성 성공 (54.85초, 13개 문장)
+- 배경 영상 다양성 확인 (8개의 서로 다른 영상 사용)
+- Temp 폴더 자동 정리 작동 확인
+- Google Trends rate limiting 적용 완료
+
 ### 2025-11-30 - 주제 개선 및 업로드 전 확인 기능 추가
 
 **주요 변경사항**:

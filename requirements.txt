@@ -32,3 +32,8 @@ flask>=3.0.0
 # 테스팅
 pytest>=7.4.0
 pytest-mock>=3.12.0
+
+# 트렌드 수집
+praw>=7.7.1  # Reddit API (선택사항, RSS 피드 사용 시 불필요)
+pytrends>=5.0.0  # Google Trends API
+# requests는 이미 requirements.txt에 포함되어 있음 (RSS 피드 파싱용)

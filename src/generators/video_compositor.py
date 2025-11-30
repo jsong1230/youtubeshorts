@@ -186,7 +186,12 @@ class VideoCompositor:
                 
                 retry_keywords.extend(category_keywords)
                 
-                for retry_idx, keyword in enumerate(retry_keywords[:5]):  # 최대 5개 키워드 시도
+                # 키워드 다양성 확보: 중복 제거 및 셔플
+                import random
+                unique_keywords = list(dict.fromkeys(retry_keywords))  # 순서 유지하면서 중복 제거
+                random.shuffle(unique_keywords)  # 랜덤 순서로 섞기
+                
+                for retry_idx, keyword in enumerate(unique_keywords[:8]):  # 최대 8개 키워드 시도 (다양성 확보)
                     bg_video_path, video_id = self._download_video_for_sentence(
                         group_sentence,
                         i,
@@ -432,17 +437,27 @@ class VideoCompositor:
             bitrate='8000k'
         )
         
-        # 임시 파일 정리
-        for i in range(len(script)):
-            temp_frame = os.path.join(config.TEMP_DIR, f"frame_{i}.png")
-            if os.path.exists(temp_frame):
-                os.remove(temp_frame)
-            temp_audio = os.path.join(config.TEMP_DIR, f"audio_{i}.mp3")
-            if os.path.exists(temp_audio):
-                os.remove(temp_audio)
-            temp_bg_video = os.path.join(config.TEMP_DIR, f"bg_video_{i}.mp4")
-            if os.path.exists(temp_bg_video):
-                os.remove(temp_bg_video)
+        # 임시 파일 정리 (영상 생성 후)
+        try:
+            # 기존 방식: 특정 패턴의 파일만 삭제
+            for i in range(len(script)):
+                temp_frame = os.path.join(config.TEMP_DIR, f"frame_{i}.png")
+                if os.path.exists(temp_frame):
+                    os.remove(temp_frame)
+                temp_audio = os.path.join(config.TEMP_DIR, f"audio_{i}.mp3")
+                if os.path.exists(temp_audio):
+                    os.remove(temp_audio)
+                # bg_video는 video_id가 포함되어 있어서 패턴 매칭이 어려움
+                # 아래 자동 정리 기능에서 처리
+            
+            # 자동 정리: 1시간 이상 된 임시 파일 삭제
+            from src.utils.temp_cleaner import TempCleaner
+            temp_cleaner = TempCleaner(max_age_hours=1)  # 1시간 이상 된 파일만 삭제
+            stats = temp_cleaner.clean_old_files(dry_run=False)
+            if stats['deleted'] > 0:
+                print(f"🧹 임시 파일 자동 정리: {stats['deleted']}개 파일 삭제 ({stats['size_freed'] / 1024 / 1024:.2f} MB 해제)")
+        except Exception as e:
+            print(f"   ⚠️ 임시 파일 정리 실패 (무시): {e}")
         
         return output_path
 
@@ -511,7 +526,8 @@ class VideoCompositor:
             
             if config.PEXELS_API_KEY:
                 try:
-                    pexels_video_url = f"https://api.pexels.com/videos/search?query={english_keyword}&per_page=20&orientation=portrait"
+                    # 더 많은 영상을 가져와서 다양성 확보 (per_page 증가)
+                    pexels_video_url = f"https://api.pexels.com/videos/search?query={english_keyword}&per_page=80&orientation=portrait"
                     pexels_headers = {
                         **headers,
                         'Authorization': config.PEXELS_API_KEY
@@ -526,7 +542,8 @@ class VideoCompositor:
                             if exclude_video_ids is None:
                                 exclude_video_ids = set()
 
-                            video_data = None
+                            # 사용 가능한 영상들 수집
+                            available_videos = []
                             for video in data['videos']:
                                 video_id = video.get('id', 0)
                                 # 이미 다운로드한 영상 ID는 건너뛰기
@@ -534,7 +551,8 @@ class VideoCompositor:
                                     continue
                                 
                                 duration_sec = video.get('duration', 0)
-                                if duration_sec < 10: continue
+                                if duration_sec < 10: 
+                                    continue
                                 
                                 files = video.get('video_files', [])
                                 best_file = None
@@ -548,12 +566,23 @@ class VideoCompositor:
                                             best_file = file
                                 
                                 if best_file:
-                                    video_data = {
+                                    available_videos.append({
                                         'id': video_id,
                                         'url': best_file.get('link'),
-                                        'duration': duration_sec
-                                    }
-                                    break
+                                        'duration': duration_sec,
+                                        'height': best_file.get('height', 0)
+                                    })
+                            
+                            # 사용 가능한 영상이 있으면 랜덤 선택 (다양성 확보)
+                            if available_videos:
+                                import random
+                                # 랜덤하게 선택하되, 품질이 좋은 영상 우선 (높이 1920에 가까운 것)
+                                available_videos.sort(key=lambda x: abs(x['height'] - 1920))
+                                # 상위 10개 중에서 랜덤 선택
+                                top_videos = available_videos[:min(10, len(available_videos))]
+                                video_data = random.choice(top_videos)
+                            else:
+                                video_data = None
                             
                             if video_data:
                                 video_url = video_data['url']
