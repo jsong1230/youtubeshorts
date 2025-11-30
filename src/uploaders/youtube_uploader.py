@@ -11,6 +11,9 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class YouTubeUploader:
@@ -96,33 +99,32 @@ class YouTubeUploader:
             response = self._resumable_upload(insert_request)
             
             video_id = response['id']
-            print(f"✅ 영상 업로드 완료! 영상 ID: {video_id}")
-            print(f"🔗 URL: https://www.youtube.com/watch?v={video_id}")
+            logger.info(f"✅ 영상 업로드 완료! 영상 ID: {video_id}")
+            logger.info(f"🔗 URL: https://www.youtube.com/watch?v={video_id}")
             
             # 썸네일 업로드 (있는 경우)
+            # 썸네일 업로드 (있는 경우)
             if thumbnail_path:
-                print(f"\n🖼️ 썸네일 경로 확인: {thumbnail_path}")
+                logger.info(f"🖼️ 썸네일 경로 확인: {thumbnail_path}")
                 if os.path.exists(thumbnail_path):
-                    print(f"   ✅ 썸네일 파일 존재 확인됨 (크기: {os.path.getsize(thumbnail_path)} bytes)")
+                    logger.info(f"   ✅ 썸네일 파일 존재 확인됨 (크기: {os.path.getsize(thumbnail_path)} bytes)")
                     try:
-                        print("   📤 썸네일 업로드 중...")
+                        logger.info("   📤 썸네일 업로드 중...")
                         self.upload_thumbnail(video_id, thumbnail_path)
-                        print("   ✅ 썸네일 업로드 완료!")
+                        logger.info("   ✅ 썸네일 업로드 완료!")
                     except Exception as e:
-                        print(f"   ⚠️ 썸네일 업로드 실패: {e}")
-                        import traceback
-                        traceback.print_exc()
-                        print("   영상은 정상적으로 업로드되었습니다.")
+                        logger.warning(f"   ⚠️ 썸네일 업로드 실패: {e}", exc_info=True)
+                        logger.info("   영상은 정상적으로 업로드되었습니다.")
                 else:
-                    print(f"   ⚠️ 썸네일 파일을 찾을 수 없습니다: {thumbnail_path}")
-                    print("   영상은 정상적으로 업로드되었습니다.")
+                    logger.warning(f"   ⚠️ 썸네일 파일을 찾을 수 없습니다: {thumbnail_path}")
+                    logger.info("   영상은 정상적으로 업로드되었습니다.")
             else:
-                print("\n⚠️ 썸네일 경로가 제공되지 않았습니다.")
+                logger.warning("⚠️ 썸네일 경로가 제공되지 않았습니다.")
             
             return video_id
             
         except Exception as e:
-            print(f"❌ 업로드 실패: {str(e)}")
+            logger.error(f"❌ 업로드 실패: {str(e)}", exc_info=True)
             raise
     
     def check_today_uploaded(self) -> bool:
@@ -159,12 +161,12 @@ class YouTubeUploader:
                         # ISO 형식의 날짜를 파싱
                         published_date = date_parser.parse(published_at).date()
                         if published_date == today:
-                            print(f"✅ 오늘 이미 업로드된 영상 발견: {item['snippet']['title']}")
+                            logger.info(f"✅ 오늘 이미 업로드된 영상 발견: {item['snippet']['title']}")
                             return True
             
             return False
         except Exception as e:
-            print(f"⚠️ 오늘 업로드 확인 실패: {e}")
+            logger.warning(f"⚠️ 오늘 업로드 확인 실패: {e}")
             return False
     
     def _resumable_upload(self, insert_request):
@@ -186,7 +188,8 @@ class YouTubeUploader:
                     raise
                 error = e
                 retry += 1
-                print(f"재시도 중... ({retry}/3)")
+                retry += 1
+                logger.info(f"재시도 중... ({retry}/3)")
         
         if error:
             raise error
@@ -200,8 +203,8 @@ class YouTubeUploader:
         # 절대 경로로 변환 (상대 경로 문제 방지)
         thumbnail_path = os.path.abspath(thumbnail_path)
         
-        print(f"   📁 썸네일 절대 경로: {thumbnail_path}")
-        print(f"   📏 파일 크기: {os.path.getsize(thumbnail_path)} bytes")
+        logger.debug(f"   📁 썸네일 절대 경로: {thumbnail_path}")
+        logger.debug(f"   📏 파일 크기: {os.path.getsize(thumbnail_path)} bytes")
         
         # 썸네일 파일 업로드
         media = MediaFileUpload(
@@ -216,9 +219,9 @@ class YouTubeUploader:
                 videoId=video_id,
                 media_body=media
             ).execute()
-            print(f"   ✅ 썸네일 업로드 API 응답: {response}")
+            logger.debug(f"   ✅ 썸네일 업로드 API 응답: {response}")
         except Exception as e:
-            print(f"   ❌ 썸네일 업로드 API 오류: {e}")
+            logger.error(f"   ❌ 썸네일 업로드 API 오류: {e}")
             raise
     
     def get_video_stats(self, video_id: str):
@@ -244,7 +247,7 @@ class YouTubeUploader:
                 }
             return None
         except Exception as e:
-            print(f"통계 정보 가져오기 실패: {str(e)}")
+            logger.warning(f"통계 정보 가져오기 실패: {str(e)}")
             return None
     
     def get_channel_info(self):
@@ -280,7 +283,7 @@ class YouTubeUploader:
                 }
             return None
         except Exception as e:
-            print(f"⚠️ 채널 정보 가져오기 실패: {e}")
+            logger.warning(f"⚠️ 채널 정보 가져오기 실패: {e}")
             return None
     
     def get_recent_videos(self, max_results: int = 5):
@@ -310,6 +313,6 @@ class YouTubeUploader:
                     })
             return videos
         except Exception as e:
-            print(f"⚠️ 최근 영상 목록 가져오기 실패: {e}")
+            logger.warning(f"⚠️ 최근 영상 목록 가져오기 실패: {e}")
             return []
 

@@ -9,6 +9,9 @@ from typing import List, Dict, Optional, Tuple
 from enum import Enum
 import json
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class VideoStyle(Enum):
@@ -112,7 +115,7 @@ class ABTestDatabase:
             conn.close()
             return True
         except Exception as e:
-            print(f"⚠️ A/B 테스트 항목 추가 실패: {e}")
+            logger.error(f"⚠️ A/B 테스트 항목 추가 실패: {e}", exc_info=True)
             return False
     
     def update_test_stats(
@@ -174,7 +177,7 @@ class ABTestDatabase:
                 conn.close()
                 return False
         except Exception as e:
-            print(f"⚠️ A/B 테스트 통계 업데이트 실패: {e}")
+            logger.error(f"⚠️ A/B 테스트 통계 업데이트 실패: {e}", exc_info=True)
             return False
     
     def get_best_style(
@@ -245,7 +248,7 @@ class ABTestDatabase:
                 return row['style']
             return None
         except Exception as e:
-            print(f"⚠️ 최적 스타일 조회 실패: {e}")
+            logger.error(f"⚠️ 최적 스타일 조회 실패: {e}", exc_info=True)
             return None
     
     def get_style_performance(
@@ -315,7 +318,7 @@ class ABTestDatabase:
             
             return [dict(row) for row in rows]
         except Exception as e:
-            print(f"⚠️ 스타일별 성과 조회 실패: {e}")
+            logger.error(f"⚠️ 스타일별 성과 조회 실패: {e}", exc_info=True)
             return []
     
     def get_best_styles_by_engagement(
@@ -360,7 +363,7 @@ class ABTestDatabase:
             
             return [(row[0], row[1], row[2]) for row in rows]
         except Exception as e:
-            print(f"⚠️ 최고 성과 스타일 조회 실패: {e}")
+            logger.error(f"⚠️ 최고 성과 스타일 조회 실패: {e}", exc_info=True)
             return []
     
     def get_test_by_video_id(self, video_id: str) -> Optional[Dict]:
@@ -399,7 +402,7 @@ class ABTestDatabase:
                 return result
             return None
         except Exception as e:
-            print(f"⚠️ A/B 테스트 데이터 가져오기 실패: {e}")
+            logger.error(f"⚠️ A/B 테스트 데이터 가져오기 실패: {e}", exc_info=True)
             return None
     
     def should_test_new_style(
@@ -442,6 +445,6 @@ class ABTestDatabase:
             
             return True  # 모든 스타일이 충분히 테스트됨, 새 스타일 테스트 가능
         except Exception as e:
-            print(f"⚠️ 새 스타일 테스트 여부 확인 실패: {e}")
+            logger.error(f"⚠️ 새 스타일 테스트 여부 확인 실패: {e}", exc_info=True)
             return False
 

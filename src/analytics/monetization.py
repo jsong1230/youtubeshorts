@@ -7,6 +7,9 @@ from datetime import datetime, timedelta
 from typing import Dict, List
 import config
 from src.uploaders.youtube_uploader import YouTubeUploader
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class MonetizationTracker:
@@ -193,37 +196,37 @@ class MonetizationTracker:
         """리포트 출력"""
         report = self.get_progress_report()
         
-        print("\n" + "="*50)
-        print("📊 수익화 진행 상황 리포트")
-        print("="*50)
-        print(f"총 업로드 영상: {report['total_videos']}개")
-        print(f"시작 후 경과일: {report['days_since_start']}일")
-        print(f"수익화까지 남은 일수: {report['days_until_monetization']}일")
-        print(f"\n📈 통계:")
-        print(f"  총 조회수: {report['total_views']:,}회")
-        print(f"  총 예상 수익: ${report['total_revenue']:.2f}")
-        print(f"  영상당 평균 조회수: {report['avg_views_per_video']:,.0f}회")
-        print(f"\n💰 수익 분석:")
-        print(f"  예상 월 수익: ${report['estimated_monthly_revenue']:.2f}")
-        print(f"  목표 범위: ${report['target_revenue_range']['min']}-${report['target_revenue_range']['max']}")
+        logger.info("="*50)
+        logger.info("📊 수익화 진행 상황 리포트")
+        logger.info("="*50)
+        logger.info(f"총 업로드 영상: {report['total_videos']}개")
+        logger.info(f"시작 후 경과일: {report['days_since_start']}일")
+        logger.info(f"수익화까지 남은 일수: {report['days_until_monetization']}일")
+        logger.info(f"\n📈 통계:")
+        logger.info(f"  총 조회수: {report['total_views']:,}회")
+        logger.info(f"  총 예상 수익: ${report['total_revenue']:.2f}")
+        logger.info(f"  영상당 평균 조회수: {report['avg_views_per_video']:,.0f}회")
+        logger.info(f"\n💰 수익 분석:")
+        logger.info(f"  예상 월 수익: ${report['estimated_monthly_revenue']:.2f}")
+        logger.info(f"  목표 범위: ${report['target_revenue_range']['min']}-${report['target_revenue_range']['max']}")
         
         if report['monthly_revenue']:
-            print(f"\n  월별 수익:")
+            logger.info(f"\n  월별 수익:")
             for month, revenue in sorted(report['monthly_revenue'].items()):
-                print(f"    {month}: ${revenue:.2f}")
+                logger.info(f"    {month}: ${revenue:.2f}")
         
         if report['on_track']:
-            print(f"\n✅ 목표 달성 가능!")
+            logger.info(f"\n✅ 목표 달성 가능!")
         else:
-            print(f"\n⚠️ 목표 달성을 위해 더 많은 조회수가 필요합니다.")
+            logger.info(f"\n⚠️ 목표 달성을 위해 더 많은 조회수가 필요합니다.")
         
-        print("="*50 + "\n")
+        logger.info("="*50 + "\n")
     
     def update_all_videos(self):
         """모든 영상 통계 업데이트"""
-        print("📊 모든 영상 통계 업데이트 중...")
+        logger.info("📊 모든 영상 통계 업데이트 중...")
         for video in self.data['videos']:
-            print(f"  업데이트 중: {video['title']}")
+            logger.info(f"  업데이트 중: {video['title']}")
             self.update_video_stats(video['video_id'])
-        print("✅ 업데이트 완료!")
+        logger.info("✅ 업데이트 완료!")
 

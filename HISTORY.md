@@ -4,6 +4,47 @@
 
 ## 최근 변경사항
 
+### 2025-11-30 - Phase 2: Uploaders 테스트 완료 및 전체 시스템 검증
+
+**주요 변경사항**:
+
+1. **test_youtube_uploader.py 수정 완료**
+   - 12개 테스트 모두 통과
+   - 인증 실패 예외 처리 테스트 수정
+   - `_resumable_upload` 메서드 Mock 설정 개선 (`next_chunk()` 반환값 튜플 처리)
+   - 파일 없음/API 에러 예외 처리 테스트 수정
+   - `get_video_stats` 테스트에 `snippet` 필드 추가
+   - `check_today_uploaded` 테스트 날짜 형식 수정
+
+2. **test_multi_platform_uploader.py 작성 완료**
+   - 9개 테스트 모두 통과
+   - 초기화 테스트 (YouTube만, 모든 플랫폼, TikTok 사용 불가)
+   - 업로드 테스트 (단일/다중 플랫폼, 파일 없음, 플랫폼별 에러 처리)
+   - 통합 테스트 (썸네일 포함)
+
+3. **test_social_upload.py 업데이트 완료**
+   - 7개 테스트 모두 통과
+   - unittest → pytest 스타일로 변환
+   - InstagramUploader, TikTokUploader, SocialManager 테스트 추가
+   - 부분 실패 및 미설정 상태 테스트 추가
+
+4. **전체 시스템 동작 검증**
+   - 실제 영상 생성 테스트 완료 (55.93초 영상 생성 성공)
+   - 주제: "How to build wealth with index funds in 2025"
+   - 모든 파이프라인 정상 동작 확인 (스크립트 생성, TTS, 배경 영상, 자막, 썸네일)
+
+**파일**:
+- `tests/test_youtube_uploader.py`: 테스트 수정 완료
+- `tests/test_multi_platform_uploader.py`: 새로 작성
+- `tests/test_social_upload.py`: pytest 스타일로 업데이트
+
+**테스트 결과**:
+- 총 28개 테스트 모두 통과
+- `test_youtube_uploader.py`: 12개 통과
+- `test_multi_platform_uploader.py`: 9개 통과
+- `test_social_upload.py`: 7개 통과
+- 실제 영상 생성 테스트: 성공 (53MB, 55.93초)
+
 ### 2025-11-30 - 북리뷰 콘텐츠 타입 추가 및 시스템 개선
 
 **주요 변경사항**:

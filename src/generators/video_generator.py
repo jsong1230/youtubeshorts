@@ -28,6 +28,9 @@ from .image_generator import ImageGenerator
 from .video_compositor import VideoCompositor
 from .media_downloader import MediaDownloader
 from src.pipeline.tts_engine import TTSEngine, TTSProvider
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 # 프로젝트 루트 디렉토리
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -41,7 +44,7 @@ class AIVideoGenerator:
             try:
                 self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
             except Exception as e:
-                print(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
+                logger.warning(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
                 self.openai_client = None
         else:
             self.openai_client = None
@@ -50,9 +53,9 @@ class AIVideoGenerator:
         if config.CLAUDE_API_KEY and ANTHROPIC_AVAILABLE:
             try:
                 self.claude_client = Anthropic(api_key=config.CLAUDE_API_KEY)
-                print(f"✅ Claude API 클라이언트 초기화 완료")
+                logger.info(f"✅ Claude API 클라이언트 초기화 완료")
             except Exception as e:
-                print(f"⚠️ Claude 클라이언트 초기화 실패: {e}")
+                logger.warning(f"⚠️ Claude 클라이언트 초기화 실패: {e}")
                 self.claude_client = None
         else:
             self.claude_client = None
@@ -60,14 +63,14 @@ class AIVideoGenerator:
         # AI API 제공자 확인
         self.ai_provider = getattr(config, 'AI_API_PROVIDER', 'openai').lower()
         if self.ai_provider == 'claude' and not self.claude_client:
-            print(f"⚠️ Claude API가 설정되지 않았습니다. OpenAI를 사용합니다.")
+            logger.warning(f"⚠️ Claude API가 설정되지 않았습니다. OpenAI를 사용합니다.")
             self.ai_provider = 'openai'
         elif self.ai_provider == 'openai' and not self.openai_client:
             if self.claude_client:
-                print(f"⚠️ OpenAI API가 설정되지 않았습니다. Claude를 사용합니다.")
+                logger.warning(f"⚠️ OpenAI API가 설정되지 않았습니다. Claude를 사용합니다.")
                 self.ai_provider = 'claude'
             else:
-                print(f"⚠️ AI API가 설정되지 않았습니다.")
+                logger.warning(f"⚠️ AI API가 설정되지 않았습니다.")
         
         # TTS 엔진 초기화 (AudioGenerator로 전달됨)
         self.tts_engine = None
@@ -78,10 +81,10 @@ class AIVideoGenerator:
                     tts_provider = TTSProvider(tts_provider_str.lower())
             
             self.tts_engine = TTSEngine(provider=tts_provider)
-            print(f"✅ TTS 엔진 초기화: {self.tts_engine.get_provider().value}")
+            logger.info(f"✅ TTS 엔진 초기화: {self.tts_engine.get_provider().value}")
         except Exception as e:
-            print(f"⚠️ TTS 엔진 초기화 실패: {e}")
-            print("   기본 gTTS를 사용합니다.")
+            logger.warning(f"⚠️ TTS 엔진 초기화 실패: {e}")
+            logger.info("   기본 gTTS를 사용합니다.")
             self.tts_engine = None
         
         # 컴포넌트 초기화
@@ -127,19 +130,20 @@ class AIVideoGenerator:
         """
         AI를 활용하여 YouTube Shorts 영상 생성 (Main Orchestration Method)
         """
+
         start_time = time.time()
-        print(f"🎬 AI 영상 생성 시작...")
+        logger.info(f"🎬 AI 영상 생성 시작...")
         
         # 1. 주제 생성 (없을 경우)
         topic_source = "user_provided"
         if not topic:
             topic, topic_source = self.script_generator.generate_topic(content_type=content_type)
-            print(f"📌 생성된 주제: {topic} (출처: {topic_source})")
+            logger.info(f"📌 생성된 주제: {topic} (출처: {topic_source})")
         else:
-            print(f"📌 입력된 주제: {topic}")
+            logger.info(f"📌 입력된 주제: {topic}")
         
         # 2. 스크립트 생성
-        print(f"📝 스크립트 생성 중...")
+        logger.info(f"📝 스크립트 생성 중...")
         script = self.script_generator.generate_script(
             topic,
             performance_prompt=performance_prompt,
@@ -149,19 +153,19 @@ class AIVideoGenerator:
         )
         
         if not script:
-            print("❌ 스크립트 생성 실패")
+            logger.error("❌ 스크립트 생성 실패")
             return None, None, None
             
-        print(f"✅ 스크립트 생성 완료 ({len(script)}개 문장)")
+        logger.info(f"✅ 스크립트 생성 완료 ({len(script)}개 문장)")
         for i, line in enumerate(script):
-            print(f"   {i+1}. {line}")
+            logger.debug(f"   {i+1}. {line}")
             
         # 3. 영상 길이 설정
         if not duration:
             duration = VideoConstants.TARGET_DURATION
             
         # 4. 영상 합성 (VideoCompositor 위임)
-        print(f"🎥 영상 합성 시작...")
+        logger.info(f"🎥 영상 합성 시작...")
         try:
             video_path = self.video_compositor.create_video_from_script(
                 script=script,
@@ -172,19 +176,17 @@ class AIVideoGenerator:
                 language=language
             )
         except Exception as e:
-            print(f"❌ 영상 합성 실패: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"❌ 영상 합성 실패: {e}", exc_info=True)
             return None, None, None
             
         if not video_path or not os.path.exists(video_path):
-            print("❌ 영상 파일 생성 실패")
+            logger.error("❌ 영상 파일 생성 실패")
             return None, None, None
             
-        print(f"✅ 영상 생성 완료: {video_path}")
+        logger.info(f"✅ 영상 생성 완료: {video_path}")
         
         # 5. 썸네일 생성 (ImageGenerator 위임)
-        print(f"🖼️ 썸네일 생성 중...")
+        logger.info(f"🖼️ 썸네일 생성 중...")
         thumbnail_path = None
         try:
             thumbnail_path = self.image_generator.generate_thumbnail(
@@ -194,14 +196,14 @@ class AIVideoGenerator:
                 script=script
             )
             if thumbnail_path:
-                print(f"✅ 썸네일 생성 완료: {thumbnail_path}")
+                logger.info(f"✅ 썸네일 생성 완료: {thumbnail_path}")
             else:
-                print(f"⚠️ 썸네일 생성 실패")
+                logger.warning(f"⚠️ 썸네일 생성 실패")
         except Exception as e:
-            print(f"⚠️ 썸네일 생성 중 오류: {e}")
+            logger.warning(f"⚠️ 썸네일 생성 중 오류: {e}")
             
         end_time = time.time()
         elapsed_time = end_time - start_time
-        print(f"✨ 전체 작업 완료! (소요 시간: {elapsed_time:.2f}초)")
+        logger.info(f"✨ 전체 작업 완료! (소요 시간: {elapsed_time:.2f}초)")
         
         return video_path, thumbnail_path, topic, script

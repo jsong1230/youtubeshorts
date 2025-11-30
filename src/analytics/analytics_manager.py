@@ -12,7 +12,7 @@ class AnalyticsManager:
     def fetch_channel_stats(self):
         """채널 전체 통계 조회"""
         if not self.youtube:
-            print("⚠️ YouTube API 서비스가 초기화되지 않았습니다.")
+            logger.warning("⚠️ YouTube API 서비스가 초기화되지 않았습니다.")
             return None
             
         try:
@@ -35,7 +35,7 @@ class AnalyticsManager:
                 }
             return None
         except Exception as e:
-            print(f"❌ 채널 통계 조회 실패: {e}")
+            logger.error(f"❌ 채널 통계 조회 실패: {e}")
             return None
 
     def get_recent_shorts_stats(self, max_results=10):
@@ -109,13 +109,13 @@ class AnalyticsManager:
             return results
             
         except Exception as e:
-            print(f"❌ 영상 통계 조회 실패: {e}")
+            logger.error(f"❌ 영상 통계 조회 실패: {e}")
             return []
 
             return results
             
         except Exception as e:
-            print(f"❌ 영상 통계 조회 실패: {e}")
+            logger.error(f"❌ 영상 통계 조회 실패: {e}")
             return []
 
     def _extract_topic(self, title):
@@ -228,30 +228,30 @@ class AnalyticsManager:
 
     def generate_performance_report(self):
         """성과 분석 리포트 생성 및 출력"""
-        print("\n📊 YouTube Shorts 성과 분석 리포트")
-        print("=" * 50)
+        logger.info("\n📊 YouTube Shorts 성과 분석 리포트")
+        logger.info("=" * 50)
         
         # 1. 채널 통계
         channel_stats = self.fetch_channel_stats()
         if channel_stats:
-            print(f"📺 채널: {channel_stats['title']}")
-            print(f"   구독자: {channel_stats['subscriber_count']:,}명")
-            print(f"   총 조회수: {channel_stats['view_count']:,}회")
-            print(f"   총 영상 수: {channel_stats['video_count']:,}개")
-        print("-" * 50)
+            logger.info(f"📺 채널: {channel_stats['title']}")
+            logger.info(f"   구독자: {channel_stats['subscriber_count']:,}명")
+            logger.info(f"   총 조회수: {channel_stats['view_count']:,}회")
+            logger.info(f"   총 영상 수: {channel_stats['video_count']:,}개")
+        logger.info("-" * 50)
         
         # 2. 최근 영상 성과 (더 많은 데이터 분석을 위해 30개 조회)
         recent_videos = self.get_recent_shorts_stats(max_results=30)
         
-        print(f"📈 최근 업로드 영상 성과 (최근 {len(recent_videos)}개 분석)")
+        logger.info(f"📈 최근 업로드 영상 성과 (최근 {len(recent_videos)}개 분석)")
         
         if not recent_videos:
-            print("   최근 업로드된 영상이 없습니다.")
+            logger.info("   최근 업로드된 영상이 없습니다.")
         else:
             # 상위 5개만 출력
             top_videos = sorted(recent_videos, key=lambda x: x['stats']['views'], reverse=True)[:5]
             
-            print("\n   🏆 Top 5 인기 영상:")
+            logger.info("\n   🏆 Top 5 인기 영상:")
             for i, video in enumerate(top_videos):
                 title = video['title']
                 if len(title) > 40:
@@ -260,69 +260,69 @@ class AnalyticsManager:
                 stats = video['stats']
                 pub_date = datetime.strptime(video['published_at'], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d")
                 
-                print(f"   {i+1}. [{pub_date}] {title}")
-                print(f"      👁️ {stats['views']:,} | ❤️ {stats['likes']:,} | 🔥 {stats['engagement_rate']:.2f}%")
+                logger.info(f"   {i+1}. [{pub_date}] {title}")
+                logger.info(f"      👁️ {stats['views']:,} | ❤️ {stats['likes']:,} | 🔥 {stats['engagement_rate']:.2f}%")
             
-            print("-" * 50)
+            logger.info("-" * 50)
             
             # 3. 주제별 성과 분석
-            print("🧠 주제별 성과 분석")
+            logger.info("🧠 주제별 성과 분석")
             topic_results = self.analyze_topic_performance(recent_videos)
             
-            print(f"\n   {'주제':<15} | {'영상수':<5} | {'평균조회수':<10} | {'평균참여율':<10}")
-            print(f"   {'-'*15}-+-{'-'*5}-+-{'-'*10}-+-{'-'*10}")
+            logger.info(f"\n   {'주제':<15} | {'영상수':<5} | {'평균조회수':<10} | {'평균참여율':<10}")
+            logger.info(f"   {'-'*15}-+-{'-'*5}-+-{'-'*10}-+-{'-'*10}")
             
             for res in topic_results:
-                print(f"   {res['topic']:<15} | {res['count']:<5} | {res['avg_views']:<10.1f} | {res['avg_engagement']:<9.2f}%")
+                logger.info(f"   {res['topic']:<15} | {res['count']:<5} | {res['avg_views']:<10.1f} | {res['avg_engagement']:<9.2f}%")
                 
-            print("-" * 50)
+            logger.info("-" * 50)
             
             # 4. 인사이트 및 추천
             if topic_results:
                 best_topic = topic_results[0]
-                print("💡 AI 인사이트:")
-                print(f"   - 현재 가장 성과가 좋은 주제는 '{best_topic['topic']}' 입니다.")
-                print(f"     (평균 조회수 {best_topic['avg_views']:.1f}회, 참여율 {best_topic['avg_engagement']:.2f}%)")
+                logger.info("💡 AI 인사이트:")
+                logger.info(f"   - 현재 가장 성과가 좋은 주제는 '{best_topic['topic']}' 입니다.")
+                logger.info(f"     (평균 조회수 {best_topic['avg_views']:.1f}회, 참여율 {best_topic['avg_engagement']:.2f}%)")
                 
                 if len(topic_results) > 1:
                     worst_topic = topic_results[-1]
                     if worst_topic['count'] >= 2:  # 데이터가 좀 쌓인 경우에만 조언
-                        print(f"   - '{worst_topic['topic']}' 주제는 성과가 저조합니다. 접근 방식을 바꾸거나 비중을 줄이세요.")
+                        logger.info(f"   - '{worst_topic['topic']}' 주제는 성과가 저조합니다. 접근 방식을 바꾸거나 비중을 줄이세요.")
                 
                 # 참여율이 높은 주제 찾기 (조회수 1등과 다를 수 있음)
                 most_engaging = max(topic_results, key=lambda x: x['avg_engagement'])
                 if most_engaging['topic'] != best_topic['topic']:
-                    print(f"   - '{most_engaging['topic']}' 주제는 조회수 대비 참여율이 가장 높습니다 ({most_engaging['avg_engagement']:.2f}%).")
-                    print(f"     이 주제는 충성도 높은 시청자를 모으기에 좋습니다.")
+                    logger.info(f"   - '{most_engaging['topic']}' 주제는 조회수 대비 참여율이 가장 높습니다 ({most_engaging['avg_engagement']:.2f}%).")
+                    logger.info(f"     이 주제는 충성도 높은 시청자를 모으기에 좋습니다.")
             
-            print("-" * 50)
+            logger.info("-" * 50)
             
             # 5. 업로드 시간대별 분석
-            print("⏰ 업로드 시간대별 성과 분석 (KST 기준)")
+            logger.info("⏰ 업로드 시간대별 성과 분석 (KST 기준)")
             time_results = self.analyze_upload_time_performance(recent_videos)
             
             if len(time_results) >= 3:  # 최소 3개 이상의 시간대 데이터가 있을 때만 분석
-                print(f"\n   {'시간':<10} | {'영상수':<5} | {'평균조회수':<10} | {'평균참여율':<10}")
-                print(f"   {'-'*10}-+-{'-'*5}-+-{'-'*10}-+-{'-'*10}")
+                logger.info(f"\n   {'시간':<10} | {'영상수':<5} | {'평균조회수':<10} | {'평균참여율':<10}")
+                logger.info(f"   {'-'*10}-+-{'-'*5}-+-{'-'*10}-+-{'-'*10}")
                 
                 for res in time_results:
                     hour_str = f"{res['hour']:02d}:00"
-                    print(f"   {hour_str:<10} | {res['count']:<5} | {res['avg_views']:<10.1f} | {res['avg_engagement']:<9.2f}%")
+                    logger.info(f"   {hour_str:<10} | {res['count']:<5} | {res['avg_views']:<10.1f} | {res['avg_engagement']:<9.2f}%")
                 
-                print("\n   💡 업로드 시간 인사이트:")
+                logger.info("\n   💡 업로드 시간 인사이트:")
                 
                 # 조회수 기준 최고 시간대
                 best_time = max(time_results, key=lambda x: x['avg_views'])
-                print(f"   - 가장 성과가 좋은 시간대는 {best_time['hour']:02d}:00 입니다.")
-                print(f"     (평균 조회수 {best_time['avg_views']:.1f}회, 참여율 {best_time['avg_engagement']:.2f}%)")
+                logger.info(f"   - 가장 성과가 좋은 시간대는 {best_time['hour']:02d}:00 입니다.")
+                logger.info(f"     (평균 조회수 {best_time['avg_views']:.1f}회, 참여율 {best_time['avg_engagement']:.2f}%)")
                 
                 # 데이터가 한 시간대에 집중되어 있는지 확인
                 total_videos = sum(r['count'] for r in time_results)
                 max_concentration = max(r['count'] for r in time_results)
                 if max_concentration / total_videos > 0.7:  # 70% 이상이 한 시간대에 집중
-                    print(f"   - ⚠️ 대부분의 영상이 같은 시간대에 업로드되었습니다.")
-                    print(f"     다양한 시간대에 업로드를 시도해보면 더 정확한 분석이 가능합니다.")
+                    logger.info(f"   - ⚠️ 대부분의 영상이 같은 시간대에 업로드되었습니다.")
+                    logger.info(f"     다양한 시간대에 업로드를 시도해보면 더 정확한 분석이 가능합니다.")
             else:
-                print("\n   ⚠️ 업로드 시간대 데이터가 부족합니다. 다양한 시간에 업로드를 시도해보세요.")
+                logger.info("\n   ⚠️ 업로드 시간대 데이터가 부족합니다. 다양한 시간에 업로드를 시도해보세요.")
         
-        print("=" * 50)
+        logger.info("=" * 50)

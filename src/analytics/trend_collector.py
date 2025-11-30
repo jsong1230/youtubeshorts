@@ -8,6 +8,9 @@ from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 from collections import Counter
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     from googleapiclient.discovery import build
@@ -44,16 +47,16 @@ class TrendCollector:
         if YOUTUBE_API_AVAILABLE:
             try:
                 self.youtube = get_authenticated_service()
-                print("✅ YouTube API 클라이언트 초기화 완료")
+                logger.info("✅ YouTube API 클라이언트 초기화 완료")
             except Exception as e:
-                print(f"⚠️ YouTube API 클라이언트 초기화 실패: {e}")
+                logger.warning(f"⚠️ YouTube API 클라이언트 초기화 실패: {e}")
         
         # OpenAI API 초기화 (키워드 추출용)
         if OPENAI_AVAILABLE and config.OPENAI_API_KEY:
             try:
                 self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
             except Exception as e:
-                print(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
+                logger.warning(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
     
     def get_trending_shorts(
         self,
@@ -71,7 +74,7 @@ class TrendCollector:
             인기 Shorts 영상 리스트 (제목, 조회수, 좋아요 등 포함)
         """
         if not self.youtube:
-            print("⚠️ YouTube API가 초기화되지 않았습니다.")
+            logger.warning("⚠️ YouTube API가 초기화되지 않았습니다.")
             return []
         
         try:
@@ -114,11 +117,11 @@ class TrendCollector:
                             'tags': video_details.get('tags', [])
                         })
             
-            print(f"✅ 인기 Shorts {len(videos)}개 수집 완료")
+            logger.info(f"✅ 인기 Shorts {len(videos)}개 수집 완료")
             return videos
             
         except Exception as e:
-            print(f"⚠️ 인기 Shorts 수집 실패: {e}")
+            logger.warning(f"⚠️ 인기 Shorts 수집 실패: {e}")
             import traceback
             traceback.print_exc()
             return []
@@ -154,7 +157,7 @@ class TrendCollector:
                 }
             return None
         except Exception as e:
-            print(f"⚠️ 영상 상세 정보 가져오기 실패 ({video_id}): {e}")
+            logger.warning(f"⚠️ 영상 상세 정보 가져오기 실패 ({video_id}): {e}")
             return None
     
     def _parse_duration(self, duration_str: str) -> int:
@@ -193,10 +196,10 @@ class TrendCollector:
         ]
         
         if not filtered_videos:
-            print(f"⚠️ 조회수 {min_views} 이상인 영상이 없습니다.")
+            logger.warning(f"⚠️ 조회수 {min_views} 이상인 영상이 없습니다.")
             return []
         
-        print(f"📊 {len(filtered_videos)}개 영상에서 키워드 추출 중...")
+        logger.info(f"📊 {len(filtered_videos)}개 영상에서 키워드 추출 중...")
         
         # 제목과 태그에서 키워드 추출
         all_keywords = []
@@ -233,12 +236,12 @@ class TrendCollector:
             try:
                 refined_keywords = self._refine_keywords_with_ai(top_keywords[:top_n])
                 if refined_keywords:
-                    print(f"✅ AI로 정제된 키워드 {len(refined_keywords)}개")
+                    logger.info(f"✅ AI로 정제된 키워드 {len(refined_keywords)}개")
                     return refined_keywords[:top_n]
             except Exception as e:
-                print(f"⚠️ AI 키워드 정제 실패, 기본 키워드 사용: {e}")
+                logger.warning(f"⚠️ AI 키워드 정제 실패, 기본 키워드 사용: {e}")
         
-        print(f"✅ 추출된 키워드 {len(top_keywords[:top_n])}개")
+        logger.info(f"✅ 추출된 키워드 {len(top_keywords[:top_n])}개")
         return top_keywords[:top_n]
     
     def _extract_keywords_from_text(self, text: str) -> List[str]:
@@ -301,7 +304,7 @@ class TrendCollector:
             return refined_keywords
             
         except Exception as e:
-            print(f"⚠️ AI 키워드 정제 실패: {e}")
+            logger.warning(f"⚠️ AI 키워드 정제 실패: {e}")
             return keywords
     
     def collect_trending_keywords(
@@ -321,13 +324,13 @@ class TrendCollector:
         Returns:
             트렌드 키워드 리스트
         """
-        print(f"🔍 YouTube 트렌드 키워드 수집 시작...")
+        logger.info(f"🔍 YouTube 트렌드 키워드 수집 시작...")
         
         # 1. 인기 Shorts 수집
         videos = self.get_trending_shorts(max_results=max_videos)
         
         if not videos:
-            print("⚠️ 수집된 영상이 없습니다.")
+            logger.warning("⚠️ 수집된 영상이 없습니다.")
             return []
         
         # 2. 키워드 추출
@@ -406,11 +409,11 @@ class TrendCollector:
             # 중복 제거 및 정렬
             unique_topics = list(dict.fromkeys(topics))  # 순서 유지하면서 중복 제거
             
-            print(f"✅ {category} 카테고리 트렌드 주제 {len(unique_topics)}개 수집")
+            logger.info(f"✅ {category} 카테고리 트렌드 주제 {len(unique_topics)}개 수집")
             return unique_topics[:20]  # 최대 20개
             
         except Exception as e:
-            print(f"⚠️ 카테고리별 트렌드 주제 수집 실패: {e}")
+            logger.warning(f"⚠️ 카테고리별 트렌드 주제 수집 실패: {e}")
             return []
     
     def generate_topics_from_trends(
@@ -433,12 +436,12 @@ class TrendCollector:
             생성된 주제 리스트
         """
         if not self.openai_client:
-            print("⚠️ OpenAI API가 없어 주제 생성이 불가능합니다.")
+            logger.warning("⚠️ OpenAI API가 없어 주제 생성이 불가능합니다.")
             return []
         
         # 키워드가 없으면 자동 수집
         if not keywords:
-            print("📊 트렌드 키워드 자동 수집 중...")
+            logger.info("📊 트렌드 키워드 자동 수집 중...")
             keywords = self.collect_trending_keywords(
                 max_videos=30,
                 min_views=5000,
@@ -446,7 +449,7 @@ class TrendCollector:
             )
         
         if not keywords:
-            print("⚠️ 수집된 키워드가 없습니다.")
+            logger.warning("⚠️ 수집된 키워드가 없습니다.")
             return []
         
         # CPM 점수 기반 키워드 우선순위 정렬
@@ -469,9 +472,9 @@ class TrendCollector:
             prioritized_keywords = high_cpm_keywords + other_keywords[:5]
             keywords = prioritized_keywords[:20]  # 최대 20개
             
-            print(f"📊 CPM 우선순위 적용: 상위 {len(high_cpm_keywords)}개 고CPM 키워드 선택")
+            logger.info(f"📊 CPM 우선순위 적용: 상위 {len(high_cpm_keywords)}개 고CPM 키워드 선택")
         except Exception as e:
-            print(f"⚠️ CPM 우선순위 적용 실패, 원본 키워드 사용: {e}")
+            logger.warning(f"⚠️ CPM 우선순위 적용 실패, 원본 키워드 사용: {e}")
         
         try:
             # 콘텐츠 타입별 프롬프트
@@ -554,11 +557,11 @@ Return only the topics, one per line, without numbering or bullets. Each topic s
             # 중복 제거
             unique_topics = list(dict.fromkeys(topics))  # 순서 유지하면서 중복 제거
             
-            print(f"✅ AI로 생성된 주제 {len(unique_topics)}개 (목표: {num_topics}개)")
+            logger.info(f"✅ AI로 생성된 주제 {len(unique_topics)}개 (목표: {num_topics}개)")
             return unique_topics[:num_topics]
             
         except Exception as e:
-            print(f"⚠️ AI 주제 생성 실패: {e}")
+            logger.warning(f"⚠️ AI 주제 생성 실패: {e}")
             import traceback
             traceback.print_exc()
             return []
@@ -646,7 +649,7 @@ Return only the topics, one per line, without numbering or bullets. Each topic s
             계절별 트렌드 키워드 리스트
         """
         if not self.youtube:
-            print("⚠️ YouTube API가 없어 계절별 트렌드 키워드 수집이 불가능합니다.")
+            logger.warning("⚠️ YouTube API가 없어 계절별 트렌드 키워드 수집이 불가능합니다.")
             return []
         
         # 계절별 검색어
@@ -676,10 +679,10 @@ Return only the topics, one per line, without numbering or bullets. Each topic s
         queries = seasonal_queries.get(season.lower(), [])
         
         if not queries:
-            print(f"⚠️ 알 수 없는 계절: {season}")
+            logger.warning(f"⚠️ 알 수 없는 계절: {season}")
             return []
         
-        print(f"🍂 {season} 계절 트렌드 키워드 수집 시작...")
+        logger.info(f"🍂 {season} 계절 트렌드 키워드 수집 시작...")
         
         all_keywords = []
         
@@ -735,7 +738,7 @@ Return only the topics, one per line, without numbering or bullets. Each topic s
                                     if extracted_keywords:
                                         all_keywords.extend(extracted_keywords)
                                 except Exception as e:
-                                    print(f"⚠️ AI 키워드 추출 실패: {e}")
+                                    logger.warning(f"⚠️ AI 키워드 추출 실패: {e}")
                                     # AI 실패 시 제목에서 간단한 키워드 추출
                                     words = title.lower().split()
                                     relevant_words = [w for w in words if len(w) > 4 and w not in ['video', 'shorts', 'youtube']]
@@ -746,11 +749,11 @@ Return only the topics, one per line, without numbering or bullets. Each topic s
             keyword_counter = Counter(all_keywords)
             top_keywords = [keyword for keyword, count in keyword_counter.most_common(top_n)]
             
-            print(f"✅ {season} 계절 트렌드 키워드 {len(top_keywords)}개 수집 완료")
+            logger.info(f"✅ {season} 계절 트렌드 키워드 {len(top_keywords)}개 수집 완료")
             return top_keywords
             
         except Exception as e:
-            print(f"⚠️ {season} 계절 트렌드 키워드 수집 실패: {e}")
+            logger.warning(f"⚠️ {season} 계절 트렌드 키워드 수집 실패: {e}")
             return []
     
     def generate_seasonal_topics(
@@ -775,12 +778,12 @@ Return only the topics, one per line, without numbering or bullets. Each topic s
             생성된 계절별 주제 리스트
         """
         if not self.openai_client:
-            print("⚠️ OpenAI API가 없어 계절별 주제 생성이 불가능합니다.")
+            logger.warning("⚠️ OpenAI API가 없어 계절별 주제 생성이 불가능합니다.")
             return []
         
         # 키워드가 없으면 자동 수집
         if not keywords:
-            print(f"📊 {season} 계절 트렌드 키워드 자동 수집 중...")
+            logger.info(f"📊 {season} 계절 트렌드 키워드 자동 수집 중...")
             keywords = self.collect_seasonal_trending_keywords(
                 season=season,
                 max_videos=30,
@@ -789,7 +792,7 @@ Return only the topics, one per line, without numbering or bullets. Each topic s
             )
         
         if not keywords:
-            print(f"⚠️ {season} 계절 키워드가 없습니다.")
+            logger.warning(f"⚠️ {season} 계절 키워드가 없습니다.")
             return []
         
         try:
@@ -900,11 +903,11 @@ Return only the topics, one per line, without numbering or bullets. Each topic s
             # 중복 제거
             unique_topics = list(dict.fromkeys(topics))  # 순서 유지하면서 중복 제거
             
-            print(f"✅ {season} 계절 AI 생성 주제 {len(unique_topics)}개 (목표: {num_topics}개)")
+            logger.info(f"✅ {season} 계절 AI 생성 주제 {len(unique_topics)}개 (목표: {num_topics}개)")
             return unique_topics[:num_topics]
             
         except Exception as e:
-            print(f"⚠️ {season} 계절 AI 주제 생성 실패: {e}")
+            logger.warning(f"⚠️ {season} 계절 AI 주제 생성 실패: {e}")
             import traceback
             traceback.print_exc()
             return []

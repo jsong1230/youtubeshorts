@@ -7,6 +7,9 @@ from src.uploaders.youtube_uploader import YouTubeUploader
 from src.uploaders.tiktok_uploader import TikTokUploader
 from src.uploaders.instagram_uploader import InstagramUploader
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class MultiPlatformUploader:
@@ -20,31 +23,31 @@ class MultiPlatformUploader:
         # YouTube 업로더 (항상 활성화)
         try:
             self.uploaders['youtube'] = YouTubeUploader()
-            print("✅ YouTube 업로더 초기화 완료")
+            logger.info("✅ YouTube 업로더 초기화 완료")
         except Exception as e:
-            print(f"⚠️ YouTube 업로더 초기화 실패: {e}")
+            logger.warning(f"⚠️ YouTube 업로더 초기화 실패: {e}")
         
         # TikTok 업로더 (선택사항)
         if config.ENABLE_TIKTOK_UPLOAD:
             try:
                 self.uploaders['tiktok'] = TikTokUploader()
                 if self.uploaders['tiktok'].is_available():
-                    print("✅ TikTok 업로더 초기화 완료")
+                    logger.info("✅ TikTok 업로더 초기화 완료")
                 else:
-                    print("⚠️ TikTok 업로더 사용 불가 (API 키 미설정)")
+                    logger.warning("⚠️ TikTok 업로더 사용 불가 (API 키 미설정)")
             except Exception as e:
-                print(f"⚠️ TikTok 업로더 초기화 실패: {e}")
+                logger.warning(f"⚠️ TikTok 업로더 초기화 실패: {e}")
         
         # Instagram 업로더 (선택사항)
         if config.ENABLE_INSTAGRAM_UPLOAD:
             try:
                 self.uploaders['instagram'] = InstagramUploader()
                 if self.uploaders['instagram'].is_available():
-                    print("✅ Instagram 업로더 초기화 완료")
+                    logger.info("✅ Instagram 업로더 초기화 완료")
                 else:
-                    print("⚠️ Instagram 업로더 사용 불가 (API 키 미설정)")
+                    logger.warning("⚠️ Instagram 업로더 사용 불가 (API 키 미설정)")
             except Exception as e:
-                print(f"⚠️ Instagram 업로더 초기화 실패: {e}")
+                logger.warning(f"⚠️ Instagram 업로더 초기화 실패: {e}")
     
     def upload_to_all(
         self,
@@ -77,16 +80,16 @@ class MultiPlatformUploader:
         
         results = {}
         
-        print(f"\n📤 멀티 플랫폼 업로드 시작: {', '.join(platforms)}")
+        logger.info(f"📤 멀티 플랫폼 업로드 시작: {', '.join(platforms)}")
         
         # YouTube 업로드
         if 'youtube' in platforms and 'youtube' in self.uploaders:
             try:
-                print("\n📺 YouTube 업로드 중...")
+                logger.info("📺 YouTube 업로드 중...")
                 if thumbnail_path:
-                    print(f"   🖼️ 썸네일 경로 전달됨: {thumbnail_path}")
+                    logger.info(f"   🖼️ 썸네일 경로 전달됨: {thumbnail_path}")
                 else:
-                    print("   ⚠️ 썸네일 경로가 전달되지 않았습니다.")
+                    logger.warning("   ⚠️ 썸네일 경로가 전달되지 않았습니다.")
                 youtube_id = self.uploaders['youtube'].upload_video(
                     video_path=video_path,
                     title=title,
@@ -97,18 +100,18 @@ class MultiPlatformUploader:
                 )
                 results['youtube'] = youtube_id
                 if youtube_id:
-                    print(f"✅ YouTube 업로드 완료: {youtube_id}")
+                    logger.info(f"✅ YouTube 업로드 완료: {youtube_id}")
                 else:
-                    print("⚠️ YouTube 업로드 실패")
+                    logger.error("⚠️ YouTube 업로드 실패")
             except Exception as e:
-                print(f"⚠️ YouTube 업로드 오류: {e}")
+                logger.error(f"⚠️ YouTube 업로드 오류: {e}", exc_info=True)
                 results['youtube'] = None
         
         # TikTok 업로드
         if 'tiktok' in platforms and 'tiktok' in self.uploaders:
             try:
                 if self.uploaders['tiktok'].is_available():
-                    print("\n🎵 TikTok 업로드 중...")
+                    logger.info("🎵 TikTok 업로드 중...")
                     tiktok_id = self.uploaders['tiktok'].upload_video(
                         video_path=video_path,
                         title=title,
@@ -116,21 +119,21 @@ class MultiPlatformUploader:
                     )
                     results['tiktok'] = tiktok_id
                     if tiktok_id:
-                        print(f"✅ TikTok 업로드 완료: {tiktok_id}")
+                        logger.info(f"✅ TikTok 업로드 완료: {tiktok_id}")
                     else:
-                        print("⚠️ TikTok 업로드 실패")
+                        logger.error("⚠️ TikTok 업로드 실패")
                 else:
-                    print("⚠️ TikTok 업로더 사용 불가 (API 키 미설정)")
+                    logger.warning("⚠️ TikTok 업로더 사용 불가 (API 키 미설정)")
                     results['tiktok'] = None
             except Exception as e:
-                print(f"⚠️ TikTok 업로드 오류: {e}")
+                logger.error(f"⚠️ TikTok 업로드 오류: {e}", exc_info=True)
                 results['tiktok'] = None
         
         # Instagram 업로드
         if 'instagram' in platforms and 'instagram' in self.uploaders:
             try:
                 if self.uploaders['instagram'].is_available():
-                    print("\n📷 Instagram Reels 업로드 중...")
+                    logger.info("📷 Instagram Reels 업로드 중...")
                     # Instagram은 caption에 해시태그 포함
                     caption = title
                     if description:
@@ -145,14 +148,14 @@ class MultiPlatformUploader:
                     )
                     results['instagram'] = instagram_id
                     if instagram_id:
-                        print(f"✅ Instagram 업로드 완료: {instagram_id}")
+                        logger.info(f"✅ Instagram 업로드 완료: {instagram_id}")
                     else:
-                        print("⚠️ Instagram 업로드 실패")
+                        logger.error("⚠️ Instagram 업로드 실패")
                 else:
-                    print("⚠️ Instagram 업로더 사용 불가 (API 키 미설정)")
+                    logger.warning("⚠️ Instagram 업로더 사용 불가 (API 키 미설정)")
                     results['instagram'] = None
             except Exception as e:
-                print(f"⚠️ Instagram 업로드 오류: {e}")
+                logger.error(f"⚠️ Instagram 업로드 오류: {e}", exc_info=True)
                 results['instagram'] = None
         
         self.results = results
@@ -176,7 +179,7 @@ class MultiPlatformUploader:
             try:
                 return self.uploaders['youtube'].get_video_stats(video_id)
             except Exception as e:
-                print(f"⚠️ YouTube 통계 정보 가져오기 실패: {e}")
+                logger.warning(f"⚠️ YouTube 통계 정보 가져오기 실패: {e}")
                 return None
         return None
     
@@ -191,7 +194,7 @@ class MultiPlatformUploader:
             try:
                 return self.uploaders['youtube'].check_today_uploaded()
             except Exception as e:
-                print(f"⚠️ 오늘 업로드 확인 실패: {e}")
+                logger.warning(f"⚠️ 오늘 업로드 확인 실패: {e}")
                 return False
         return False
 

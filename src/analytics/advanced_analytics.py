@@ -10,6 +10,9 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
 from collections import defaultdict
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 from src.pipeline.database import VideoDatabase
 from src.analytics.ab_testing import ABTestDatabase
 from src.analytics.thumbnail_optimizer import ThumbnailOptimizer
@@ -182,7 +185,7 @@ class PerformancePredictor:
                 'confidence': confidence
             }
         except Exception as e:
-            print(f"⚠️ 성과 예측 실패: {e}")
+            logger.warning(f"⚠️ 성과 예측 실패: {e}")
             return {
                 'predicted_views': 100,
                 'predicted_engagement_rate': 2.0,
@@ -224,7 +227,7 @@ class PerformancePredictor:
             conn.close()
             return videos
         except Exception as e:
-            print(f"⚠️ 과거 데이터 가져오기 실패: {e}")
+            logger.warning(f"⚠️ 과거 데이터 가져오기 실패: {e}")
             return []
     
     def _calculate_topic_average(self, topic: str, historical_data: List[Dict]) -> Dict:
@@ -327,7 +330,7 @@ class PerformancePredictor:
             conn.commit()
             conn.close()
         except Exception as e:
-            print(f"⚠️ 예측 결과 저장 실패: {e}")
+            logger.warning(f"⚠️ 예측 결과 저장 실패: {e}")
     
     def update_prediction_accuracy(self, video_id: str, actual_views: int):
         """예측 정확도 업데이트"""
@@ -359,7 +362,7 @@ class PerformancePredictor:
             
             conn.close()
         except Exception as e:
-            print(f"⚠️ 예측 정확도 업데이트 실패: {e}")
+            logger.warning(f"⚠️ 예측 정확도 업데이트 실패: {e}")
 
 
 class AutoOptimizer:
@@ -408,7 +411,7 @@ class AutoOptimizer:
             
             return None
         except Exception as e:
-            print(f"⚠️ 주제 선택 최적화 실패: {e}")
+            logger.warning(f"⚠️ 주제 선택 최적화 실패: {e}")
             return None
     
     def optimize_upload_time(self) -> int:
@@ -451,7 +454,7 @@ class AutoOptimizer:
             # 기본값: 오전 9시
             return 9
         except Exception as e:
-            print(f"⚠️ 업로드 시간 최적화 실패: {e}")
+            logger.warning(f"⚠️ 업로드 시간 최적화 실패: {e}")
             return 9
     
     def optimize_video_style(self, content_type: str) -> str:
@@ -477,7 +480,7 @@ class AutoOptimizer:
             # 기본값
             return 'default'
         except Exception as e:
-            print(f"⚠️ 영상 스타일 최적화 실패: {e}")
+            logger.warning(f"⚠️ 영상 스타일 최적화 실패: {e}")
             return 'default'
     
     def optimize_thumbnail_style(self) -> str:
@@ -499,7 +502,7 @@ class AutoOptimizer:
             # 기본값: DALL-E 3
             return 'dalle3'
         except Exception as e:
-            print(f"⚠️ 썸네일 스타일 최적화 실패: {e}")
+            logger.warning(f"⚠️ 썸네일 스타일 최적화 실패: {e}")
             return 'dalle3'
     
     def get_optimization_recommendations(self) -> Dict:
@@ -561,7 +564,7 @@ class CompetitorAnalyzer:
                 'analysis_date': datetime.now().isoformat()
             }
         except Exception as e:
-            print(f"⚠️ 경쟁사 채널 분석 실패: {e}")
+            logger.warning(f"⚠️ 경쟁사 채널 분석 실패: {e}")
             return {}
     
     def benchmark_against_competitors(self, competitor_data: List[Dict]) -> Dict:
@@ -604,7 +607,7 @@ class CompetitorAnalyzer:
                 'recommendations': self._generate_benchmark_recommendations(comparison)
             }
         except Exception as e:
-            print(f"⚠️ 벤치마킹 실패: {e}")
+            logger.warning(f"⚠️ 벤치마킹 실패: {e}")
             return {}
     
     def _get_own_channel_data(self) -> Dict:
@@ -628,7 +631,7 @@ class CompetitorAnalyzer:
                 'upload_frequency': len(historical_data) / 30  # 일일 업로드 빈도
             }
         except Exception as e:
-            print(f"⚠️ 자체 채널 데이터 가져오기 실패: {e}")
+            logger.warning(f"⚠️ 자체 채널 데이터 가져오기 실패: {e}")
             return {
                 'avg_views': 0,
                 'avg_engagement_rate': 0,
@@ -685,7 +688,7 @@ class AudienceSegmentAnalyzer:
                 'analysis_date': datetime.now().isoformat()
             }
         except Exception as e:
-            print(f"⚠️ 시청자 세그먼트 분석 실패: {e}")
+            logger.warning(f"⚠️ 시청자 세그먼트 분석 실패: {e}")
             return {}
     
     def _analyze_topic_segments(self, days: int) -> List[Dict]:
@@ -715,7 +718,7 @@ class AudienceSegmentAnalyzer:
             segments.sort(key=lambda x: x['avg_views'], reverse=True)
             return segments
         except Exception as e:
-            print(f"⚠️ 주제별 세그먼트 분석 실패: {e}")
+            logger.warning(f"⚠️ 주제별 세그먼트 분석 실패: {e}")
             return []
     
     def _analyze_content_type_segments(self, days: int) -> List[Dict]:
@@ -751,7 +754,7 @@ class AudienceSegmentAnalyzer:
             segments.sort(key=lambda x: x['avg_views'], reverse=True)
             return segments
         except Exception as e:
-            print(f"⚠️ 콘텐츠 타입별 세그먼트 분석 실패: {e}")
+            logger.warning(f"⚠️ 콘텐츠 타입별 세그먼트 분석 실패: {e}")
             return []
     
     def _analyze_time_segments(self, days: int) -> List[Dict]:
@@ -812,6 +815,6 @@ class AudienceSegmentAnalyzer:
             segments.sort(key=lambda x: x['avg_views'], reverse=True)
             return segments
         except Exception as e:
-            print(f"⚠️ 시간대별 세그먼트 분석 실패: {e}")
+            logger.warning(f"⚠️ 시간대별 세그먼트 분석 실패: {e}")
             return []
 

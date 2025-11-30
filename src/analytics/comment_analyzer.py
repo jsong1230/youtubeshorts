@@ -46,7 +46,7 @@ class CommentAnalyzer:
                 'analyzed_at': datetime.now().isoformat()
             }
         except Exception as e:
-            print(f"⚠️ 댓글 분석 실패: {e}")
+            logger.warning(f"⚠️ 댓글 분석 실패: {e}")
             return {}
     
     def _fetch_comments(self, video_id: str, max_comments: int) -> List[Dict]:
@@ -86,7 +86,7 @@ class CommentAnalyzer:
             
             return comments[:max_comments]
         except Exception as e:
-            print(f"⚠️ 댓글 가져오기 실패: {e}")
+            logger.warning(f"⚠️ 댓글 가져오기 실패: {e}")
             return []
     
     def _extract_topic_suggestions(self, comments: List[Dict]) -> List[Dict]:
@@ -149,7 +149,7 @@ class CommentAnalyzer:
             
             return suggestions
         except Exception as e:
-            print(f"⚠️ 주제 제안 추출 실패: {e}")
+            logger.warning(f"⚠️ 주제 제안 추출 실패: {e}")
             return []
     
     def _extract_topic_from_comment(self, comment_text: str) -> Optional[str]:
@@ -192,7 +192,7 @@ class CommentAnalyzer:
             
             return None
         except Exception as e:
-            print(f"⚠️ 주제 추출 실패: {e}")
+            logger.warning(f"⚠️ 주제 추출 실패: {e}")
             return None
     
     def analyze_recent_videos_comments(
@@ -232,6 +232,6 @@ class CommentAnalyzer:
                 'analyzed_at': datetime.now().isoformat()
             }
         except Exception as e:
-            print(f"⚠️ 최근 영상 댓글 분석 실패: {e}")
+            logger.warning(f"⚠️ 최근 영상 댓글 분석 실패: {e}")
             return {}
 

@@ -6,6 +6,9 @@ import os
 from typing import List, Dict, Optional, Set
 from datetime import datetime, timedelta
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     from googleapiclient.discovery import build
@@ -33,16 +36,16 @@ class ChannelHistoryCollector:
         if YOUTUBE_API_AVAILABLE:
             try:
                 self.youtube = get_authenticated_service()
-                print("✅ YouTube API 클라이언트 초기화 완료 (채널 히스토리)")
+                logger.info("✅ YouTube API 클라이언트 초기화 완료 (채널 히스토리)")
             except Exception as e:
-                print(f"⚠️ YouTube API 클라이언트 초기화 실패: {e}")
+                logger.warning(f"⚠️ YouTube API 클라이언트 초기화 실패: {e}")
         
         # OpenAI API 초기화 (유사도 분석용)
         if OPENAI_AVAILABLE and config.OPENAI_API_KEY:
             try:
                 self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
             except Exception as e:
-                print(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
+                logger.warning(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
     
     def get_channel_videos(
         self,
@@ -60,7 +63,7 @@ class ChannelHistoryCollector:
             영상 리스트 (video_id, title, topic, published_at 등)
         """
         if not self.youtube:
-            print("⚠️ YouTube API가 초기화되지 않았습니다.")
+            logger.warning("⚠️ YouTube API가 초기화되지 않았습니다.")
             return []
         
         try:
@@ -124,10 +127,10 @@ class ChannelHistoryCollector:
                 
                 page_count += 1
             
-            print(f"✅ 채널에서 {len(videos)}개 영상 수집 완료")
+            logger.info(f"✅ 채널에서 {len(videos)}개 영상 수집 완료")
             return videos
         except Exception as e:
-            print(f"⚠️ 채널 영상 수집 실패: {e}")
+            logger.warning(f"⚠️ 채널 영상 수집 실패: {e}")
             import traceback
             traceback.print_exc()
             return []
@@ -154,7 +157,7 @@ class ChannelHistoryCollector:
                 # 소문자로 변환하여 비교 (대소문자 무시)
                 topics.add(topic.lower().strip())
         
-        print(f"✅ 기존 주제 {len(topics)}개 수집 완료 (최근 {days}일)")
+        logger.info(f"✅ 기존 주제 {len(topics)}개 수집 완료 (최근 {days}일)")
         return topics
     
     def check_topic_similarity(
@@ -232,7 +235,7 @@ DIFFERENT"""
                     return False, None
                     
             except Exception as e:
-                print(f"⚠️ OpenAI 유사도 분석 실패: {e}")
+                logger.warning(f"⚠️ OpenAI 유사도 분석 실패: {e}")
                 # 실패 시 기본 체크 결과 반환
                 return False, None
         
@@ -257,7 +260,7 @@ DIFFERENT"""
         existing_topics = self.get_existing_topics(days=days)
         
         if not existing_topics:
-            print("⚠️ 기존 주제가 없어 중복 체크를 건너뜁니다.")
+            logger.warning("⚠️ 기존 주제가 없어 중복 체크를 건너뜁니다.")
             return new_topics
         
         filtered_topics = []
@@ -271,11 +274,11 @@ DIFFERENT"""
             )
             
             if is_similar:
-                print(f"⏭️  주제 스킵 (유사함): '{topic}' (유사한 주제: '{similar_topic}')")
+                logger.info(f"⏭️  주제 스킵 (유사함): '{topic}' (유사한 주제: '{similar_topic}')")
                 skipped_count += 1
             else:
                 filtered_topics.append(topic)
         
-        print(f"✅ 주제 필터링 완료: {len(filtered_topics)}/{len(new_topics)}개 통과 (스킵: {skipped_count}개)")
+        logger.info(f"✅ 주제 필터링 완료: {len(filtered_topics)}/{len(new_topics)}개 통과 (스킵: {skipped_count}개)")
         return filtered_topics
 

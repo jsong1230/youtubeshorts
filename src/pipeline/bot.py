@@ -29,8 +29,11 @@ from src.web.notifications import NotificationService
 from src.generators.series_generator import SeriesGenerator, SeriesType
 from src.generators.user_request_handler import UserRequestHandler
 from src.analytics.comment_analyzer import CommentAnalyzer
+from src.utils.logger import get_logger
 import config
 import json
+
+logger = get_logger(__name__)
 
 
 class ShortsBot:
@@ -44,7 +47,7 @@ class ShortsBot:
         if use_multi_platform:
             self.uploader = MultiPlatformUploader()
             self.use_multi_platform = True
-            print("📱 멀티 플랫폼 업로드 모드 활성화")
+            logger.info("📱 멀티 플랫폼 업로드 모드 활성화")
         else:
             self.uploader = YouTubeUploader()
             self.use_multi_platform = False
@@ -102,15 +105,15 @@ class ShortsBot:
             else:
                 return ""
         except Exception as e:
-            print(f"⚠️ 성과 기반 프롬프트 생성 실패: {e}")
+            logger.warning(f"⚠️ 성과 기반 프롬프트 생성 실패: {e}")
             return ""
     
     def create_video_only(self, topic: str = None):
         """영상 생성만 (업로드 없음)"""
         try:
-            print(f"\n{'='*50}")
-            print(f"📹 영상 생성 테스트 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-            print(f"{'='*50}\n")
+            logger.info("="*50)
+            logger.info("📹 영상 생성 테스트 시작")
+            logger.info("="*50)
             
             # 언어 자동 감지 (기본값: 영어, 주제가 한글이면 한글로 설정)
             language = 'en'  # 기본값을 영어로 변경
@@ -120,12 +123,12 @@ class ShortsBot:
                 total_chars = len(re.findall(r'[a-zA-Z가-힣]', topic))
                 if total_chars > 0 and korean_chars / total_chars > 0.5:
                     language = 'ko'
-                    print(f"🌐 언어 자동 감지: 한국어 (주제: {topic})")
+                    logger.info(f"🌐 언어 자동 감지: 한국어 (주제: {topic})")
                 else:
-                    print(f"🌐 언어 자동 감지: 영어 (주제: {topic})")
+                    logger.info(f"🌐 언어 자동 감지: 영어 (주제: {topic})")
             
             # AI로 영상 생성 (매번 새로운 아이디어로)
-            print("📹 영상 생성 중...")
+            logger.info("📹 영상 생성 중...")
             result = self.video_generator.generate_video(
                 topic=topic, 
                 duration=None,
@@ -150,7 +153,7 @@ class ShortsBot:
                 topic_source = None
             
             if not video_path:
-                print("❌ 영상 생성 실패")
+                logger.error("❌ 영상 생성 실패")
                 return None
             
             # 실제 사용된 주제
@@ -185,21 +188,19 @@ class ShortsBot:
             with open(metadata_file, 'w', encoding='utf-8') as f:
                 json.dump(metadata, f, ensure_ascii=False, indent=2)
             
-            print(f"\n✅ 영상 생성 완료!")
-            print(f"📁 파일 위치: {video_path}")
+            logger.info(f"✅ 영상 생성 완료!")
+            logger.info(f"📁 파일 위치: {video_path}")
             if thumbnail_path:
-                print(f"🖼️ 썸네일 위치: {thumbnail_path}")
-            print(f"📝 제목: {title}")
-            print(f"📌 주제: {actual_topic}")
-            print(f"💾 메타데이터 저장: {metadata_file}")
-            print(f"🔍 확인 방법: open {video_path}")
+                logger.info(f"🖼️ 썸네일 위치: {thumbnail_path}")
+            logger.info(f"📝 제목: {title}")
+            logger.info(f"📌 주제: {actual_topic}")
+            logger.info(f"💾 메타데이터 저장: {metadata_file}")
+            logger.info(f"🔍 확인 방법: open {video_path}")
             
             return video_path
             
         except Exception as e:
-            print(f"\n❌ 오류 발생: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"❌ 오류 발생: {str(e)}", exc_info=True)
             return None
     
     def create_and_upload(self, topic: str = None, content_type: ContentType = None, force: bool = False, language: str = None, auto_upload: bool = False):
@@ -215,12 +216,12 @@ class ShortsBot:
         """
         try:
             content_type_name = content_type.value if content_type else "자동"
-            print(f"\n{'='*50}")
-            print(f"🚀 영상 생성 및 업로드 시작 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-            print(f"📌 콘텐츠 타입: {content_type_name}")
+            logger.info("="*50)
+            logger.info(f"🚀 영상 생성 및 업로드 시작")
+            logger.info(f"📌 콘텐츠 타입: {content_type_name}")
             if force:
-                print(f"⚠️ 강제 업로드 모드: 중복 체크를 건너뜁니다")
-            print(f"{'='*50}\n")
+                logger.warning(f"⚠️ 강제 업로드 모드: 중복 체크를 건너뜁니다")
+            logger.info("="*50)
             
             # 1. 업로드 제약 확인
             if not self._check_upload_constraints(force):
@@ -232,29 +233,29 @@ class ShortsBot:
             # 3. 성과 기반 프롬프트 가져오기
             performance_prompt = self._get_performance_based_prompt()
             if performance_prompt:
-                print("📊 성과 기반 프롬프트 적용 중...")
-                print(f"   {performance_prompt[:100]}...")
+                logger.info("📊 성과 기반 프롬프트 적용 중...")
+                logger.debug(f"   {performance_prompt[:100]}...")
             
             # 4. 영상 콘텐츠 생성
             video_assets = self._generate_video_content(topic, content_type, language, performance_prompt)
             
             # 5. 업로드 전 사용자 확인 (auto_upload가 False인 경우)
             if not auto_upload:
-                print(f"\n{'='*60}")
-                print("📋 영상 생성 완료! 업로드 전 확인이 필요합니다.")
-                print(f"{'='*60}")
-                print(f"제목: {video_assets.get('title', 'N/A')}")
-                print(f"주제: {video_assets.get('actual_topic', topic)}")
-                print(f"영상 파일: {video_assets.get('video_path', 'N/A')}")
+                logger.info("="*60)
+                logger.info("📋 영상 생성 완료! 업로드 전 확인이 필요합니다.")
+                logger.info("="*60)
+                logger.info(f"제목: {video_assets.get('title', 'N/A')}")
+                logger.info(f"주제: {video_assets.get('actual_topic', topic)}")
+                logger.info(f"영상 파일: {video_assets.get('video_path', 'N/A')}")
                 if video_assets.get('thumbnail_path'):
-                    print(f"썸네일: {video_assets.get('thumbnail_path', 'N/A')}")
+                    logger.info(f"썸네일: {video_assets.get('thumbnail_path', 'N/A')}")
                 print(f"\n이 영상을 YouTube에 업로드하시겠습니까? (y/n): ", end='', flush=True)
                 
                 try:
                     user_input = input().strip().lower()
                     if user_input not in ['y', 'yes', '예']:
-                        print("❌ 업로드가 취소되었습니다.")
-                        print(f"📁 영상 파일은 다음 경로에 저장되어 있습니다: {video_assets.get('video_path')}")
+                        logger.info("❌ 업로드가 취소되었습니다.")
+                        logger.info(f"📁 영상 파일은 다음 경로에 저장되어 있습니다: {video_assets.get('video_path')}")
                         return {
                             'video_path': video_assets.get('video_path'),
                             'thumbnail_path': video_assets.get('thumbnail_path'),
@@ -263,7 +264,7 @@ class ShortsBot:
                             'uploaded': False
                         }
                 except (EOFError, KeyboardInterrupt):
-                    print("\n❌ 업로드가 취소되었습니다.")
+                    logger.info("❌ 업로드가 취소되었습니다.")
                     return {
                         'video_path': video_assets.get('video_path'),
                         'thumbnail_path': video_assets.get('thumbnail_path'),
@@ -271,7 +272,7 @@ class ShortsBot:
                         'topic': video_assets.get('actual_topic', topic),
                         'uploaded': False
                     }
-                print("✅ 업로드를 진행합니다...\n")
+                logger.info("✅ 업로드를 진행합니다...")
             
             # 6. 플랫폼 업로드
             upload_results = self._upload_to_platforms(video_assets)
@@ -281,8 +282,8 @@ class ShortsBot:
             
             video_id = upload_results.get('youtube')
             if video_id:
-                print(f"\n✅ 완료! 영상 ID: {video_id}")
-                print(f"🔗 https://www.youtube.com/watch?v={video_id}\n")
+                logger.info(f"✅ 완료! 영상 ID: {video_id}")
+                logger.info(f"🔗 https://www.youtube.com/watch?v={video_id}")
                 
                 # 8. 알림 전송
                 self._send_notifications(video_assets, video_id)
@@ -293,9 +294,7 @@ class ShortsBot:
             return video_id
             
         except Exception as e:
-            print(f"\n❌ 오류 발생: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"❌ 오류 발생: {str(e)}", exc_info=True)
             return None
 
     def _load_video_metadata(self, video_path: str) -> Optional[Dict[str, Any]]:
@@ -317,13 +316,13 @@ class ShortsBot:
             if os.path.exists(metadata_file):
                 with open(metadata_file, 'r', encoding='utf-8') as f:
                     metadata = json.load(f)
-                    print(f"✅ 메타데이터 파일 로드: {metadata_file}")
+                    logger.info(f"✅ 메타데이터 파일 로드: {metadata_file}")
                     return metadata
             else:
-                print(f"⚠️ 메타데이터 파일을 찾을 수 없습니다: {metadata_file}")
+                logger.warning(f"⚠️ 메타데이터 파일을 찾을 수 없습니다: {metadata_file}")
                 return None
         except Exception as e:
-            print(f"⚠️ 메타데이터 파일 읽기 실패: {e}")
+            logger.error(f"⚠️ 메타데이터 파일 읽기 실패: {e}")
             return None
     
     def _check_upload_constraints(self, force: bool) -> bool:
@@ -340,33 +339,33 @@ class ShortsBot:
         self.sync_manager.print_sync_status()
         
         if force:
-            print(f"⚠️ 강제 업로드 모드: 중복 체크를 건너뜁니다")
+            logger.warning(f"⚠️ 강제 업로드 모드: 중복 체크를 건너뜁니다")
             return True
             
         # 오늘 이미 업로드했는지 확인 (로컬 상태)
         if self.sync_manager.check_today_uploaded():
             today_info = self.sync_manager.get_today_upload_info()
-            print(f"\n⚠️ 경고: 로컬 상태 파일에 따르면 오늘 이미 업로드했습니다.")
-            print(f"   영상 ID: {today_info.get('video_id', 'N/A')}")
-            print(f"   제목: {today_info.get('title', 'N/A')}")
-            print(f"   컴퓨터: {today_info.get('computer_id', 'N/A')}")
+            logger.warning(f"⚠️ 경고: 로컬 상태 파일에 따르면 오늘 이미 업로드했습니다.")
+            logger.info(f"   영상 ID: {today_info.get('video_id', 'N/A')}")
+            logger.info(f"   제목: {today_info.get('title', 'N/A')}")
+            logger.info(f"   컴퓨터: {today_info.get('computer_id', 'N/A')}")
             print(f"\n계속하시겠습니까? (y/n): ", end='')
             try:
                 response = input().strip().lower()
                 if response != 'y':
-                    print("❌ 업로드를 취소했습니다.")
+                    logger.info("❌ 업로드를 취소했습니다.")
                     return False
             except EOFError:
                 # 비대화형 환경에서는 자동으로 진행
-                print("y (자동 진행)")
+                logger.info("y (자동 진행)")
         
         # YouTube API로 오늘 업로드 확인 (실제 서버 상태)
         if not self.use_multi_platform:
             if hasattr(self.uploader, 'check_today_uploaded'):
                 if self.uploader.check_today_uploaded():
-                    print(f"\n⚠️ YouTube API 확인 결과, 오늘 이미 업로드된 영상이 있습니다.")
-                    print(f"   중복 업로드를 방지하기 위해 업로드를 건너뜁니다.")
-                    print(f"   강제로 업로드하려면 force=True 옵션을 사용하세요.")
+                    logger.warning(f"⚠️ YouTube API 확인 결과, 오늘 이미 업로드된 영상이 있습니다.")
+                    logger.info(f"   중복 업로드를 방지하기 위해 업로드를 건너뜁니다.")
+                    logger.info(f"   강제로 업로드하려면 force=True 옵션을 사용하세요.")
                     return False
                     
         return True
@@ -392,13 +391,13 @@ class ShortsBot:
             total_chars = len(re.findall(r'[a-zA-Z가-힣]', topic))
             if total_chars > 0 and korean_chars / total_chars > 0.5:
                 language = 'ko'
-                print(f"🌐 언어 자동 감지: 한국어 (주제: {topic})")
+                logger.info(f"🌐 언어 자동 감지: 한국어 (주제: {topic})")
             else:
                 language = 'en'
-                print(f"🌐 언어 자동 감지: 영어 (주제: {topic})")
+                logger.info(f"🌐 언어 자동 감지: 영어 (주제: {topic})")
         elif language is None:
             language = 'en'  # 기본값을 영어로 변경
-            print(f"🌐 언어 기본값: 영어")
+            logger.info(f"🌐 언어 기본값: 영어")
         
         # 사용자 요청 주제 확인 (우선순위)
         if not topic:
@@ -406,7 +405,7 @@ class ShortsBot:
             if user_request:
                 topic = user_request['topic']
                 request_id = user_request['id']
-                print(f"📝 사용자 요청 주제 사용: {topic} (요청 ID: {request_id})")
+                logger.info(f"📝 사용자 요청 주제 사용: {topic} (요청 ID: {request_id})")
                 # 요청을 진행 중으로 표시
                 self.user_request_handler.mark_in_progress(request_id)
                 
@@ -420,7 +419,7 @@ class ShortsBot:
             영상 자산 딕셔너리 (video_path, thumbnail_path, title, description, tags, etc.)
         """
         # 1. AI로 영상 생성
-        print("📹 1단계: AI 영상 생성 중...")
+        logger.info("📹 1단계: AI 영상 생성 중...")
         result = self.video_generator.generate_video(
             topic=topic, 
             duration=None,
@@ -462,12 +461,13 @@ class ShortsBot:
             title = f"{title} #Shorts"
         
         # 썸네일 임베딩 (이미 generate_video에서 생성됨)
+        # 썸네일 임베딩 (이미 generate_video에서 생성됨)
         if thumbnail_path:
-            print("\n🎞️ 썸네일 이미지를 영상 첫 프레임에 삽입합니다...")
+            logger.info("🎞️ 썸네일 이미지를 영상 첫 프레임에 삽입합니다...")
             self.video_generator.image_generator.embed_thumbnail_frame(video_path, thumbnail_path)
-            print(f"✅ 썸네일 생성 완료: {thumbnail_path}")
+            logger.info(f"✅ 썸네일 생성 완료: {thumbnail_path}")
         else:
-            print("   ⚠️ 경고: 썸네일 생성 실패 (None 반환)")
+            logger.warning("   ⚠️ 경고: 썸네일 생성 실패 (None 반환)")
             
         # 4. 설명 및 태그 생성
         description = self._generate_description(language, topic, actual_topic)
@@ -478,9 +478,9 @@ class ShortsBot:
             temp_cleaner = TempCleaner(max_age_hours=1)  # 1시간 이상 된 파일만 삭제
             stats = temp_cleaner.clean_old_files(dry_run=False)
             if stats['deleted'] > 0:
-                print(f"🧹 임시 파일 자동 정리: {stats['deleted']}개 파일 삭제 ({stats['size_freed'] / 1024 / 1024:.2f} MB 해제)")
+                logger.info(f"🧹 임시 파일 자동 정리: {stats['deleted']}개 파일 삭제 ({stats['size_freed'] / 1024 / 1024:.2f} MB 해제)")
         except Exception as e:
-            print(f"   ⚠️ 임시 파일 정리 실패 (무시): {e}")
+            logger.warning(f"   ⚠️ 임시 파일 정리 실패 (무시): {e}")
         
         return {
             'video_path': video_path,
@@ -505,7 +505,7 @@ class ShortsBot:
             if hasattr(self.uploader, 'get_recent_videos'):
                 recent_videos = self.uploader.get_recent_videos(max_results=3)
         except Exception as e:
-            print(f"⚠️ 채널 정보/최근 영상 가져오기 실패: {e}")
+            logger.warning(f"⚠️ 채널 정보/최근 영상 가져오기 실패: {e}")
 
         if language == 'en':
             description = f"{config.DEFAULT_DESCRIPTION}\n\n"
@@ -612,7 +612,7 @@ class ShortsBot:
 
     def _upload_to_platforms(self, video_assets: Dict[str, Any]) -> Dict[str, str]:
         """플랫폼에 영상 업로드"""
-        print("\n📤 2단계: 플랫폼 업로드 중...")
+        logger.info("📤 2단계: 플랫폼 업로드 중...")
         
         if self.use_multi_platform:
             # 멀티 플랫폼 업로드
@@ -684,15 +684,13 @@ class ShortsBot:
             with open(log_file, 'w', encoding='utf-8') as f:
                 json.dump(upload_logs, f, ensure_ascii=False, indent=2)
             
-            print(f"✅ 업로드 로그 저장 완료: {log_file}")
+            logger.info(f"✅ 업로드 로그 저장 완료: {log_file}")
             
             # HISTORY.md에 기록 추가
             self._append_to_history(log_entry)
             
         except Exception as e:
-            print(f"⚠️ 업로드 로그 저장 실패: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.warning(f"⚠️ 업로드 로그 저장 실패: {e}", exc_info=True)
     
     def _append_to_history(self, log_entry: Dict[str, Any]):
         """HISTORY.md에 업로드 기록 추가"""
@@ -772,21 +770,19 @@ class ShortsBot:
             with open(history_file, 'w', encoding='utf-8') as f:
                 f.write(content)
             
-            print(f"✅ HISTORY.md에 기록 추가 완료")
+            logger.info(f"✅ HISTORY.md에 기록 추가 완료")
             
         except Exception as e:
-            print(f"⚠️ HISTORY.md 기록 추가 실패: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.warning(f"⚠️ HISTORY.md 기록 추가 실패: {e}", exc_info=True)
 
     def _update_databases(self, video_assets: Dict[str, Any], upload_results: Dict[str, str], 
                          request_id: Optional[str], content_type: ContentType, performance_prompt: str):
         """데이터베이스 및 상태 업데이트"""
-        print("\n💾 3단계: 데이터베이스에 저장 중...")
+        logger.info("💾 3단계: 데이터베이스에 저장 중...")
         
         video_id = upload_results.get('youtube')
         if not video_id:
-            print("⚠️ YouTube Video ID가 없어 데이터베이스 업데이트 일부를 건너뜁니다.")
+            logger.warning("⚠️ YouTube Video ID가 없어 데이터베이스 업데이트 일부를 건너뜁니다.")
             return
 
         # 1. 메인 비디오 DB 저장
@@ -801,7 +797,7 @@ class ShortsBot:
         # 2. 사용자 요청 완료 처리
         if request_id:
             self.user_request_handler.mark_completed(request_id, video_id)
-            print(f"✅ 사용자 요청 완료 처리: 요청 ID {request_id} -> 영상 ID {video_id}")
+            logger.info(f"✅ 사용자 요청 완료 처리: 요청 ID {request_id} -> 영상 ID {video_id}")
             
         # 3. A/B 테스트 DB 저장
         try:
@@ -824,9 +820,9 @@ class ShortsBot:
                 topic=video_assets.get('actual_topic'),
                 content_type=content_type.value if content_type else 'auto'
             )
-            print(f"✅ A/B 테스트 데이터베이스에 저장 완료: {style}")
+            logger.info(f"✅ A/B 테스트 데이터베이스에 저장 완료: {style}")
         except Exception as e:
-            print(f"⚠️ A/B 테스트 데이터베이스 저장 실패: {e}")
+            logger.warning(f"⚠️ A/B 테스트 데이터베이스 저장 실패: {e}")
             
         # 4. 주제 DB 저장
         try:
@@ -850,9 +846,9 @@ class ShortsBot:
                     video_id=video_id,
                     views=0, likes=0, comments=0
                 )
-                print(f"✅ 주제 데이터베이스에 저장 완료: {video_assets.get('actual_topic')[:50]}...")
+                logger.info(f"✅ 주제 데이터베이스에 저장 완료: {video_assets.get('actual_topic')[:50]}...")
         except Exception as e:
-            print(f"⚠️ 주제 데이터베이스 저장 실패: {e}")
+            logger.warning(f"⚠️ 주제 데이터베이스 저장 실패: {e}")
         
         # 5. 업로드 로그 파일 저장 (다른 IDE/머신에서도 확인 가능)
         self._save_upload_log(
@@ -863,16 +859,16 @@ class ShortsBot:
         )
             
         # 5. 동기화 상태 업데이트
-        print("\n🔄 동기화 상태 업데이트 중...")
+        logger.info("🔄 동기화 상태 업데이트 중...")
         self.sync_manager.record_upload(
             video_id=video_id,
             title=video_assets['title'],
             topic=video_assets.get('actual_topic')
         )
-        print("✅ 동기화 상태 업데이트 완료")
+        logger.info("✅ 동기화 상태 업데이트 완료")
         
         # 6. 수익화 추적 추가
-        print("\n📊 4단계: 수익화 추적에 추가 중...")
+        logger.info("📊 4단계: 수익화 추적에 추가 중...")
         self.monetization.add_video(
             video_id=video_id,
             title=video_assets['title'],
@@ -889,7 +885,7 @@ class ShortsBot:
                 video_url=video_url
             )
         except Exception as e:
-            print(f"⚠️ 알림 전송 실패: {e}")
+            logger.warning(f"⚠️ 알림 전송 실패: {e}")
     
     def _map_topic_source(self, source) -> str:
         """
@@ -934,19 +930,19 @@ class ShortsBot:
             ContentType.AUTO
         ]
         
-        print(f"\n{'='*60}")
-        print(f"🎬 모든 콘텐츠 타입 영상 생성 시작 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"📊 총 {len(content_types)}개 타입 생성 예정")
+        logger.info("="*60)
+        logger.info(f"🎬 모든 콘텐츠 타입 영상 생성 시작")
+        logger.info(f"📊 총 {len(content_types)}개 타입 생성 예정")
         if auto_upload:
-            print(f"⚠️ 자동 업로드 모드: 업로드 전 확인 없이 자동으로 업로드됩니다")
-        print(f"{'='*60}\n")
+            logger.warning(f"⚠️ 자동 업로드 모드: 업로드 전 확인 없이 자동으로 업로드됩니다")
+        logger.info("="*60)
         
         results = []
         for i, content_type in enumerate(content_types, 1):
             try:
-                print(f"\n{'─'*60}")
-                print(f"📹 [{i}/{len(content_types)}] {content_type.value.upper()} 타입 영상 생성 중...")
-                print(f"{'─'*60}\n")
+                logger.info("─"*60)
+                logger.info(f"📹 [{i}/{len(content_types)}] {content_type.value.upper()} 타입 영상 생성 중...")
+                logger.info("─"*60)
                 
                 video_id = self.create_and_upload(topic=None, content_type=content_type, auto_upload=auto_upload)
                 if video_id:
@@ -955,39 +951,37 @@ class ShortsBot:
                         'video_id': video_id,
                         'status': 'success'
                     })
-                    print(f"✅ [{i}/{len(content_types)}] {content_type.value} 타입 완료: {video_id}")
+                    logger.info(f"✅ [{i}/{len(content_types)}] {content_type.value} 타입 완료: {video_id}")
                 else:
                     results.append({
                         'content_type': content_type.value,
                         'video_id': None,
                         'status': 'failed'
                     })
-                    print(f"❌ [{i}/{len(content_types)}] {content_type.value} 타입 실패")
+                    logger.error(f"❌ [{i}/{len(content_types)}] {content_type.value} 타입 실패")
                     
             except Exception as e:
-                print(f"❌ [{i}/{len(content_types)}] {content_type.value} 타입 오류: {str(e)}")
+                logger.error(f"❌ [{i}/{len(content_types)}] {content_type.value} 타입 오류: {str(e)}", exc_info=True)
                 results.append({
                     'content_type': content_type.value,
                     'video_id': None,
                     'status': 'error',
                     'error': str(e)
                 })
-                import traceback
-                traceback.print_exc()
         
         # 최종 결과 요약
-        print(f"\n{'='*60}")
-        print(f"📊 모든 타입 생성 완료 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"{'='*60}")
+        logger.info("="*60)
+        logger.info(f"📊 모든 타입 생성 완료")
+        logger.info("="*60)
         success_count = sum(1 for r in results if r['status'] == 'success')
         failed_count = len(results) - success_count
-        print(f"✅ 성공: {success_count}개")
-        print(f"❌ 실패: {failed_count}개")
-        print(f"\n상세 결과:")
+        logger.info(f"✅ 성공: {success_count}개")
+        logger.info(f"❌ 실패: {failed_count}개")
+        logger.info(f"상세 결과:")
         for r in results:
             status_icon = "✅" if r['status'] == 'success' else "❌"
-            print(f"  {status_icon} {r['content_type']}: {r.get('video_id', 'N/A')}")
-        print(f"{'='*60}\n")
+            logger.info(f"  {status_icon} {r['content_type']}: {r.get('video_id', 'N/A')}")
+        logger.info("="*60)
         
         return results
     
@@ -995,16 +989,16 @@ class ShortsBot:
         """하루 6개 자동 업로드 스케줄 설정 (모든 콘텐츠 타입)"""
         upload_time = config.UPLOAD_SCHEDULE_TIME
         
-        print(f"⏰ 자동 업로드 스케줄 설정 완료")
-        print(f"   업로드 시간: 매일 {upload_time} ({config.UPLOAD_TIMEZONE})")
-        print(f"   목표: 하루 6개 (모든 콘텐츠 타입) → 3개월 후 수익화 → 월 $100~500\n")
+        logger.info(f"⏰ 자동 업로드 스케줄 설정 완료")
+        logger.info(f"   업로드 시간: 매일 {upload_time} ({config.UPLOAD_TIMEZONE})")
+        logger.info(f"   목표: 하루 6개 (모든 콘텐츠 타입) → 3개월 후 수익화 → 월 $100~500")
         
         schedule.every().day.at(upload_time).do(self.create_and_upload_all_types)
     
     def run_scheduler(self):
         """스케줄러 실행"""
-        print("🤖 YouTube Shorts 자동 업로드 봇 시작")
-        print("   종료하려면 Ctrl+C를 누르세요\n")
+        logger.info("🤖 YouTube Shorts 자동 업로드 봇 시작")
+        logger.info("   종료하려면 Ctrl+C를 누르세요")
         
         # 첫 업로드 즉시 실행 (테스트용)
         # self.create_and_upload()
@@ -1015,7 +1009,7 @@ class ShortsBot:
     
     def update_all_stats(self):
         """모든 영상 통계 업데이트"""
-        print("📊 모든 영상 통계 업데이트 중...")
+        logger.info("📊 모든 영상 통계 업데이트 중...")
         self.monetization.update_all_videos()
         
         # 주제 데이터베이스 초기화
@@ -1049,10 +1043,10 @@ class ShortsBot:
                             comments=stats.get('comments', 0)
                         )
                     except Exception as e:
-                        print(f"⚠️ 주제 데이터베이스 통계 업데이트 실패 ({video_id}): {e}")
+                        logger.warning(f"⚠️ 주제 데이터베이스 통계 업데이트 실패 ({video_id}): {e}")
         
         # 성과가 낮은 주제 자동 필터링
-        print("\n🔽 성과가 낮은 주제 자동 필터링 중...")
+        logger.info("🔽 성과가 낮은 주제 자동 필터링 중...")
         filtered_count = topic_db.filter_low_performing_topics(
             days=30,
             max_engagement_rate=0.5,
@@ -1060,7 +1054,7 @@ class ShortsBot:
         )
         
         # A/B 테스트 통계 업데이트
-        print("\n📊 A/B 테스트 통계 업데이트 중...")
+        logger.info("📊 A/B 테스트 통계 업데이트 중...")
         for video in self.monetization.data.get('videos', []):
             video_id = video['video_id']
             stats = self.uploader.get_video_stats(video_id)
@@ -1075,23 +1069,23 @@ class ShortsBot:
                         watch_time=watch_time
                     )
                 except Exception as e:
-                    print(f"⚠️ A/B 테스트 통계 업데이트 실패 ({video_id}): {e}")
+                    logger.warning(f"⚠️ A/B 테스트 통계 업데이트 실패 ({video_id}): {e}")
         
         # 최적 스타일 분석 및 출력
-        print("\n📈 최적 스타일 분석 중...")
+        logger.info("📈 최적 스타일 분석 중...")
         try:
             best_styles = self.ab_test_db.get_best_styles_by_engagement(
                 days=30,
                 min_tests=3
             )
             if best_styles:
-                print("\n🏆 최고 성과 스타일 (참여율 기준):")
+                logger.info("🏆 최고 성과 스타일 (참여율 기준):")
                 for style, engagement_rate, avg_views in best_styles[:5]:
-                    print(f"   {style}: 참여율 {engagement_rate:.2%}, 평균 조회수 {avg_views:.0f}")
+                    logger.info(f"   {style}: 참여율 {engagement_rate:.2%}, 평균 조회수 {avg_views:.0f}")
         except Exception as e:
-            print(f"⚠️ 최적 스타일 분석 실패: {e}")
+            logger.warning(f"⚠️ 최적 스타일 분석 실패: {e}")
         if filtered_count > 0:
-            print(f"✅ {filtered_count}개 주제 필터링 완료")
+            logger.info(f"✅ {filtered_count}개 주제 필터링 완료")
         
         self.monetization.print_report()
 

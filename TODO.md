@@ -283,9 +283,15 @@
   - [ ] 모든 `print` 문을 `logger`로 교체하여 체계적인 로그 관리
   - [ ] 로그 레벨(INFO, DEBUG, ERROR) 적절히 분리
   - [ ] 파일 로그와 콘솔 로그 이원화 (이미 구현됨, 적용 필요)
-- [ ] **테스트 코드 작성**
-  - [ ] 주요 모듈(`VideoGenerator`, `ShortsBot`)에 대한 단위 테스트
-  - [ ] 전체 파이프라인 통합 테스트 (Mocking 활용)
+- [x] **테스트 코드 작성** ✅ (진행 중)
+  - [x] Phase 1: Core Utilities 테스트 완료 (`test_logger.py`) ✅
+  - [x] Phase 2: Uploaders 테스트 완료 ✅ (2025-11-30)
+    - [x] `test_youtube_uploader.py` 수정 완료 (12개 테스트 통과) ✅
+    - [x] `test_multi_platform_uploader.py` 작성 완료 (9개 테스트 통과) ✅
+    - [x] `test_social_upload.py` 업데이트 완료 (7개 테스트 통과) ✅
+  - [ ] Phase 3: Analytics 테스트 (`test_ab_testing.py`, `test_monetization.py`, `test_trend_collector.py`)
+  - [ ] Phase 4: Pipeline 테스트 (`test_bot_pipeline.py`)
+  - [ ] Phase 5: Integration 테스트 (`test_end_to_end.py`)
   - [ ] CI/CD 파이프라인 구축 (GitHub Actions)
 - [ ] **코드 리팩토링**
   - [ ] `ShortsBot` 클래스의 거대한 메서드(`create_and_upload`) 분리

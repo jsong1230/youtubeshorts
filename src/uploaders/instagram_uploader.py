@@ -6,6 +6,9 @@ import time
 import requests
 import config
 from pathlib import Path
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 class InstagramUploader:
     """Instagram Graph API를 사용하여 Reels 업로드"""
@@ -17,7 +20,7 @@ class InstagramUploader:
         self.base_url = f"https://graph.facebook.com/{self.api_version}"
         
         if not self.access_token or not self.account_id:
-            print("⚠️ Instagram 설정이 누락되었습니다. (ACCESS_TOKEN 또는 ACCOUNT_ID)")
+            logger.warning("⚠️ Instagram 설정이 누락되었습니다. (ACCESS_TOKEN 또는 ACCOUNT_ID)")
             self.is_configured = False
         else:
             self.is_configured = True
@@ -30,11 +33,11 @@ class InstagramUploader:
         3. 미디어 게시 (Publish)
         """
         if not self.is_configured:
-            print("❌ Instagram 업로더가 설정되지 않았습니다.")
+            logger.error("❌ Instagram 업로더가 설정되지 않았습니다.")
             return False
             
         if not os.path.exists(video_path):
-            print(f"❌ 영상 파일을 찾을 수 없습니다: {video_path}")
+            logger.error(f"❌ 영상 파일을 찾을 수 없습니다: {video_path}")
             return False
 
         # 주의: Graph API는 로컬 파일 업로드를 직접 지원하지 않고, 
@@ -47,13 +50,13 @@ class InstagramUploader:
         # *현재 구현은 로컬 파일을 직접 올릴 수 없으므로, 
         #  이 부분은 실제 호스팅 로직이 필요함을 알립니다.*
         
-        print("⚠️ Instagram Graph API는 공개된 비디오 URL이 필요합니다.")
-        print("   현재 로컬 파일 직접 업로드는 지원하지 않으므로,")
-        print("   실제 사용 시에는 AWS S3나 호스팅 서버에 먼저 업로드해야 합니다.")
+        logger.warning("⚠️ Instagram Graph API는 공개된 비디오 URL이 필요합니다.")
+        logger.warning("   현재 로컬 파일 직접 업로드는 지원하지 않으므로,")
+        logger.warning("   실제 사용 시에는 AWS S3나 호스팅 서버에 먼저 업로드해야 합니다.")
         
         # TODO: 실제 호스팅 로직 구현 필요 (S3, Google Cloud Storage 등)
         # 임시로 로컬 경로를 반환하며 실패 처리
-        print(f"❌ [미구현] 비디오 호스팅 URL 생성 필요: {video_path}")
+        logger.error(f"❌ [미구현] 비디오 호스팅 URL 생성 필요: {video_path}")
         return False
 
     def upload_reel_from_url(self, video_url: str, caption: str = "") -> bool:
@@ -61,7 +64,7 @@ class InstagramUploader:
         if not self.is_configured:
             return False
 
-        print(f"🚀 Instagram Reels 업로드 시작: {video_url}")
+        logger.info(f"🚀 Instagram Reels 업로드 시작: {video_url}")
         
         # 1. 컨테이너 생성
         container_id = self._create_media_container(video_url, caption)
@@ -75,7 +78,7 @@ class InstagramUploader:
         # 3. 게시
         media_id = self._publish_media(container_id)
         if media_id:
-            print(f"✅ Instagram Reels 게시 성공! Media ID: {media_id}")
+            logger.info(f"✅ Instagram Reels 게시 성공! Media ID: {media_id}")
             return True
         
         return False
@@ -96,13 +99,13 @@ class InstagramUploader:
             result = response.json()
             
             if "id" in result:
-                print(f"   📦 컨테이너 생성 완료: {result['id']}")
+                logger.info(f"   📦 컨테이너 생성 완료: {result['id']}")
                 return result["id"]
             else:
-                print(f"❌ 컨테이너 생성 실패: {result}")
+                logger.error(f"❌ 컨테이너 생성 실패: {result}")
                 return None
         except Exception as e:
-            print(f"❌ API 요청 오류: {e}")
+            logger.error(f"❌ API 요청 오류: {e}", exc_info=True)
             return None
 
     def _wait_for_processing(self, container_id: str, timeout: int = 300) -> bool:
@@ -121,22 +124,22 @@ class InstagramUploader:
                 
                 status = result.get("status_code")
                 if status == "FINISHED":
-                    print("   ✅ 미디어 처리 완료")
+                    logger.info("   ✅ 미디어 처리 완료")
                     return True
                 elif status == "ERROR":
-                    print(f"❌ 미디어 처리 중 오류 발생: {result}")
+                    logger.error(f"❌ 미디어 처리 중 오류 발생: {result}")
                     return False
                 elif status == "IN_PROGRESS":
-                    print("   ⏳ 처리 중... (대기)")
+                    logger.info("   ⏳ 처리 중... (대기)")
                     time.sleep(5)
                 else:
-                    print(f"   ❓ 알 수 없는 상태: {status}")
+                    logger.warning(f"   ❓ 알 수 없는 상태: {status}")
                     time.sleep(5)
             except Exception as e:
-                print(f"❌ 상태 확인 오류: {e}")
+                logger.error(f"❌ 상태 확인 오류: {e}", exc_info=True)
                 return False
                 
-        print("❌ 처리 시간 초과")
+        logger.error("❌ 처리 시간 초과")
         return False
 
     def _publish_media(self, container_id: str) -> str:
@@ -154,8 +157,8 @@ class InstagramUploader:
             if "id" in result:
                 return result["id"]
             else:
-                print(f"❌ 게시 실패: {result}")
+                logger.error(f"❌ 게시 실패: {result}")
                 return None
         except Exception as e:
-            print(f"❌ 게시 요청 오류: {e}")
+            logger.error(f"❌ 게시 요청 오류: {e}", exc_info=True)
             return None

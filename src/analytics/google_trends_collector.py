@@ -7,6 +7,9 @@ import time
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     from pytrends.request import TrendReq
@@ -52,16 +55,16 @@ class GoogleTrendsCollector:
             try:
                 # 언어와 시간대 설정 (영어, 미국)
                 self.pytrends = TrendReq(hl='en-US', tz=360)
-                print("✅ Google Trends 클라이언트 초기화 완료")
+                logger.info("✅ Google Trends 클라이언트 초기화 완료")
             except Exception as e:
-                print(f"⚠️ Google Trends 클라이언트 초기화 실패: {e}")
+                logger.warning(f"⚠️ Google Trends 클라이언트 초기화 실패: {e}")
         
         # OpenAI API 초기화 (주제 변환용)
         if OPENAI_AVAILABLE and config.OPENAI_API_KEY:
             try:
                 self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
             except Exception as e:
-                print(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
+                logger.warning(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
     
     def get_trending_keywords(
         self,
@@ -81,7 +84,7 @@ class GoogleTrendsCollector:
             트렌드 키워드 리스트 (키워드, 트렌드 점수 등)
         """
         if not self.pytrends:
-            print("⚠️ Google Trends API가 초기화되지 않았습니다.")
+            logger.warning("⚠️ Google Trends API가 초기화되지 않았습니다.")
             return []
         
         try:
@@ -127,10 +130,10 @@ class GoogleTrendsCollector:
             # 트렌드 점수 순으로 정렬
             trending_keywords.sort(key=lambda x: x['max_score'], reverse=True)
             
-            print(f"✅ Google Trends에서 {len(trending_keywords)}개 키워드 트렌드 수집")
+            logger.info(f"✅ Google Trends에서 {len(trending_keywords)}개 키워드 트렌드 수집")
             return trending_keywords
         except Exception as e:
-            print(f"⚠️ Google Trends 키워드 수집 실패: {e}")
+            logger.warning(f"⚠️ Google Trends 키워드 수집 실패: {e}")
             import traceback
             traceback.print_exc()
             return []
@@ -203,7 +206,7 @@ class GoogleTrendsCollector:
             변환된 주제 리스트
         """
         if not self.openai_client:
-            print("⚠️ OpenAI API가 없어 Google Trends 키워드를 주제로 변환할 수 없습니다.")
+            logger.warning("⚠️ OpenAI API가 없어 Google Trends 키워드를 주제로 변환할 수 없습니다.")
             # 간단한 변환만 수행
             topics = []
             for kw_data in keywords[:num_topics]:
@@ -267,11 +270,11 @@ Return only the topics, one per line."""
             # 중복 제거
             unique_topics = list(dict.fromkeys(topics))
             
-            print(f"✅ Google Trends 키워드에서 {len(unique_topics)}개 주제 생성")
+            logger.info(f"✅ Google Trends 키워드에서 {len(unique_topics)}개 주제 생성")
             return unique_topics[:num_topics]
             
         except Exception as e:
-            print(f"⚠️ Google Trends 키워드 주제 변환 실패: {e}")
+            logger.warning(f"⚠️ Google Trends 키워드 주제 변환 실패: {e}")
             import traceback
             traceback.print_exc()
             return []

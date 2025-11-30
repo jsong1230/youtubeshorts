@@ -16,6 +16,9 @@ import xml.etree.ElementTree as ET
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     import requests
@@ -90,21 +93,21 @@ class RedditCollector:
                         user_agent=user_agent
                     )
                     self.use_rss = False  # API가 있으면 API 사용
-                    print("✅ Reddit API 클라이언트 초기화 완료 (PRAW 사용)")
+                    logger.info("✅ Reddit API 클라이언트 초기화 완료 (PRAW 사용)")
                 else:
-                    print("ℹ️ Reddit API 인증 정보가 없습니다. RSS 피드를 사용합니다 (승인 불필요).")
+                    logger.info("ℹ️ Reddit API 인증 정보가 없습니다. RSS 피드를 사용합니다 (승인 불필요).")
             except Exception as e:
-                print(f"⚠️ Reddit API 클라이언트 초기화 실패, RSS 피드 사용: {e}")
+                logger.warning(f"⚠️ Reddit API 클라이언트 초기화 실패, RSS 피드 사용: {e}")
         
         # OpenAI API 초기화 (주제 변환용)
         if OPENAI_AVAILABLE and config.OPENAI_API_KEY:
             try:
                 self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
             except Exception as e:
-                print(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
+                logger.warning(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
         
         if self.use_rss:
-            print("✅ Reddit RSS 피드 모드 활성화 (API 승인 불필요)")
+            logger.info("✅ Reddit RSS 피드 모드 활성화 (API 승인 불필요)")
     
     def get_trending_posts_from_rss(
         self,
@@ -124,7 +127,7 @@ class RedditCollector:
             인기 게시글 리스트 (제목, 점수, 댓글 수 등 포함)
         """
         if not REQUESTS_AVAILABLE:
-            print("⚠️ requests 라이브러리가 없어 RSS 피드를 사용할 수 없습니다.")
+            logger.warning("⚠️ requests 라이브러리가 없어 RSS 피드를 사용할 수 없습니다.")
             return []
         
         # Rate limiting
@@ -198,10 +201,10 @@ class RedditCollector:
                     })
             
             self.last_request_time[subreddit_name] = time.time()
-            print(f"✅ Reddit RSS '{subreddit_name}' 서브레딧에서 {len(posts)}개 게시글 수집")
+            logger.info(f"✅ Reddit RSS '{subreddit_name}' 서브레딧에서 {len(posts)}개 게시글 수집")
             return posts
         except Exception as e:
-            print(f"⚠️ Reddit RSS 게시글 수집 실패 ({subreddit_name}): {e}")
+            logger.warning(f"⚠️ Reddit RSS 게시글 수집 실패 ({subreddit_name}): {e}")
             import traceback
             traceback.print_exc()
             return []
@@ -261,13 +264,13 @@ class RedditCollector:
             # 마지막 요청 시간 업데이트
             self.last_request_time[subreddit_name] = time.time()
             
-            print(f"✅ Reddit '{subreddit_name}' 서브레딧에서 {len(posts)}개 게시글 수집 (읽기 전용)")
+            logger.info(f"✅ Reddit '{subreddit_name}' 서브레딧에서 {len(posts)}개 게시글 수집 (읽기 전용)")
             return posts
         except Exception as e:
-            print(f"⚠️ Reddit 게시글 수집 실패 ({subreddit_name}): {e}")
+            logger.warning(f"⚠️ Reddit 게시글 수집 실패 ({subreddit_name}): {e}")
             # Rate limiting 오류인 경우 추가 대기
             if 'rate limit' in str(e).lower() or '429' in str(e):
-                print("   ⏳ Rate limit 도달, 60초 대기...")
+                logger.info("   ⏳ Rate limit 도달, 60초 대기...")
                 time.sleep(60)
             return []
     
@@ -314,7 +317,7 @@ class RedditCollector:
         # 점수와 댓글 수를 기준으로 정렬
         all_posts.sort(key=lambda x: x['score'] + x['num_comments'] * 2, reverse=True)
         
-        print(f"✅ 총 {len(all_posts)}개 Reddit 게시글 수집 완료")
+        logger.info(f"✅ 총 {len(all_posts)}개 Reddit 게시글 수집 완료")
         return all_posts
     
     def convert_posts_to_topics(
@@ -337,7 +340,7 @@ class RedditCollector:
             변환된 주제 리스트
         """
         if not self.openai_client:
-            print("⚠️ OpenAI API가 없어 Reddit 게시글을 주제로 변환할 수 없습니다.")
+            logger.warning("⚠️ OpenAI API가 없어 Reddit 게시글을 주제로 변환할 수 없습니다.")
             # 간단한 필터링만 수행
             topics = []
             for post in posts[:num_topics]:
@@ -401,11 +404,11 @@ Return only the topics, one per line."""
             # 중복 제거
             unique_topics = list(dict.fromkeys(topics))
             
-            print(f"✅ Reddit 게시글에서 {len(unique_topics)}개 주제 생성")
+            logger.info(f"✅ Reddit 게시글에서 {len(unique_topics)}개 주제 생성")
             return unique_topics[:num_topics]
             
         except Exception as e:
-            print(f"⚠️ Reddit 게시글 주제 변환 실패: {e}")
+            logger.warning(f"⚠️ Reddit 게시글 주제 변환 실패: {e}")
             import traceback
             traceback.print_exc()
             return []
@@ -447,10 +450,10 @@ Return only the topics, one per line."""
                         if time.time() - cache_time < cache_duration:
                             topics = cache_data.get('topics', [])
                             if topics:
-                                print(f"📊 캐시된 Reddit 주제 {len(topics)}개 사용 (API 호출 생략)")
+                                logger.info(f"📊 캐시된 Reddit 주제 {len(topics)}개 사용 (API 호출 생략)")
                                 return topics[:num_topics]
                 except Exception as e:
-                    print(f"⚠️ 캐시 읽기 실패: {e}")
+                    logger.warning(f"⚠️ 캐시 읽기 실패: {e}")
         
         # Reddit 게시글 수집
         posts = self.get_trending_topics_from_multiple_subreddits(
@@ -480,7 +483,7 @@ Return only the topics, one per line."""
                         'topics': topics
                     }, f, ensure_ascii=False, indent=2)
             except Exception as e:
-                print(f"⚠️ 캐시 저장 실패: {e}")
+                logger.warning(f"⚠️ 캐시 저장 실패: {e}")
         
         return topics
 

@@ -5,6 +5,9 @@
 import random
 from typing import List, Optional
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     from openai import OpenAI
@@ -54,7 +57,7 @@ class BookCollector:
             try:
                 self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
             except Exception as e:
-                print(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
+                logger.warning(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
     
     def generate_book_review_topics(
         self,
@@ -133,11 +136,11 @@ Return only the topics, one per line."""
             # 중복 제거
             unique_topics = list(dict.fromkeys(topics))
             
-            print(f"✅ 책 리뷰 주제 {len(unique_topics)}개 생성")
+            logger.info(f"✅ 책 리뷰 주제 {len(unique_topics)}개 생성")
             return unique_topics[:num_topics]
             
         except Exception as e:
-            print(f"⚠️ 책 리뷰 주제 생성 실패: {e}")
+            logger.warning(f"⚠️ 책 리뷰 주제 생성 실패: {e}")
             return self._generate_default_topics(num_topics)
     
     def _generate_default_topics(self, num_topics: int) -> List[str]:

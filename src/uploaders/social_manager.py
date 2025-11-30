@@ -4,6 +4,9 @@
 import config
 from .instagram_uploader import InstagramUploader
 from .tiktok_uploader import TikTokUploader
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 class SocialManager:
     """여러 소셜 플랫폼에 동시 업로드를 관리하는 클래스"""
@@ -38,21 +41,21 @@ class SocialManager:
         # 임시로 경고 메시지 출력 후 스킵 처리 가능성 있음.
         
         if self.enable_instagram:
-            print("\n📸 Instagram 업로드 시도...")
+            logger.info("📸 Instagram 업로드 시도...")
             if self.instagram.is_configured:
                 success = self.instagram.upload_reel(video_path, caption=description)
                 results["instagram"] = "success" if success else "failed"
             else:
-                print("   ⚠️ Instagram 설정이 미완료되어 건너뜁니다.")
+                logger.warning("   ⚠️ Instagram 설정이 미완료되어 건너뜁니다.")
                 results["instagram"] = "not_configured"
 
         if self.enable_tiktok:
-            print("\n🎵 TikTok 업로드 시도...")
+            logger.info("🎵 TikTok 업로드 시도...")
             if self.tiktok.is_configured:
                 success = self.tiktok.upload_video(video_path, title=title)
                 results["tiktok"] = "success" if success else "failed"
             else:
-                print("   ⚠️ TikTok 설정이 미완료되어 건너뜁니다.")
+                logger.warning("   ⚠️ TikTok 설정이 미완료되어 건너뜁니다.")
                 results["tiktok"] = "not_configured"
                 
         return results

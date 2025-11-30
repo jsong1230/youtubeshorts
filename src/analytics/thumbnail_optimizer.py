@@ -8,6 +8,9 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
 import json
 import config
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class ThumbnailOptimizer:
@@ -94,7 +97,7 @@ class ThumbnailOptimizer:
             conn.close()
             return True
         except Exception as e:
-            print(f"⚠️ 썸네일 정보 추가 실패: {e}")
+            logger.warning(f"⚠️ 썸네일 정보 추가 실패: {e}")
             return False
     
     def update_thumbnail_stats(
@@ -163,7 +166,7 @@ class ThumbnailOptimizer:
             conn.close()
             return True
         except Exception as e:
-            print(f"⚠️ 썸네일 통계 업데이트 실패: {e}")
+            logger.warning(f"⚠️ 썸네일 통계 업데이트 실패: {e}")
             return False
     
     def get_best_thumbnail_variant(
@@ -209,7 +212,7 @@ class ThumbnailOptimizer:
                 return row[0]
             return None
         except Exception as e:
-            print(f"⚠️ 최고 성과 썸네일 변형 조회 실패: {e}")
+            logger.warning(f"⚠️ 최고 성과 썸네일 변형 조회 실패: {e}")
             return None
     
     def get_best_thumbnail_style(
@@ -255,7 +258,7 @@ class ThumbnailOptimizer:
                 return row[0]
             return None
         except Exception as e:
-            print(f"⚠️ 최고 성과 썸네일 스타일 조회 실패: {e}")
+            logger.warning(f"⚠️ 최고 성과 썸네일 스타일 조회 실패: {e}")
             return None
     
     def get_thumbnail_performance(
@@ -300,7 +303,7 @@ class ThumbnailOptimizer:
             
             return [dict(row) for row in rows]
         except Exception as e:
-            print(f"⚠️ 썸네일 성과 조회 실패: {e}")
+            logger.warning(f"⚠️ 썸네일 성과 조회 실패: {e}")
             return []
     
     def optimize_for_platform(
