@@ -136,8 +136,8 @@ def main():
             else:
                 # 주제로 새로 생성 및 업로드
                 topic = args[0] if args else None
-                # upload 명령어는 자동 업로드 (사용자가 명시적으로 업로드를 요청)
-                bot.create_and_upload(topic=topic, force=force, auto_upload=True)
+                # upload 명령어도 업로드 전 사용자 확인 받기 (규칙: 항상 확인 후 업로드)
+                bot.create_and_upload(topic=topic, force=force, auto_upload=False)
 
         elif command == 'stats':
             # 통계 업데이트 및 리포트
