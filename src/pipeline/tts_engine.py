@@ -23,11 +23,18 @@ try:
 except ImportError:
     OPENAI_AVAILABLE = False
 
+try:
+    from google.cloud import texttospeech
+    GOOGLE_CLOUD_TTS_AVAILABLE = True
+except ImportError:
+    GOOGLE_CLOUD_TTS_AVAILABLE = False
+
 
 class TTSProvider(Enum):
     """TTS 제공자"""
     GTTS = "gtts"
     OPENAI = "openai"
+    GOOGLE_CLOUD = "google_cloud"  # Google Cloud Text-to-Speech (한글 발음 우수)
 
 
 class TTSEngineBase(ABC):
@@ -240,8 +247,12 @@ class OpenAIEngine(TTSEngineBase):
             # speed 범위 제한 (0.25 ~ 4.0)
             speed = max(0.25, min(4.0, speed))
             
+            # 한글인 경우 더 나은 발음을 위해 tts-1-hd 사용 (고품질)
+            # 영어인 경우도 tts-1-hd 사용 (일관성)
+            model = "tts-1-hd" if lang == 'ko' else "tts-1-hd"
+            
             response = self.client.audio.speech.create(
-                model="tts-1-hd",  # 고품질 TTS (더 나은 음질)
+                model=model,  # 고품질 TTS (한글 발음 개선)
                 voice=voice,
                 input=processed_text,
                 speed=speed
@@ -267,7 +278,8 @@ class OpenAIEngine(TTSEngineBase):
             voice 이름
         """
         if lang == 'ko':
-            return "nova"  # 한국어는 nova가 가장 적합
+            # 한글 발음 개선: shimmer가 더 부드럽고 자연스러운 한글 발음 제공
+            return "shimmer"  # 한국어는 shimmer가 더 자연스러운 발음 (부드러운 여성 음성)
         
         # 영어 voice 선택 (콘텐츠 타입별)
         voice_map = {
@@ -305,6 +317,88 @@ class OpenAIEngine(TTSEngineBase):
         return speed_map.get(content_type, 1.0)  # 기본값: 1.0
 
 
+class GoogleCloudEngine(TTSEngineBase):
+    """Google Cloud Text-to-Speech 엔진 (한글 발음 우수)"""
+    
+    def __init__(self):
+        if not GOOGLE_CLOUD_TTS_AVAILABLE:
+            raise ImportError("google-cloud-texttospeech가 설치되지 않았습니다. pip install google-cloud-texttospeech로 설치하세요.")
+        
+        # Google Cloud 인증 확인
+        google_credentials = getattr(config, 'GOOGLE_CLOUD_CREDENTIALS_PATH', None)
+        if google_credentials and os.path.exists(google_credentials):
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = google_credentials
+        
+        try:
+            self.client = texttospeech.TextToSpeechClient()
+        except Exception as e:
+            raise ValueError(f"Google Cloud TTS 클라이언트 초기화 실패: {e}. GOOGLE_APPLICATION_CREDENTIALS 환경 변수 또는 서비스 계정 키를 확인하세요.")
+    
+    def generate(self, text: str, output_path: str, lang: str = 'ko', content_type: str = None, voice: str = None, speed: float = None) -> bool:
+        """Google Cloud TTS로 음성 생성 (한글 발음 우수)"""
+        try:
+            # 텍스트 전처리
+            processed_text = GoogleCloudEngine._preprocess_text(text, lang=lang)
+            
+            # 언어 코드 및 voice 설정
+            if lang == 'ko':
+                language_code = "ko-KR"
+                # 한글 최적 voice 선택
+                if voice is None:
+                    # Google Cloud의 한글 voice 중 가장 자연스러운 것 선택
+                    # Wavenet이 더 고품질이지만 유료, Standard는 무료 할당량 있음
+                    voice_name = "ko-KR-Wavenet-A"  # 여성 음성 (최고 품질, 한글 발음 우수)
+                    # 대안: "ko-KR-Standard-A" (무료 할당량, 품질 양호)
+                    ssml_gender = texttospeech.SsmlVoiceGender.FEMALE
+                else:
+                    voice_name = voice
+                    ssml_gender = texttospeech.SsmlVoiceGender.FEMALE
+            else:
+                language_code = "en-US"
+                if voice is None:
+                    voice_name = "en-US-Standard-C"  # 여성 음성
+                    ssml_gender = texttospeech.SsmlVoiceGender.FEMALE
+                else:
+                    voice_name = voice
+                    ssml_gender = texttospeech.SsmlVoiceGender.FEMALE
+            
+            # 속도 설정 (0.25 ~ 4.0)
+            if speed is None:
+                speed = 1.0
+            speed = max(0.25, min(4.0, speed))
+            
+            # 음성 설정
+            voice_config = texttospeech.VoiceSelectionParams(
+                language_code=language_code,
+                name=voice_name,
+                ssml_gender=ssml_gender
+            )
+            
+            # 오디오 설정
+            audio_config = texttospeech.AudioConfig(
+                audio_encoding=texttospeech.AudioEncoding.MP3,
+                speaking_rate=speed
+            )
+            
+            # TTS 요청
+            synthesis_input = texttospeech.SynthesisInput(text=processed_text)
+            response = self.client.synthesize_speech(
+                input=synthesis_input,
+                voice=voice_config,
+                audio_config=audio_config
+            )
+            
+            # 파일 저장
+            with open(output_path, "wb") as out:
+                out.write(response.audio_content)
+            
+            logger.debug(f"   🔊 Google Cloud TTS 생성: voice={voice_name}, speed={speed:.2f}, lang={lang}")
+            return True
+        except Exception as e:
+            logger.warning(f"⚠️ Google Cloud TTS 음성 생성 실패: {e}")
+            return False
+
+
 class TTSEngine:
     """TTS 엔진 팩토리 클래스"""
     
@@ -316,14 +410,27 @@ class TTSEngine:
             provider: TTS 제공자 (None이면 자동 선택)
         """
         if provider is None:
-            # 자동 선택: OpenAI가 설정되어 있으면 OpenAI, 아니면 gTTS
-            # OpenAI TTS와 DALL-E 3는 OpenAI API로 사용 가능하므로 함께 사용
-            if config.OPENAI_API_KEY and OPENAI_AVAILABLE:
-                provider = TTSProvider.OPENAI
-            elif GTTS_AVAILABLE:
-                provider = TTSProvider.GTTS
-            else:
-                raise ImportError("사용 가능한 TTS 엔진이 없습니다. gTTS 또는 OpenAI를 설치하세요.")
+            # 자동 선택: 한글인 경우 Google Cloud 우선, 아니면 OpenAI 우선
+            tts_provider_str = getattr(config, 'TTS_PROVIDER', None)
+            if tts_provider_str:
+                try:
+                    provider = TTSProvider(tts_provider_str.lower())
+                except ValueError:
+                    provider = None
+            
+            if provider is None:
+                # 자동 선택 로직
+                # Google Cloud가 설정되어 있으면 우선 사용 (한글 발음 우수)
+                if GOOGLE_CLOUD_TTS_AVAILABLE and getattr(config, 'GOOGLE_CLOUD_CREDENTIALS_PATH', None):
+                    provider = TTSProvider.GOOGLE_CLOUD
+                # OpenAI가 설정되어 있으면 사용
+                elif config.OPENAI_API_KEY and OPENAI_AVAILABLE:
+                    provider = TTSProvider.OPENAI
+                # 그 외에는 gTTS
+                elif GTTS_AVAILABLE:
+                    provider = TTSProvider.GTTS
+                else:
+                    raise ImportError("사용 가능한 TTS 엔진이 없습니다. gTTS, OpenAI, 또는 Google Cloud TTS를 설치하세요.")
         
         self.provider = provider
         self._engine = self._create_engine(provider)
@@ -334,6 +441,8 @@ class TTSEngine:
             return GTTSEngine()
         elif provider == TTSProvider.OPENAI:
             return OpenAIEngine()
+        elif provider == TTSProvider.GOOGLE_CLOUD:
+            return GoogleCloudEngine()
         else:
             raise ValueError(f"지원하지 않는 TTS 제공자: {provider}")
     

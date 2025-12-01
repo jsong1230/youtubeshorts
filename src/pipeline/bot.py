@@ -175,11 +175,16 @@ class ShortsBot:
             video_name_without_ext = os.path.splitext(video_basename)[0]
             metadata_file = os.path.join(config.VIDEO_OUTPUT_DIR, f"{video_name_without_ext}_metadata.json")
             
+            # description 생성 (업로드 시 필요)
+            description = self._generate_description(language, topic, actual_topic)
+            
             metadata = {
                 'video_path': video_path,
                 'thumbnail_path': thumbnail_path,
                 'title': title,
                 'topic': actual_topic,
+                'description': description,  # description 추가
+                'tags': config.DEFAULT_TAGS,  # tags 추가
                 'script': script,
                 'language': language,
                 'created_at': datetime.now().isoformat()
@@ -553,10 +558,7 @@ class ShortsBot:
                     description += f"{i}. {video['title']}\n"
                     description += f"   👉 {video['url']}\n\n"
             
-            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            description += "🏷️ Tags\n"
-            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            description += "#shorts #finance #productivity #lifestyle #tips #money #investing #selfimprovement #ai #automation"
+            # 태그는 description에 포함하지 않고 YouTube tags 필드에만 등록
         else:
             description = f"{config.DEFAULT_DESCRIPTION}\n\n"
             description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -603,10 +605,7 @@ class ShortsBot:
                     description += f"{i}. {video['title']}\n"
                     description += f"   👉 {video['url']}\n\n"
             
-            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            description += "🏷️ 태그\n"
-            description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            description += "#shorts #쇼츠 #ai #인공지능 #자동생성 #유용한정보 #팁 #라이프스타일 #일상 #정보 #꿀팁 #생활정보"
+            # 태그는 description에 포함하지 않고 YouTube tags 필드에만 등록
             
         return description
 

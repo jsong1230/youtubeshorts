@@ -4,6 +4,47 @@
 
 ## 최근 변경사항
 
+### 2025-12-02 - Google Cloud TTS 추가, 한글 발음 개선 및 Description/Tags 개선
+
+**주요 변경사항**:
+
+1. **Google Cloud Text-to-Speech 추가 (한글 발음 개선)**
+   - Google Cloud TTS 엔진 추가 (`GoogleCloudEngine` 클래스)
+   - 한글 최적 voice: `ko-KR-Wavenet-A` 사용 (최고 품질)
+   - `.env`에 `TTS_PROVIDER=google_cloud` 및 `GOOGLE_CLOUD_CREDENTIALS_PATH` 설정 추가
+   - `google-cloud-texttospeech` 패키지 추가
+   - 자동 선택 로직: Google Cloud 설정 시 우선 사용
+
+2. **한글 발음 개선**
+   - OpenAI TTS voice 변경: `nova` → `shimmer` (더 부드러운 한글 발음)
+   - Google Cloud TTS 사용 시 한글 발음이 크게 개선됨
+   - 테스트 영상 생성 및 업로드 완료
+
+3. **Description 및 Tags 개선**
+   - Description에서 태그 섹션 제거 (태그는 YouTube tags 필드에만 등록)
+   - 메타데이터에 `description` 및 `tags` 필드 추가
+   - 구독 링크 형식 수정: `@@` 제거 (`https://www.youtube.com/@aicryptofunk`)
+   - 기본 태그 업데이트: `shorts,쇼츠,ai,인공지능,자동생성,유용한정보,팁,라이프스타일,일상,정보,꿀팁,생활정보` (12개 태그)
+
+4. **업로드된 영상**
+   - Video ID: `qugkhBgi7xU` - 크리스마스 선물 예산 안에서 특별함 더하기
+   - Video ID: `a5Wq_mYSuno` - 겨울철 전기요금 절약하는 실용적인 팁
+   - 두 영상 모두 2시간 후 예약 공개 설정
+
+**파일**:
+- `src/pipeline/tts_engine.py`: Google Cloud TTS 엔진 추가, OpenAI TTS voice 변경
+- `src/pipeline/bot.py`: 메타데이터에 description/tags 추가, description에서 태그 섹션 제거
+- `src/uploaders/youtube_uploader.py`: 구독 링크 형식 수정, description 업데이트 메서드 추가
+- `config.py`: Google Cloud TTS 설정 추가, 기본 태그 업데이트
+- `requirements.txt`: `google-cloud-texttospeech` 패키지 추가
+- `.cursorrules`: 업로드 전 확인 규칙 강화
+- `.env`: `DEFAULT_TAGS` 업데이트 (12개 태그)
+- `google-cloud-tts-key.json`: Google Cloud 서비스 계정 키 파일
+
+**사용 방법**:
+- Google Cloud TTS 사용: `.env`에 `TTS_PROVIDER=google_cloud` 설정
+- 한글 영상 생성: 한글 주제 입력 시 자동으로 Google Cloud TTS 사용 (설정된 경우)
+
 ### 2025-12-02 - 한글 주제 생성 지원, 한글 영상 생성 및 업로드 전 확인 규칙 추가
 
 **주요 변경사항**:

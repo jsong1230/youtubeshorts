@@ -260,6 +260,41 @@ class YouTubeUploader:
             logger.error(f"   ❌ 썸네일 업로드 API 오류: {e}")
             raise
     
+    def update_video_description(self, video_id: str, description: str):
+        """영상 설명(description) 업데이트"""
+        try:
+            # 현재 영상 정보 가져오기
+            request = self.youtube.videos().list(
+                part='snippet',
+                id=video_id
+            )
+            response = request.execute()
+            
+            if not response.get('items'):
+                raise ValueError(f"영상을 찾을 수 없습니다: {video_id}")
+            
+            video = response['items'][0]
+            snippet = video['snippet']
+            
+            # Description 업데이트
+            snippet['description'] = description
+            
+            # 업데이트 요청
+            update_request = self.youtube.videos().update(
+                part='snippet',
+                body={
+                    'id': video_id,
+                    'snippet': snippet
+                }
+            )
+            update_response = update_request.execute()
+            
+            logger.info(f"✅ 영상 description 업데이트 완료: {video_id}")
+            return update_response
+        except Exception as e:
+            logger.error(f"❌ description 업데이트 실패: {e}")
+            raise
+    
     def get_video_stats(self, video_id: str):
         """영상 통계 정보 가져오기"""
         try:
@@ -307,7 +342,9 @@ class YouTubeUploader:
                 
                 # 채널 URL 생성
                 if custom_url:
-                    channel_url = f"https://www.youtube.com/@{custom_url}"
+                    # custom_url에서 @ 기호 제거 (이미 @가 포함되어 있을 수 있음)
+                    clean_custom_url = custom_url.lstrip('@')
+                    channel_url = f"https://www.youtube.com/@{clean_custom_url}"
                 else:
                     channel_url = f"https://www.youtube.com/channel/{channel_id}"
                 

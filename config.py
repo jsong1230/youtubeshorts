@@ -64,8 +64,9 @@ class Settings:
         self.default_title_prefix = os.getenv('DEFAULT_TITLE_PREFIX', 'Shorts')
         self.default_description = os.getenv('DEFAULT_DESCRIPTION', 
             'AI로 자동 생성된 YouTube Shorts 영상입니다. 유용한 정보와 팁을 매일 공유합니다. 구독과 좋아요 부탁드립니다!')
+        # 기본 태그: shorts,쇼츠,ai,인공지능,자동생성,유용한정보,팁,라이프스타일,일상,정보,꿀팁,생활정보
         self.default_tags = self._get_list('DEFAULT_TAGS', 
-            'shorts,쇼츠,ai,인공지능,자동생성,유용한정보,팁,라이프스타일')
+            'shorts,쇼츠,ai,인공지능,자동생성,유용한정보,팁,라이프스타일,일상,정보,꿀팁,생활정보')
         
         # 디렉토리 설정
         self.video_output_dir = 'output/videos'
@@ -74,6 +75,7 @@ class Settings:
         
         # TTS 설정
         self.tts_provider = os.getenv('TTS_PROVIDER', None)
+        self.google_cloud_credentials_path = os.getenv('GOOGLE_CLOUD_CREDENTIALS_PATH', None)  # Google Cloud TTS용 서비스 계정 키 경로
         
         # YouTube Shorts 요구사항
         self.shorts_min_duration = 15
@@ -201,6 +203,7 @@ THUMBNAIL_OUTPUT_DIR = _settings.thumbnail_output_dir
 TEMP_DIR = _settings.temp_dir
 
 TTS_PROVIDER = _settings.tts_provider
+GOOGLE_CLOUD_CREDENTIALS_PATH = _settings.google_cloud_credentials_path
 
 SHORTS_MIN_DURATION = _settings.shorts_min_duration
 SHORTS_MAX_DURATION = _settings.shorts_max_duration
