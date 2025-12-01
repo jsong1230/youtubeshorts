@@ -50,7 +50,7 @@ def with_timeout(timeout_seconds=30):
         return wrapper
     return decorator
 
-def collect_topics():
+def collect_topics(language='en'):
     """여러 소스에서 주제를 수집 (타임아웃 및 진행 상황 표시 포함)"""
     global interrupted
     
@@ -190,7 +190,7 @@ def collect_topics():
             with ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(
                     script_generator.generate_seasonal_topics_from_trends,
-                    current_season, content_type, 'en'
+                    current_season, content_type, language
                 )
                 ai_seasonal_topics = future.result(timeout=timeouts['ai_seasonal'])
             
@@ -215,7 +215,7 @@ def collect_topics():
             with ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(
                     script_generator.generate_ai_topics_from_trends,
-                    content_type, 'en'
+                    content_type, language
                 )
                 ai_trend_topics = future.result(timeout=timeouts['ai_general'])
             
@@ -272,25 +272,30 @@ def main():
     # Ctrl+C 핸들러 설정
     signal.signal(signal.SIGINT, timeout_handler)
     
-    # 명령줄 인자에서 주제 개수 읽기 (기본값: 3)
+    # 명령줄 인자 파싱
     num_topics = 3
-    if len(sys.argv) > 1:
-        try:
-            num_topics = int(sys.argv[1])
+    language = 'en'  # 기본값: 영어
+    
+    # 인자 파싱
+    for arg in sys.argv[1:]:
+        if arg.isdigit():
+            num_topics = int(arg)
             if num_topics < 1:
                 print("⚠️ 주제 개수는 1 이상이어야 합니다. 기본값 3을 사용합니다.")
                 num_topics = 3
-        except ValueError:
-            print(f"⚠️ '{sys.argv[1]}'는 유효한 숫자가 아닙니다. 기본값 3을 사용합니다.")
-            num_topics = 3
+        elif arg in ['--ko', '--korean', '-k']:
+            language = 'ko'
+        elif arg in ['--en', '--english', '-e']:
+            language = 'en'
     
-    print(f"🎯 주제 {num_topics}개 수집 중...")
+    lang_name = "한국어" if language == 'ko' else "영어"
+    print(f"🎯 주제 {num_topics}개 수집 중... ({lang_name})")
     print("💡 Ctrl+C를 누르면 안전하게 중단할 수 있습니다.")
     print()
     
     try:
         total_start_time = time.time()
-        all_topics = collect_topics()
+        all_topics = collect_topics(language=language)
         total_elapsed = time.time() - total_start_time
         
         if interrupted:
