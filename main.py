@@ -39,6 +39,43 @@ def main():
     if len(sys.argv) > 1:
         command = sys.argv[1]
 
+        if command == 'topics' or command == 'get-topics':
+            # 주제 선정 명령어
+            from get_topics import collect_topics
+            import random
+            
+            # 주제 개수 읽기 (기본값: 3)
+            num_topics = 3
+            if len(sys.argv) > 2:
+                try:
+                    num_topics = int(sys.argv[2])
+                    if num_topics < 1:
+                        logger.warning("⚠️ 주제 개수는 1 이상이어야 합니다. 기본값 3을 사용합니다.")
+                        num_topics = 3
+                except ValueError:
+                    logger.warning(f"⚠️ '{sys.argv[2]}'는 유효한 숫자가 아닙니다. 기본값 3을 사용합니다.")
+                    num_topics = 3
+            
+            logger.info(f"🎯 주제 {num_topics}개 수집 중...")
+            all_topics = collect_topics()
+            
+            if not all_topics:
+                logger.error("❌ 수집된 주제가 없습니다.")
+                return
+            
+            # 랜덤으로 지정된 개수만큼 선택
+            selected_count = min(num_topics, len(all_topics))
+            selected_topics = random.sample(all_topics, selected_count)
+            
+            logger.info("")
+            logger.info("=" * 60)
+            logger.info(f"🎲 랜덤 선택된 주제 {selected_count}개:")
+            logger.info("=" * 60)
+            for i, topic in enumerate(selected_topics, 1):
+                logger.info(f"{i}. {topic}")
+            logger.info("=" * 60)
+            return
+
         if command == 'test' or command == 'generate':
             # 영상 생성만 (업로드 없음)
             topic = sys.argv[2] if len(sys.argv) > 2 else None
@@ -187,6 +224,7 @@ def main():
 
         else:
             logger.info("사용법:")
+            logger.info("  python main.py topics [개수]   - 주제 선정 (기본값: 3개)")
             logger.info("  python main.py test [주제]     - 영상 생성만 (업로드 없음)")
             logger.info("  python main.py upload [주제] [--force]  - 즉시 영상 생성 및 업로드 (--force: 중복 체크 건너뛰기)")
             logger.info("  python main.py batch [개수] [--upload] - 여러 영상 순차 생성 (2개 이상)")

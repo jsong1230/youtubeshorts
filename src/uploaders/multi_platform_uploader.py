@@ -96,7 +96,8 @@ class MultiPlatformUploader:
                     description=description or config.DEFAULT_DESCRIPTION,
                     tags=tags or config.DEFAULT_TAGS,
                     privacy_status='public',
-                    thumbnail_path=thumbnail_path
+                    thumbnail_path=thumbnail_path,
+                    schedule_delay_hours=config.UPLOAD_DELAY_HOURS  # 예약 업로드 지연 시간
                 )
                 results['youtube'] = youtube_id
                 if youtube_id:

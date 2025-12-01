@@ -4,6 +4,49 @@
 
 ## 최근 변경사항
 
+### 2025-12-01 - 예약 업로드 기능 추가 및 주제 선정 명령어 개선
+
+**주요 변경사항**:
+
+1. **2시간 지연 예약 업로드 기능 추가**
+   - `config.py`에 `UPLOAD_DELAY_HOURS` 설정 추가
+   - `youtube_uploader.py`의 `upload_video` 메서드에 `schedule_delay_hours` 파라미터 추가
+   - YouTube API의 `scheduledStartTime` 기능 활용
+   - 예약 업로드는 자동으로 `unlisted` 상태로 설정 (공개 상태 불가)
+   - 최소 15분 이후 시간으로 자동 조정 (YouTube API 요구사항)
+   - `.env` 파일에 `UPLOAD_DELAY_HOURS=2` 설정 추가
+   - `bot.py`와 `multi_platform_uploader.py`에서 예약 업로드 파라미터 전달
+
+2. **주제 선정 명령어 개선**
+   - `main.py`에 `topics` 명령어 추가 (`python main.py topics [개수]`)
+   - `get_topics.py` 개선: 명령줄 인자로 주제 개수 지정 가능
+   - 기본값 3개, 원하는 개수 지정 가능
+   - 코드 수정 없이 주제 선정 가능하도록 구조 개선
+
+3. **3개 영상 생성 및 업로드 완료**
+   - 주제 1: "Consistency outruns talent every single time." (Video ID: fO26Q-6Eb_8)
+   - 주제 2: "Create a Cozy Winter Workspace: Boost Productivity with Seasonal Decor" (Video ID: rL__NbB3a8k)
+   - 주제 3: "Time is Money: The Secret to Maximizing Your Daily Productivity" (Video ID: seLGHtHg750)
+   - 모든 영상 정상 업로드 및 썸네일 업로드 완료
+
+4. **예약 업로드 기능 버그 수정**
+   - `bot.py`의 `_upload_to_platforms` 메서드에서 `schedule_delay_hours` 파라미터 전달 누락 수정
+   - `multi_platform_uploader.py`에서도 예약 업로드 파라미터 전달 추가
+   - `.env` 파일에 `UPLOAD_DELAY_HOURS=2` 설정 추가
+
+**파일**:
+- `config.py`: `UPLOAD_DELAY_HOURS` 설정 추가
+- `src/uploaders/youtube_uploader.py`: 예약 업로드 기능 구현
+- `src/pipeline/bot.py`: 예약 업로드 파라미터 전달 추가
+- `src/uploaders/multi_platform_uploader.py`: 예약 업로드 파라미터 전달 추가
+- `main.py`: `topics` 명령어 추가
+- `get_topics.py`: 명령줄 인자 지원 개선
+- `.env`: `UPLOAD_DELAY_HOURS=2` 설정 추가
+
+**사용 방법**:
+- 예약 업로드: `.env` 파일에 `UPLOAD_DELAY_HOURS=2` 설정 (2시간 후 공개)
+- 주제 선정: `python main.py topics 3` (3개 주제 선정)
+
 ### 2025-11-30 - 로깅 시스템 전면 적용 및 Phase 3-4 테스트 작성 완료
 
 **주요 변경사항**:
@@ -233,6 +276,36 @@
 - `$,000` → 매칭되지 않아 원본 유지
 
 ## 프로젝트 개요
+
+- **2025-12-01 - 영상 업로드 완료**
+  - **제목**: Time is Money: The Secret to Maximizing Your Daily Productivity #Shorts
+  - **주제**: Time is Money: The Secret to Maximizing Your Daily Productivity
+  - **콘텐츠 타입**: auto
+  - **Video ID**: seLGHtHg750
+  - **URL**: https://www.youtube.com/watch?v=seLGHtHg750
+  - **영상 파일**: output/videos/shorts_20251201_183255.mp4
+  - **썸네일**: output/thumbnails/thumb_20251201_183451.jpg
+  - **업로드 시간**: 2025-12-01T18:35:47.494974
+
+- **2025-12-01 - 영상 업로드 완료**
+  - **제목**: Create a Cozy Winter Workspace: Boost Productivity with Seasonal Decor #Shorts
+  - **주제**: Create a Cozy Winter Workspace: Boost Productivity with Seasonal Decor
+  - **콘텐츠 타입**: auto
+  - **Video ID**: rL__NbB3a8k
+  - **URL**: https://www.youtube.com/watch?v=rL__NbB3a8k
+  - **영상 파일**: output/videos/shorts_20251201_183002.mp4
+  - **썸네일**: output/thumbnails/thumb_20251201_183147.jpg
+  - **업로드 시간**: 2025-12-01T18:32:35.952536
+
+- **2025-12-01 - 영상 업로드 완료**
+  - **제목**: Consistency outruns talent every single time. #Shorts
+  - **주제**: Consistency outruns talent every single time.
+  - **콘텐츠 타입**: auto
+  - **Video ID**: fO26Q-6Eb_8
+  - **URL**: https://www.youtube.com/watch?v=fO26Q-6Eb_8
+  - **영상 파일**: output/videos/shorts_20251201_182701.mp4
+  - **썸네일**: output/thumbnails/thumb_20251201_182855.jpg
+  - **업로드 시간**: 2025-12-01T18:29:38.695649
 
 - **2025-11-30 - 영상 업로드 완료**
   - **제목**: Test Video

@@ -631,7 +631,8 @@ class ShortsBot:
                 description=video_assets['description'],
                 tags=video_assets['tags'],
                 privacy_status='public',
-                thumbnail_path=video_assets['thumbnail_path']
+                thumbnail_path=video_assets['thumbnail_path'],
+                schedule_delay_hours=config.UPLOAD_DELAY_HOURS  # 예약 업로드 지연 시간
             )
             upload_results = {'youtube': video_id}
             

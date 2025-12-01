@@ -3,7 +3,7 @@ YouTube Shorts 자동 업로드 모듈
 """
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil import parser as date_parser
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -43,7 +43,8 @@ class YouTubeUploader:
         tags: list = None,
         category_id: str = '22',  # People & Blogs
         privacy_status: str = 'public',
-        thumbnail_path: str = None
+        thumbnail_path: str = None,
+        schedule_delay_hours: float = None
     ):
         """
         영상 업로드
@@ -55,12 +56,38 @@ class YouTubeUploader:
             tags: 태그 리스트
             category_id: 카테고리 ID (기본값: 22 - People & Blogs)
             privacy_status: 공개 설정 ('public', 'private', 'unlisted')
+            thumbnail_path: 썸네일 파일 경로
+            schedule_delay_hours: 예약 업로드 지연 시간 (시간 단위, None이면 config에서 읽음, 0이면 즉시 업로드)
         
         Returns:
             업로드된 영상의 ID
         """
         if not os.path.exists(video_path):
             raise FileNotFoundError(f"영상 파일을 찾을 수 없습니다: {video_path}")
+        
+        # 예약 업로드 지연 시간 설정 (파라미터가 없으면 config에서 읽음)
+        if schedule_delay_hours is None:
+            schedule_delay_hours = config.UPLOAD_DELAY_HOURS
+        
+        # 예약 업로드 시간 계산
+        scheduled_start_time = None
+        if schedule_delay_hours and schedule_delay_hours > 0:
+            # 현재 시간에 지연 시간 추가
+            scheduled_time = datetime.utcnow() + timedelta(hours=schedule_delay_hours)
+            # YouTube API는 최소 15분 이후의 시간이어야 함
+            min_scheduled_time = datetime.utcnow() + timedelta(minutes=15)
+            if scheduled_time < min_scheduled_time:
+                scheduled_time = min_scheduled_time
+                logger.info(f"⚠️ 예약 시간이 최소 15분 요구사항보다 짧아서 15분 후로 조정되었습니다.")
+            
+            # ISO 8601 형식으로 변환 (UTC)
+            scheduled_start_time = scheduled_time.strftime('%Y-%m-%dT%H:%M:%S.000Z')
+            logger.info(f"📅 예약 업로드 설정: {schedule_delay_hours}시간 후 ({scheduled_start_time})")
+            
+            # 예약 업로드는 private 또는 unlisted 상태여야 함
+            if privacy_status == 'public':
+                privacy_status = 'unlisted'
+                logger.info(f"⚠️ 예약 업로드는 공개 상태로 설정할 수 없어 'unlisted'로 변경되었습니다.")
         
         # YouTube Shorts는 세로형 영상이어야 함
         body = {
@@ -75,6 +102,10 @@ class YouTubeUploader:
                 'selfDeclaredMadeForKids': False
             }
         }
+        
+        # 예약 업로드 시간 설정
+        if scheduled_start_time:
+            body['status']['scheduledStartTime'] = scheduled_start_time
         
         # Shorts로 표시하기 위한 설정
         body['snippet']['defaultLanguage'] = 'ko'
@@ -99,8 +130,13 @@ class YouTubeUploader:
             response = self._resumable_upload(insert_request)
             
             video_id = response['id']
-            logger.info(f"✅ 영상 업로드 완료! 영상 ID: {video_id}")
-            logger.info(f"🔗 URL: https://www.youtube.com/watch?v={video_id}")
+            if scheduled_start_time:
+                logger.info(f"✅ 영상 예약 업로드 완료! 영상 ID: {video_id}")
+                logger.info(f"📅 예약 공개 시간: {scheduled_start_time} (UTC)")
+                logger.info(f"🔗 URL: https://www.youtube.com/watch?v={video_id}")
+            else:
+                logger.info(f"✅ 영상 업로드 완료! 영상 ID: {video_id}")
+                logger.info(f"🔗 URL: https://www.youtube.com/watch?v={video_id}")
             
             # 썸네일 업로드 (있는 경우)
             # 썸네일 업로드 (있는 경우)

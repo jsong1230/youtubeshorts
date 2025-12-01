@@ -58,6 +58,7 @@ class Settings:
         # 업로드 스케줄 설정
         self.upload_schedule_time = os.getenv('UPLOAD_SCHEDULE_TIME', '09:00')
         self.upload_timezone = os.getenv('UPLOAD_TIMEZONE', 'Asia/Seoul')
+        self.upload_delay_hours = self._get_float('UPLOAD_DELAY_HOURS', 0.0)  # 예약 업로드 지연 시간 (시간 단위, 0이면 즉시 업로드)
         
         # 영상 기본 설정
         self.default_title_prefix = os.getenv('DEFAULT_TITLE_PREFIX', 'Shorts')
@@ -213,6 +214,8 @@ MONETIZATION_DATA_PATH = _settings.monetization_data_path
 
 ENABLE_TIKTOK_UPLOAD = _settings.enable_tiktok_upload
 ENABLE_INSTAGRAM_UPLOAD = _settings.enable_instagram_upload
+
+UPLOAD_DELAY_HOURS = _settings.upload_delay_hours
 
 TIKTOK_CLIENT_KEY = _settings.tiktok_client_key
 TIKTOK_CLIENT_SECRET = _settings.tiktok_client_secret
