@@ -387,6 +387,46 @@
 ## 프로젝트 개요
 
 - **2025-12-02 - 영상 업로드 완료**
+  - **제목**: Why Smart People Max Out Their 401k in December (Not January) #Shorts
+  - **주제**: Why Smart People Max Out Their 401k in December (Not January)
+  - **콘텐츠 타입**: auto
+  - **Video ID**: 0x6WPchQ96c
+  - **URL**: https://www.youtube.com/watch?v=0x6WPchQ96c
+  - **영상 파일**: output/videos/shorts_20251202_232456.mp4
+  - **썸네일**: output/thumbnails/thumb_20251202_232616.jpg
+  - **업로드 시간**: 2025-12-02T23:27:24.328471
+
+- **2025-12-02 - 영상 업로드 완료**
+  - **제목**: The  December Mistake That Kills Your January Budget #Shorts
+  - **주제**: The  December Mistake That Kills Your January Budget
+  - **콘텐츠 타입**: auto
+  - **Video ID**: nXFG9QRHWhM
+  - **URL**: https://www.youtube.com/watch?v=nXFG9QRHWhM
+  - **영상 파일**: output/videos/shorts_20251202_232248.mp4
+  - **썸네일**: output/thumbnails/thumb_20251202_232417.jpg
+  - **업로드 시간**: 2025-12-02T23:27:06.540909
+
+- **2025-12-02 - 영상 업로드 완료**
+  - **제목**: 새해를 위한 비상금 만들기: 3개월 안에 100만원 모으는 실전 방법 #Shorts
+  - **주제**: 새해를 위한 비상금 만들기: 3개월 안에 100만원 모으는 실전 방법
+  - **콘텐츠 타입**: auto
+  - **Video ID**: gkJSlhFaCCY
+  - **URL**: https://www.youtube.com/watch?v=gkJSlhFaCCY
+  - **영상 파일**: output/videos/shorts_20251202_214154.mp4
+  - **썸네일**: output/thumbnails/thumb_20251202_214314.jpg
+  - **업로드 시간**: 2025-12-02T21:44:16.354546
+
+- **2025-12-02 - 영상 업로드 완료**
+  - **제목**: 연말정산 세금 절감: 12월 31일 전에 꼭 해야 할 3가지 #Shorts
+  - **주제**: 연말정산 세금 절감: 12월 31일 전에 꼭 해야 할 3가지
+  - **콘텐츠 타입**: auto
+  - **Video ID**: ROHc7zf0h4Y
+  - **URL**: https://www.youtube.com/watch?v=ROHc7zf0h4Y
+  - **영상 파일**: output/videos/shorts_20251202_213957.mp4
+  - **썸네일**: output/thumbnails/thumb_20251202_214118.jpg
+  - **업로드 시간**: 2025-12-02T21:44:01.155735
+
+- **2025-12-02 - 영상 업로드 완료**
   - **제목**: 크리스마스 선물 아이디어: 예산 안에서 특별함 더하기 #Shorts
   - **주제**: 크리스마스 선물 아이디어: 예산 안에서 특별함 더하기
   - **콘텐츠 타입**: auto

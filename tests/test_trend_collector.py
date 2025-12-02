@@ -311,3 +311,4 @@ class TestTrendCollector:
         assert isinstance(keywords, list)
         trend_collector.get_trending_shorts.assert_called_once()
         trend_collector.extract_keywords_from_videos.assert_called_once()
+

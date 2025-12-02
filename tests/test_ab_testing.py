@@ -258,3 +258,4 @@ class TestVideoStyle:
         assert VideoStyle.NO_MUSIC.value == "no_music"
         assert VideoStyle.GRADIENT.value == "gradient"
         assert VideoStyle.VIDEO_BG.value == "video_bg"
+

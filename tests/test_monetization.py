@@ -227,3 +227,4 @@ class TestMonetizationTracker:
         new_tracker._load_data()
         assert len(new_tracker.data['videos']) == 1
         assert new_tracker.data['videos'][0]['video_id'] == "test_video_1"
+

@@ -459,3 +459,4 @@ class TestShortsBot:
         
         # At least one video generation attempt should be made
         assert bot.video_generator.generate_video.call_count >= 1
+

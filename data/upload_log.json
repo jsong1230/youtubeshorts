@@ -323,5 +323,135 @@
       "youtube": "_MtYtTPwpx0"
     },
     "url": "https://www.youtube.com/watch?v=_MtYtTPwpx0"
+  },
+  {
+    "timestamp": "2025-11-30T22:51:25.476261",
+    "video_id": "test_video_id_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "auto",
+    "video_path": "/private/var/folders/zb/w2ldjmt504jcjsjhvfytbxlr0000gn/T/pytest-of-jsong/pytest-16/test_create_and_upload_success0/test_video.mp4",
+    "thumbnail_path": "/private/var/folders/zb/w2ldjmt504jcjsjhvfytbxlr0000gn/T/pytest-of-jsong/pytest-16/test_create_and_upload_success0/test_thumbnail.jpg",
+    "upload_results": {
+      "youtube": "test_video_id_123"
+    },
+    "url": "https://www.youtube.com/watch?v=test_video_id_123"
+  },
+  {
+    "timestamp": "2025-11-30T22:51:25.494692",
+    "video_id": "test_video_123",
+    "title": "Test Video",
+    "topic": "Test Topic",
+    "content_type": "hook",
+    "video_path": null,
+    "thumbnail_path": null,
+    "upload_results": {
+      "youtube": "test_video_123"
+    },
+    "url": "https://www.youtube.com/watch?v=test_video_123"
+  },
+  {
+    "timestamp": "2025-12-01T18:29:38.695649",
+    "video_id": "fO26Q-6Eb_8",
+    "title": "Consistency outruns talent every single time. #Shorts",
+    "topic": "Consistency outruns talent every single time.",
+    "content_type": "auto",
+    "video_path": "output/videos/shorts_20251201_182701.mp4",
+    "thumbnail_path": "output/thumbnails/thumb_20251201_182855.jpg",
+    "upload_results": {
+      "youtube": "fO26Q-6Eb_8"
+    },
+    "url": "https://www.youtube.com/watch?v=fO26Q-6Eb_8"
+  },
+  {
+    "timestamp": "2025-12-01T18:32:35.952536",
+    "video_id": "rL__NbB3a8k",
+    "title": "Create a Cozy Winter Workspace: Boost Productivity with Seasonal Decor #Shorts",
+    "topic": "Create a Cozy Winter Workspace: Boost Productivity with Seasonal Decor",
+    "content_type": "auto",
+    "video_path": "output/videos/shorts_20251201_183002.mp4",
+    "thumbnail_path": "output/thumbnails/thumb_20251201_183147.jpg",
+    "upload_results": {
+      "youtube": "rL__NbB3a8k"
+    },
+    "url": "https://www.youtube.com/watch?v=rL__NbB3a8k"
+  },
+  {
+    "timestamp": "2025-12-01T18:35:47.494974",
+    "video_id": "seLGHtHg750",
+    "title": "Time is Money: The Secret to Maximizing Your Daily Productivity #Shorts",
+    "topic": "Time is Money: The Secret to Maximizing Your Daily Productivity",
+    "content_type": "auto",
+    "video_path": "output/videos/shorts_20251201_183255.mp4",
+    "thumbnail_path": "output/thumbnails/thumb_20251201_183451.jpg",
+    "upload_results": {
+      "youtube": "seLGHtHg750"
+    },
+    "url": "https://www.youtube.com/watch?v=seLGHtHg750"
+  },
+  {
+    "timestamp": "2025-12-02T00:29:34.771809",
+    "video_id": "eC5EAXss-7w",
+    "title": "크리스마스 선물 아이디어: 예산 안에서 특별함 더하기 #Shorts",
+    "topic": "크리스마스 선물 아이디어: 예산 안에서 특별함 더하기",
+    "content_type": "auto",
+    "video_path": "output/videos/shorts_20251202_002613.mp4",
+    "thumbnail_path": "output/thumbnails/thumb_20251202_002835.jpg",
+    "upload_results": {
+      "youtube": "eC5EAXss-7w"
+    },
+    "url": "https://www.youtube.com/watch?v=eC5EAXss-7w"
+  },
+  {
+    "timestamp": "2025-12-02T21:44:01.155735",
+    "video_id": "ROHc7zf0h4Y",
+    "title": "연말정산 세금 절감: 12월 31일 전에 꼭 해야 할 3가지 #Shorts",
+    "topic": "연말정산 세금 절감: 12월 31일 전에 꼭 해야 할 3가지",
+    "content_type": "auto",
+    "video_path": "output/videos/shorts_20251202_213957.mp4",
+    "thumbnail_path": "output/thumbnails/thumb_20251202_214118.jpg",
+    "upload_results": {
+      "youtube": "ROHc7zf0h4Y"
+    },
+    "url": "https://www.youtube.com/watch?v=ROHc7zf0h4Y"
+  },
+  {
+    "timestamp": "2025-12-02T21:44:16.354546",
+    "video_id": "gkJSlhFaCCY",
+    "title": "새해를 위한 비상금 만들기: 3개월 안에 100만원 모으는 실전 방법 #Shorts",
+    "topic": "새해를 위한 비상금 만들기: 3개월 안에 100만원 모으는 실전 방법",
+    "content_type": "auto",
+    "video_path": "output/videos/shorts_20251202_214154.mp4",
+    "thumbnail_path": "output/thumbnails/thumb_20251202_214314.jpg",
+    "upload_results": {
+      "youtube": "gkJSlhFaCCY"
+    },
+    "url": "https://www.youtube.com/watch?v=gkJSlhFaCCY"
+  },
+  {
+    "timestamp": "2025-12-02T23:27:06.540909",
+    "video_id": "nXFG9QRHWhM",
+    "title": "The  December Mistake That Kills Your January Budget #Shorts",
+    "topic": "The  December Mistake That Kills Your January Budget",
+    "content_type": "auto",
+    "video_path": "output/videos/shorts_20251202_232248.mp4",
+    "thumbnail_path": "output/thumbnails/thumb_20251202_232417.jpg",
+    "upload_results": {
+      "youtube": "nXFG9QRHWhM"
+    },
+    "url": "https://www.youtube.com/watch?v=nXFG9QRHWhM"
+  },
+  {
+    "timestamp": "2025-12-02T23:27:24.328471",
+    "video_id": "0x6WPchQ96c",
+    "title": "Why Smart People Max Out Their 401k in December (Not January) #Shorts",
+    "topic": "Why Smart People Max Out Their 401k in December (Not January)",
+    "content_type": "auto",
+    "video_path": "output/videos/shorts_20251202_232456.mp4",
+    "thumbnail_path": "output/thumbnails/thumb_20251202_232616.jpg",
+    "upload_results": {
+      "youtube": "0x6WPchQ96c"
+    },
+    "url": "https://www.youtube.com/watch?v=0x6WPchQ96c"
   }
 ]
