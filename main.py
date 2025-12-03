@@ -4,6 +4,7 @@ YouTube Shorts 자동 업로드 봇 메인 실행 파일
 """
 import sys
 import os
+import json
 from pathlib import Path
 
 # 프로젝트 루트를 경로에 추가
@@ -97,7 +98,9 @@ def main():
                     topic = metadata.get('topic')
                     title = metadata.get('title')
                     thumbnail_path = metadata.get('thumbnail_path')
-                    description = bot._generate_description(metadata.get('language', 'en'), topic, topic)
+                    description = bot.pipeline.metadata_manager.generate_description(
+                        metadata.get('language', 'en'), topic, topic
+                    )
                     
                     # 영상 자산 딕셔너리 생성
                     video_assets = {
@@ -106,15 +109,39 @@ def main():
                         'title': title,
                         'description': description,
                         'tags': config.DEFAULT_TAGS,
-                        'actual_topic': topic
+                        'actual_topic': topic,
+                        'script': metadata.get('script', []),
+                        'language': metadata.get('language', 'en')
                     }
                     
-                    # 업로드
-                    upload_results = bot._upload_to_platforms(video_assets)
-                    video_id = upload_results.get('youtube')
+                    # 비공개로 업로드 (privacy_status='private')
+                    from src.core.config import settings
+                    video_id = bot.uploader.upload_video(
+                        video_path=video_path,
+                        title=title,
+                        description=description,
+                        tags=config.DEFAULT_TAGS,
+                        privacy_status='private',  # 비공개로 설정
+                        thumbnail_path=thumbnail_path,
+                        schedule_delay_hours=0  # 즉시 업로드
+                    )
+                    
                     if video_id:
-                        bot._update_databases(video_assets, upload_results, None, None, None)
-                        logger.info(f"\n✅ 업로드 완료! 영상 ID: {video_id}")
+                        # 데이터베이스 업데이트
+                        script_str = json.dumps(metadata.get('script', []), ensure_ascii=False) if metadata.get('script') else None
+                        bot.database.add_video(
+                            video_id=video_id,
+                            title=title,
+                            topic=topic,
+                            script=script_str
+                        )
+                        # Sync manager 업데이트는 선택사항
+                        try:
+                            if hasattr(bot.sync_manager, 'update_last_upload'):
+                                bot.sync_manager.update_last_upload(video_id, title)
+                        except Exception as e:
+                            logger.debug(f"Sync manager 업데이트 생략: {e}")
+                        logger.info(f"\n✅ 업로드 완료! 영상 ID: {video_id} (비공개)")
                         logger.info(f"🔗 https://www.youtube.com/watch?v={video_id}\n")
                         
                         # 업로드 성공 후 원본 파일 삭제

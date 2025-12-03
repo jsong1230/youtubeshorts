@@ -1,5 +1,23 @@
 ## Recent Updates
 
+- **2025-12-03 - Video Upload (비공개)**
+  - **한국어 영상**: 크리스마스 선물 예산 관리: 연말 지출 폭탄 피하는 3가지 전략
+    - Video ID: `cbChzZIDq3w`
+    - URL: https://www.youtube.com/watch?v=cbChzZIDq3w
+    - 길이: 51.89초
+    - 상태: 비공개 (private)
+  - **영어 영상**: Holiday Shopping Psychology: The $300 Mistake 90% of Americans Make in December
+    - Video ID: `e_nBEht1ex8`
+    - URL: https://www.youtube.com/watch?v=e_nBEht1ex8
+    - 길이: 54.84초
+    - 상태: 비공개 (private)
+  - **main.py 수정**: 파일 경로로 직접 업로드할 때 비공개 설정 및 에러 수정
+    - `_generate_description` → `pipeline.metadata_manager.generate_description`로 수정
+    - `_upload_to_platforms`, `_update_databases` 대신 직접 `uploader.upload_video` 및 `database.add_video` 호출
+    - `privacy_status='private'` 명시적 설정
+    - `json` import 추가
+    - SyncManager 메서드 호출 에러 처리 추가
+
 - **2025-12-03 - Configuration Refactoring Completed**
   - **Pydantic BaseSettings**: Migrated to type-safe configuration system
   - **Modules Refactored**: 40+ files updated to use `settings` instead of `config`
@@ -20,6 +38,42 @@
 이 문서는 YouTube Shorts 자동 업로드 봇 프로젝트의 개발 히스토리를 기록합니다.
 
 ## 최근 변경사항
+
+### 2025-12-03 - Video Upload (비공개) 및 main.py 수정
+
+**업로드된 영상**:
+
+1. **한국어 영상**
+   - **주제**: 크리스마스 선물 예산 관리: 연말 지출 폭탄 피하는 3가지 전략
+   - **Video ID**: `cbChzZIDq3w`
+   - **URL**: https://www.youtube.com/watch?v=cbChzZIDq3w
+   - **길이**: 51.89초
+   - **상태**: 비공개 (private)
+   - **썸네일**: `output/thumbnails/thumb_20251203_170438.jpg`
+
+2. **영어 영상**
+   - **주제**: Holiday Shopping Psychology: The $300 Mistake 90% of Americans Make in December
+   - **Video ID**: `e_nBEht1ex8`
+   - **URL**: https://www.youtube.com/watch?v=e_nBEht1ex8
+   - **길이**: 54.84초
+   - **상태**: 비공개 (private)
+   - **썸네일**: `output/thumbnails/thumb_20251203_170707.jpg`
+
+**main.py 수정 사항**:
+
+- 파일 경로로 직접 업로드할 때 비공개 설정 지원
+  - `privacy_status='private'` 명시적 설정 추가
+  - 사용자 요청에 따라 비공개로 업로드 가능하도록 개선
+- 에러 수정
+  - `_generate_description` 메서드가 없어 발생한 에러 수정
+    - `bot._generate_description()` → `bot.pipeline.metadata_manager.generate_description()`로 변경
+  - `_upload_to_platforms`, `_update_databases` 메서드가 없어 발생한 에러 수정
+    - 직접 `bot.uploader.upload_video()` 및 `bot.database.add_video()` 호출로 변경
+  - `json` import 누락 수정
+  - `SyncManager.update_last_upload` 메서드 호출 에러 처리 추가
+
+**파일**:
+- `main.py`: 파일 경로 업로드 로직 수정 및 에러 처리 개선
 
 ### 2025-12-03 - VideoCompositor 리팩토링 완료
 
