@@ -1,17 +1,12 @@
 """
 영상 합성 및 편집 모듈 (MoviePy 기반)
+Refactored to use helper classes for better modularity.
 """
 import os
-import re
-import random
-import time
-import requests
-from typing import Optional, List, Tuple, Dict
+from typing import Optional, List
 from PIL import Image, ImageDraw, ImageFont
-import numpy as np
 from moviepy.editor import (
-    VideoFileClip, AudioFileClip, ImageClip, TextClip, 
-    CompositeVideoClip, concatenate_videoclips, CompositeAudioClip
+    AudioFileClip, CompositeVideoClip, concatenate_videoclips
 )
 from moviepy.video.fx.all import fadein, fadeout
 
@@ -19,31 +14,30 @@ import config
 from .video_constants import VideoConstants
 from .content_type import ContentType
 from .audio_generator import AudioGenerator
-from src.utils.retry_decorator import retry
+from .video.subtitle_renderer import SubtitleRenderer
+from .video.background_video_manager import BackgroundVideoManager
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 class VideoCompositor:
-    """영상 합성 및 편집 클래스"""
+    """영상 합성 및 편집 클래스 (Coordinator)"""
     
     def __init__(
         self, 
         audio_generator: AudioGenerator,
-        media_downloader=None, # MediaDownloader instance
+        media_downloader=None,
         openai_client=None
     ):
         self.audio_generator = audio_generator
         self.media_downloader = media_downloader
         self.openai_client = openai_client
+        
+        # Initialize helper classes
+        self.subtitle_renderer = SubtitleRenderer(openai_client=openai_client)
+        self.background_manager = BackgroundVideoManager(media_downloader=media_downloader)
 
-    @retry(max_retries=3, base_delay=1, exceptions=(requests.RequestException, ConnectionError, TimeoutError))
-    def _http_get_with_retry(self, url: str, **kwargs) -> requests.Response:
-        """HTTP GET request with automatic retry on transient failures."""
-        timeout = kwargs.pop('timeout', 10)
-        response = requests.get(url, timeout=timeout, **kwargs)
-        response.raise_for_status()
-        return response
+    # Removed: _http_get_with_retry - now in BackgroundVideoManager
 
     def create_video_from_script(
         self,
@@ -188,13 +182,13 @@ class VideoCompositor:
                 random.shuffle(unique_keywords)  # 랜덤 순서로 섞기
                 
                 for retry_idx, keyword in enumerate(unique_keywords[:8]):  # 최대 8개 키워드 시도 (다양성 확보)
-                    bg_video_path, video_id = self._download_video_for_sentence(
+                    bg_video_path, video_id = self.background_manager.download_video_for_sentence(
                         group_sentence,
                         i,
                         group_duration,
                         topic=topic,
                         exclude_video_ids=downloaded_video_ids,
-                        force_keyword=keyword if retry_idx > 0 else None  # 첫 번째는 자동, 이후는 강제 키워드
+                        force_keyword=keyword if retry_idx > 0 else None
                     )
                     if bg_video_path and video_id:
                         downloaded_video_ids.add(video_id)  # 영상 ID 추가
@@ -289,7 +283,7 @@ class VideoCompositor:
             
             try:
                 logger.debug(f"   문장 {i+1} 자막 생성: {sentence[:30]}... (시작: {current_time:.2f}초)")
-                subtitle_clip = self._create_subtitle_clip(
+                subtitle_clip = self.subtitle_renderer.create_subtitle_clip(
                     sentence, actual_audio_duration, language=language)
                 if subtitle_clip:
                     subtitle_clip = subtitle_clip.set_duration(actual_audio_duration)
@@ -454,6 +448,10 @@ class VideoCompositor:
         exclude_video_ids: set = None,
         force_keyword: str = None
     ) -> tuple:
+        """문장에 맞는 배경 영상 다운로드 (Delegated to BackgroundVideoManager)"""
+        return self.background_manager.download_video_for_sentence(
+            sentence, index, duration, topic, exclude_video_ids, force_keyword
+        )
         """문장에 맞는 배경 영상 다운로드
         
         Args:
@@ -777,7 +775,10 @@ class VideoCompositor:
         self,
         text: str,
         duration: float,
-        language: str = 'ko') -> TextClip:
+        language: str = 'ko'
+    ):
+        """자막 클립 생성 (Delegated to SubtitleRenderer)"""
+        return self.subtitle_renderer.create_subtitle_clip(text, duration, language)
         """자막 클립 생성"""
         try:
             subtitle_text = text
