@@ -78,7 +78,8 @@ class TestScriptGenerator:
         3. Third sentence
         """
         
-        parsed = script_generator._parse_script_text(script_text)
+        # Access via script_parser
+        parsed = script_generator.script_parser.parse_script_text(script_text, max_sentences=3)
         
         assert isinstance(parsed, list)
         assert len(parsed) == 3
@@ -95,7 +96,8 @@ class TestScriptGenerator:
             "This is a test sentence."   # Duplicate again
         ]
         
-        cleaned = script_generator._remove_repetitive_phrases(script)
+        # Access via script_parser
+        cleaned = script_generator.script_parser.remove_repetitive_phrases(script)
         
         # Should remove exact duplicates
         assert len(cleaned) < len(script)
@@ -106,19 +108,26 @@ class TestScriptGenerator:
         """Test script uniqueness check for new script"""
         script = ["Unique sentence one", "Unique sentence two"]
         
-        with patch('src.generators.script_generator.VideoDatabase') as mock_db:
+        # Mock VideoDatabase inside ScriptValidator
+        with patch('src.generators.script.script_validator.VideoDatabase') as mock_db:
             mock_db_instance = Mock()
             mock_db_instance.get_all_scripts.return_value = []
             mock_db.return_value = mock_db_instance
             
-            is_unique = script_generator._is_script_unique(script)
+            # Re-initialize validator to use mock
+            script_generator.script_validator = script_generator.script_validator.__class__()
+            
+            # Or better, patch the method on the instance
+            script_generator.script_validator.db = mock_db_instance
+            
+            is_unique = script_generator.script_validator.is_script_unique(script)
             assert is_unique is True
     
     def test_is_script_unique_duplicate_script(self, script_generator):
         """Test script uniqueness check for duplicate script"""
         script = ["Same sentence", "Another sentence"]
         
-        with patch('src.generators.script_generator.VideoDatabase') as mock_db:
+        with patch('src.generators.script.script_validator.VideoDatabase') as mock_db:
             mock_db_instance = Mock()
             # Return existing scripts that match
             mock_db_instance.get_all_scripts.return_value = [
@@ -126,7 +135,9 @@ class TestScriptGenerator:
             ]
             mock_db.return_value = mock_db_instance
             
-            is_unique = script_generator._is_script_unique(script)
+            script_generator.script_validator.db = mock_db_instance
+            
+            is_unique = script_generator.script_validator.is_script_unique(script)
             assert is_unique is False
     
     def test_build_default_script(self, script_generator):

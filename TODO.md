@@ -296,10 +296,11 @@
     - [x] `test_trend_collector.py` 작성 완료 (16개 테스트 통과) ✅
   - [x] Phase 4: Pipeline 테스트 완료 ✅ (2025-11-30)
     - [x] `test_bot_pipeline.py` 작성 완료 (22개 테스트 통과) ✅
-  - [ ] Phase 5: Integration 테스트 (`test_end_to_end.py`)
+  - [x] Phase 5: Integration 테스트 (`test_end_to_end.py`) ✅ (2025-12-03)
   - [ ] CI/CD 파이프라인 구축 (GitHub Actions)
-- [ ] **코드 리팩토링**
-  - [ ] `ShortsBot` 클래스의 거대한 메서드(`create_and_upload`) 분리
+- [x] **코드 리팩토링**
+  - [x] `ShortsBot` 클래스의 거대한 메서드(`create_and_upload`) 분리 (VideoPipeline, MetadataManager 도입)
+  - [x] `ScriptGenerator` 클래스(3800+라인) 분리 및 모듈화 (PromptBuilder, ScriptParser, ScriptValidator 도입)
   - [ ] `VideoGenerator` 클래스(3800+라인) 분리 및 모듈화 (VideoEditor, ThumbnailCreator 등)
   - [ ] `config.py` 직접 의존성 제거 및 설정 관리자(Configuration Manager) 도입
   - [ ] 하드코딩된 상수값들을 설정 파일이나 상수 클래스로 이동
@@ -375,6 +376,6 @@
 
 ---
 
-**마지막 업데이트**: 2025-12-02 (Google Cloud TTS 추가, 한글 발음 개선, Description/Tags 개선)
+**마지막 업데이트**: 2025-12-03 (ScriptGenerator 및 ShortsBot 리팩토링 완료, 통합 테스트 추가)
 
 **다음 리뷰 예정일**: 작업 진행에 따라 업데이트

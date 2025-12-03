@@ -1,10 +1,69 @@
+## Recent Updates
+
+- **2025-12-03 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
 # 프로젝트 개발 히스토리
 
 이 문서는 YouTube Shorts 자동 업로드 봇 프로젝트의 개발 히스토리를 기록합니다.
 
 ## 최근 변경사항
 
+### 2025-12-03 - ScriptGenerator 및 ShortsBot 리팩토링 완료, 통합 테스트 추가
+
+**주요 변경사항**:
+
+1. **ScriptGenerator 클래스 리팩토링 완료**
+   - 거대한 `ScriptGenerator` 클래스를 3개의 헬퍼 클래스로 분리
+   - `PromptBuilder` (`src/generators/script/prompt_builder.py`): 프롬프트 생성 담당
+   - `ScriptParser` (`src/generators/script/script_parser.py`): AI 응답 파싱 담당
+   - `ScriptValidator` (`src/generators/script/script_validator.py`): 스크립트 검증 및 중복 체크 담당
+   - 기존 `ScriptGenerator`는 이들을 조율하는 역할로 간소화
+
+2. **ShortsBot 클래스 리팩토링 완료**
+   - 복잡했던 `create_and_upload` 메서드의 로직을 `VideoPipeline` 클래스로 추출
+   - `VideoPipeline` (`src/pipeline/video_pipeline.py`): 영상 생성부터 업로드까지의 전체 워크플로우 캡슐화
+   - `MetadataManager` (`src/pipeline/metadata_manager.py`): 메타데이터(제목, 설명) 생성 담당
+   - `ShortsBot`은 이제 파이프라인을 실행하는 역할만 수행
+
+3. **통합 테스트 추가**
+   - `tests/test_end_to_end.py` 작성: 영상 생성부터 업로드까지의 전체 파이프라인 테스트
+   - 모든 외부 의존성을 Mock으로 처리하여 독립적인 테스트 환경 구축
+   - 2개 테스트 모두 통과 확인
+
+4. **설정 파일 업데이트**
+   - `config.py`에 누락되어 있던 `PRIVACY_STATUS`, `VIDEO_LANGUAGE`, `CATEGORY_ID` 설정 추가
+   - 기본값 설정: `PRIVACY_STATUS='private'`, `VIDEO_LANGUAGE='en'`, `CATEGORY_ID='22'`
+
+5. **기존 테스트 업데이트**
+   - `tests/test_script_generator.py` 업데이트: 리팩토링된 구조에 맞게 수정
+   - 헬퍼 클래스 메서드 접근 방식 변경 (예: `script_generator.script_parser.parse_script_text()`)
+
+**파일**:
+- `src/generators/script/prompt_builder.py`: 새로 작성
+- `src/generators/script/script_parser.py`: 새로 작성
+- `src/generators/script/script_validator.py`: 새로 작성
+- `src/generators/script_generator.py`: 리팩토링 완료
+- `src/pipeline/video_pipeline.py`: 새로 작성
+- `src/pipeline/metadata_manager.py`: 새로 작성
+- `src/pipeline/bot.py`: 리팩토링 완료
+- `tests/test_end_to_end.py`: 새로 작성
+- `tests/test_script_generator.py`: 업데이트
+- `config.py`: 설정 추가
+
+**기대 효과**:
+- 코드 모듈화로 유지보수성 대폭 향상
+- 단일 책임 원칙(SRP) 준수로 코드 가독성 개선
+- 테스트 커버리지 확대로 안정성 향상
+- 향후 기능 추가 및 수정 용이
+
 ### 2025-12-02 - Google Cloud TTS 추가, 한글 발음 개선 및 Description/Tags 개선
+
 
 **주요 변경사항**:
 

@@ -110,6 +110,11 @@ class Settings:
         self.max_parallel_workers = self._get_int('MAX_PARALLEL_WORKERS', 3)
         self.enable_parallel_generation = self._get_bool('ENABLE_PARALLEL_GENERATION', True)
         
+        # 추가 설정
+        self.privacy_status = os.getenv('PRIVACY_STATUS', 'private')
+        self.video_language = os.getenv('VIDEO_LANGUAGE', 'en')
+        self.category_id = os.getenv('CATEGORY_ID', '22')  # 22: People & Blogs
+        
         # 설정 검증
         self._validate()
         
@@ -233,3 +238,7 @@ INSTAGRAM_ACCOUNT_ID = _settings.instagram_account_id
 # Parallel Processing
 MAX_PARALLEL_WORKERS = _settings.max_parallel_workers
 ENABLE_PARALLEL_GENERATION = _settings.enable_parallel_generation
+
+PRIVACY_STATUS = _settings.privacy_status
+VIDEO_LANGUAGE = _settings.video_language
+CATEGORY_ID = _settings.category_id

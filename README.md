@@ -214,6 +214,11 @@ youtubeshorts/
 │
 ├── src/                        # 소스코드
 │   ├── generators/             # 영상 생성 모듈
+│   │   ├── script/             # 스크립트 생성 헬퍼 클래스
+│   │   │   ├── prompt_builder.py   # AI 프롬프트 생성
+│   │   │   ├── script_parser.py    # 스크립트 파싱
+│   │   │   └── script_validator.py # 스크립트 검증
+│   │   ├── script_generator.py     # 스크립트 생성 (조율자)
 │   │   └── video_generator.py
 │   ├── uploaders/              # 업로드 모듈
 │   │   └── youtube_uploader.py
@@ -222,6 +227,8 @@ youtubeshorts/
 │   │   └── monetization.py
 │   ├── pipeline/               # 파이프라인 모듈
 │   │   ├── bot.py              # 메인 봇 클래스
+│   │   ├── video_pipeline.py   # 영상 생성/업로드 파이프라인
+│   │   ├── metadata_manager.py # 메타데이터 생성
 │   │   ├── database.py         # SQLite 데이터베이스
 │   │   └── tts_engine.py       # TTS 엔진 추상화
 │   └── utils/                  # 유틸리티
