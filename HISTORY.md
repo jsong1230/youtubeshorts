@@ -1,5 +1,11 @@
 ## Recent Updates
 
+- **2025-12-03 - VideoCompositor 리팩토링 완료**
+  - **VideoEditor 클래스 생성**: 영상 합성 및 편집 로직을 별도 클래스로 분리 (285줄)
+  - **VideoCompositor 간소화**: 970줄 → 159줄로 약 84% 감소, Coordinator 역할로 전환
+  - **모듈화 완료**: SubtitleRenderer, BackgroundVideoManager, VideoEditor로 책임 분리
+  - **검증 완료**: 모든 컴포넌트 정상 초기화 및 import 성공 확인
+
 - **2025-12-03 - Video Uploaded**
   - **Title**: Test Topic #Shorts
   - **Topic**: Test Topic
@@ -13,6 +19,56 @@
 이 문서는 YouTube Shorts 자동 업로드 봇 프로젝트의 개발 히스토리를 기록합니다.
 
 ## 최근 변경사항
+
+### 2025-12-03 - VideoCompositor 리팩토링 완료
+
+**주요 변경사항**:
+
+1. **VideoEditor 클래스 생성** (285줄)
+   - 영상 합성 및 편집 로직을 별도 클래스로 분리
+   - `compose_final_video`: 최종 영상 합성
+   - `apply_fade_effects`: 페이드 효과 적용
+   - `sync_audio_video`: 음성-영상 동기화
+   - `prepare_background_clips`: 배경 영상 클립 준비
+   - `prepare_subtitle_clips`: 자막 클립 준비
+   - `save_video`: 영상 저장
+
+2. **VideoCompositor 간소화** (970줄 → 159줄, 약 84% 감소)
+   - Coordinator 역할로 전환
+   - `VideoEditor`, `SubtitleRenderer`, `BackgroundVideoManager`에 위임
+   - 불필요한 메서드 제거:
+     - `_draw_text_on_image` → `SubtitleRenderer.draw_text_on_image`
+     - `_wrap_text` → `SubtitleRenderer.wrap_text`
+     - `_extract_key_words_for_subtitle` → `SubtitleRenderer.extract_key_words`
+     - `_create_subtitle_clip` → `SubtitleRenderer.create_subtitle_clip`
+     - `_download_video_for_sentence` → `BackgroundVideoManager.download_video_for_sentence`
+
+3. **최종 구조**
+   ```
+   src/generators/
+   ├── video_compositor.py (159줄) - Coordinator
+   └── video/
+       ├── subtitle_renderer.py (420줄) - 자막 렌더링
+       ├── background_video_manager.py (326줄) - 배경 영상 관리
+       └── video_editor.py (285줄) - 영상 편집 및 합성
+   ```
+
+4. **검증 완료**
+   - 모든 클래스 import 성공
+   - AIVideoGenerator 초기화 성공
+   - 모든 컴포넌트 정상 초기화 확인
+   - Linter 오류 없음
+
+**파일**:
+- `src/generators/video/video_editor.py`: 새로 작성
+- `src/generators/video/__init__.py`: VideoEditor export 추가
+- `src/generators/video_compositor.py`: 리팩토링 완료
+
+**기대 효과**:
+- 단일 책임 원칙(SRP) 준수: 각 클래스가 하나의 명확한 책임만 가짐
+- 코드 가독성 향상: VideoCompositor가 159줄로 관리 가능
+- 테스트 용이성: 각 컴포넌트를 독립적으로 테스트 가능
+- 유지보수성 향상: 변경 사항이 특정 컴포넌트에만 영향
 
 ### 2025-12-03 - ScriptGenerator 및 ShortsBot 리팩토링 완료, 통합 테스트 추가
 

@@ -218,7 +218,12 @@ youtubeshorts/
 │   │   │   ├── prompt_builder.py   # AI 프롬프트 생성
 │   │   │   ├── script_parser.py    # 스크립트 파싱
 │   │   │   └── script_validator.py # 스크립트 검증
+│   │   ├── video/              # 영상 합성 헬퍼 클래스
+│   │   │   ├── subtitle_renderer.py      # 자막 렌더링
+│   │   │   ├── background_video_manager.py  # 배경 영상 관리
+│   │   │   └── video_editor.py            # 영상 편집 및 합성
 │   │   ├── script_generator.py     # 스크립트 생성 (조율자)
+│   │   ├── video_compositor.py     # 영상 합성 (조율자)
 │   │   └── video_generator.py
 │   ├── uploaders/              # 업로드 모듈
 │   │   └── youtube_uploader.py

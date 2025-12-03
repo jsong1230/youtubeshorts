@@ -301,7 +301,7 @@
 - [x] **코드 리팩토링**
   - [x] `ShortsBot` 클래스의 거대한 메서드(`create_and_upload`) 분리 (VideoPipeline, MetadataManager 도입)
   - [x] `ScriptGenerator` 클래스 분리 및 모듈화 (PromptBuilder, ScriptParser, ScriptValidator 도입)
-  - [x] `VideoCompositor` 클래스 분리 및 모듈화 (SubtitleRenderer, BackgroundVideoManager 도입)
+  - [x] `VideoCompositor` 클래스 분리 및 모듈화 (SubtitleRenderer, BackgroundVideoManager, VideoEditor 도입) ✅ (2025-12-03)
   - [ ] `config.py` 직접 의존성 제거 및 설정 관리자(Configuration Manager) 도입
   - [ ] 하드코딩된 상수값들을 설정 파일이나 상수 클래스로 이동
 - [ ] **타입 힌트 강화**
@@ -376,6 +376,6 @@
 
 ---
 
-**마지막 업데이트**: 2025-12-03 (ScriptGenerator 및 ShortsBot 리팩토링 완료, 통합 테스트 추가)
+**마지막 업데이트**: 2025-12-03 (VideoCompositor 리팩토링 완료)
 
 **다음 리뷰 예정일**: 작업 진행에 따라 업데이트
