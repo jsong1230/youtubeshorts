@@ -1,14 +1,14 @@
-## Recent Updates
+# Recent Updates
 
 - **2025-12-03 - Video Upload (비공개)**
   - **한국어 영상**: 크리스마스 선물 예산 관리: 연말 지출 폭탄 피하는 3가지 전략
     - Video ID: `cbChzZIDq3w`
-    - URL: https://www.youtube.com/watch?v=cbChzZIDq3w
+    - URL: <https://www.youtube.com/watch?v=cbChzZIDq3w>
     - 길이: 51.89초
     - 상태: 비공개 (private)
   - **영어 영상**: Holiday Shopping Psychology: The $300 Mistake 90% of Americans Make in December
     - Video ID: `e_nBEht1ex8`
-    - URL: https://www.youtube.com/watch?v=e_nBEht1ex8
+    - URL: <https://www.youtube.com/watch?v=e_nBEht1ex8>
     - 길이: 54.84초
     - 상태: 비공개 (private)
   - **main.py 수정**: 파일 경로로 직접 업로드할 때 비공개 설정 및 에러 수정
@@ -17,21 +17,17 @@
     - `privacy_status='private'` 명시적 설정
     - `json` import 추가
     - SyncManager 메서드 호출 에러 처리 추가
-
 - **2025-12-03 - Configuration Refactoring Completed**
   - **Pydantic BaseSettings**: Migrated to type-safe configuration system
   - **Modules Refactored**: 40+ files updated to use `settings` instead of `config`
   - **Test Improvements**: 90 → 98 passing tests
   - **Production Verified**: Test video generation successful
   - **Commit**: 1af4a9f
-
 - **2025-12-03 - VideoCompositor 리팩토링 완료**
   - **VideoEditor 클래스 생성**: 영상 합성 및 편집 로직을 별도 클래스로 분리 (285줄)
   - **VideoCompositor 간소화**: 970줄 → 159줄로 약 84% 감소, Coordinator 역할로 전환
   - **모듈화 완료**: SubtitleRenderer, BackgroundVideoManager, VideoEditor로 책임 분리
   - **검증 완료**: 모든 컴포넌트 정상 초기화 및 import 성공 확인
-
-
 
 # 프로젝트 개발 히스토리
 
@@ -46,15 +42,14 @@
 1. **한국어 영상**
    - **주제**: 크리스마스 선물 예산 관리: 연말 지출 폭탄 피하는 3가지 전략
    - **Video ID**: `cbChzZIDq3w`
-   - **URL**: https://www.youtube.com/watch?v=cbChzZIDq3w
+   - **URL**: <https://www.youtube.com/watch?v=cbChzZIDq3w>
    - **길이**: 51.89초
    - **상태**: 비공개 (private)
    - **썸네일**: `output/thumbnails/thumb_20251203_170438.jpg`
-
 2. **영어 영상**
    - **주제**: Holiday Shopping Psychology: The $300 Mistake 90% of Americans Make in December
    - **Video ID**: `e_nBEht1ex8`
-   - **URL**: https://www.youtube.com/watch?v=e_nBEht1ex8
+   - **URL**: <https://www.youtube.com/watch?v=e_nBEht1ex8>
    - **길이**: 54.84초
    - **상태**: 비공개 (private)
    - **썸네일**: `output/thumbnails/thumb_20251203_170707.jpg`
@@ -87,7 +82,6 @@
    - `prepare_background_clips`: 배경 영상 클립 준비
    - `prepare_subtitle_clips`: 자막 클립 준비
    - `save_video`: 영상 저장
-
 2. **VideoCompositor 간소화** (970줄 → 159줄, 약 84% 감소)
    - Coordinator 역할로 전환
    - `VideoEditor`, `SubtitleRenderer`, `BackgroundVideoManager`에 위임
@@ -97,9 +91,9 @@
      - `_extract_key_words_for_subtitle` → `SubtitleRenderer.extract_key_words`
      - `_create_subtitle_clip` → `SubtitleRenderer.create_subtitle_clip`
      - `_download_video_for_sentence` → `BackgroundVideoManager.download_video_for_sentence`
-
 3. **최종 구조**
-   ```
+
+   ```text
    src/generators/
    ├── video_compositor.py (159줄) - Coordinator
    └── video/
@@ -135,22 +129,18 @@
    - `ScriptParser` (`src/generators/script/script_parser.py`): AI 응답 파싱 담당
    - `ScriptValidator` (`src/generators/script/script_validator.py`): 스크립트 검증 및 중복 체크 담당
    - 기존 `ScriptGenerator`는 이들을 조율하는 역할로 간소화
-
 2. **ShortsBot 클래스 리팩토링 완료**
    - 복잡했던 `create_and_upload` 메서드의 로직을 `VideoPipeline` 클래스로 추출
    - `VideoPipeline` (`src/pipeline/video_pipeline.py`): 영상 생성부터 업로드까지의 전체 워크플로우 캡슐화
    - `MetadataManager` (`src/pipeline/metadata_manager.py`): 메타데이터(제목, 설명) 생성 담당
    - `ShortsBot`은 이제 파이프라인을 실행하는 역할만 수행
-
 3. **통합 테스트 추가**
    - `tests/test_end_to_end.py` 작성: 영상 생성부터 업로드까지의 전체 파이프라인 테스트
    - 모든 외부 의존성을 Mock으로 처리하여 독립적인 테스트 환경 구축
    - 2개 테스트 모두 통과 확인
-
 4. **설정 파일 업데이트**
    - `config.py`에 누락되어 있던 `PRIVACY_STATUS`, `VIDEO_LANGUAGE`, `CATEGORY_ID` 설정 추가
    - 기본값 설정: `PRIVACY_STATUS='private'`, `VIDEO_LANGUAGE='en'`, `CATEGORY_ID='22'`
-
 5. **기존 테스트 업데이트**
    - `tests/test_script_generator.py` 업데이트: 리팩토링된 구조에 맞게 수정
    - 헬퍼 클래스 메서드 접근 방식 변경 (예: `script_generator.script_parser.parse_script_text()`)
@@ -175,7 +165,6 @@
 
 ### 2025-12-02 - Google Cloud TTS 추가, 한글 발음 개선 및 Description/Tags 개선
 
-
 **주요 변경사항**:
 
 1. **Google Cloud Text-to-Speech 추가 (한글 발음 개선)**
@@ -184,18 +173,15 @@
    - `.env`에 `TTS_PROVIDER=google_cloud` 및 `GOOGLE_CLOUD_CREDENTIALS_PATH` 설정 추가
    - `google-cloud-texttospeech` 패키지 추가
    - 자동 선택 로직: Google Cloud 설정 시 우선 사용
-
 2. **한글 발음 개선**
    - OpenAI TTS voice 변경: `nova` → `shimmer` (더 부드러운 한글 발음)
    - Google Cloud TTS 사용 시 한글 발음이 크게 개선됨
    - 테스트 영상 생성 및 업로드 완료
-
 3. **Description 및 Tags 개선**
    - Description에서 태그 섹션 제거 (태그는 YouTube tags 필드에만 등록)
    - 메타데이터에 `description` 및 `tags` 필드 추가
    - 구독 링크 형식 수정: `@@` 제거 (`https://www.youtube.com/@aicryptofunk`)
    - 기본 태그 업데이트: `shorts,쇼츠,ai,인공지능,자동생성,유용한정보,팁,라이프스타일,일상,정보,꿀팁,생활정보` (12개 태그)
-
 4. **업로드된 영상**
    - Video ID: `qugkhBgi7xU` - 크리스마스 선물 예산 안에서 특별함 더하기
    - Video ID: `a5Wq_mYSuno` - 겨울철 전기요금 절약하는 실용적인 팁
@@ -224,14 +210,12 @@
    - AI 주제 생성 시 언어 파라미터 전달
    - 진행 상황에 언어 표시 (한국어/영어)
    - `collect_topics()` 함수에 `language` 파라미터 추가
-
 2. **한글 영상 생성 및 업로드 완료**
    - 주제: "크리스마스 선물 아이디어: 예산 안에서 특별함 더하기"
    - Video ID: eC5EAXss-7w
    - 언어 자동 감지: 한국어로 정확히 감지
    - 한글 스크립트, 한글 TTS, 한글 자막 모두 정상 생성
    - 예약 업로드 완료 (1시간 후 공개 예정)
-
 3. **업로드 전 사용자 확인 규칙 추가**
    - `.cursorrules`에 "업로드 전 사용자 확인 필수" 규칙 추가
    - 모든 영상 업로드 전에 반드시 사용자 확인을 받도록 규칙 명시
@@ -257,19 +241,16 @@
    - `ThreadPoolExecutor`를 사용한 비동기 타임아웃 처리
    - 타임아웃 발생 시 해당 단계만 스킵하고 계속 진행
    - OpenAI/Claude API 클라이언트에 `timeout=30.0` 설정 추가
-
 2. **진행 상황 표시 개선**
    - 각 단계별 실시간 진행 상황 표시 (`[1/6]`, `[2/6]` 등)
    - 각 단계의 소요 시간 표시
    - 성공/실패/타임아웃 상태를 명확하게 표시
    - 총 소요 시간 표시
-
 3. **안전한 중단 기능**
    - Ctrl+C로 안전하게 중단 가능
    - `signal.SIGINT` 핸들러 추가
    - 중단 플래그로 후속 작업 자동 스킵
    - KeyboardInterrupt 예외 처리 개선
-
 4. **에러 처리 개선**
    - 타임아웃 시 명확한 메시지 표시
    - 에러 메시지 요약 표시 (50자 제한)
@@ -295,19 +276,16 @@
    - 최소 15분 이후 시간으로 자동 조정 (YouTube API 요구사항)
    - `.env` 파일에 `UPLOAD_DELAY_HOURS=2` 설정 추가
    - `bot.py`와 `multi_platform_uploader.py`에서 예약 업로드 파라미터 전달
-
 2. **주제 선정 명령어 개선**
    - `main.py`에 `topics` 명령어 추가 (`python main.py topics [개수]`)
    - `get_topics.py` 개선: 명령줄 인자로 주제 개수 지정 가능
    - 기본값 3개, 원하는 개수 지정 가능
    - 코드 수정 없이 주제 선정 가능하도록 구조 개선
-
 3. **3개 영상 생성 및 업로드 완료**
    - 주제 1: "Consistency outruns talent every single time." (Video ID: fO26Q-6Eb_8)
    - 주제 2: "Create a Cozy Winter Workspace: Boost Productivity with Seasonal Decor" (Video ID: rL__NbB3a8k)
    - 주제 3: "Time is Money: The Secret to Maximizing Your Daily Productivity" (Video ID: seLGHtHg750)
    - 모든 영상 정상 업로드 및 썸네일 업로드 완료
-
 4. **예약 업로드 기능 버그 수정**
    - `bot.py`의 `_upload_to_platforms` 메서드에서 `schedule_delay_hours` 파라미터 전달 누락 수정
    - `multi_platform_uploader.py`에서도 예약 업로드 파라미터 전달 추가
@@ -357,7 +335,6 @@
      - `src/utils/quota_manager.py` (7개)
      - `src/utils/create_client_secrets.py` (1개)
    - `src/pipeline/bot.py`의 사용자 입력용 print 문 2개는 유지 (사용자 상호작용용)
-
 2. **Phase 3: Analytics 테스트 작성 완료**
    - `test_ab_testing.py` 작성 완료 (11개 테스트 통과)
      - A/B 테스트 데이터베이스 초기화 및 관리
@@ -374,7 +351,6 @@
      - YouTube 인기 Shorts 수집
      - 키워드 추출 및 정제
      - AI 기반 키워드 정제
-
 3. **Phase 4: Pipeline 테스트 작성 완료**
    - `test_bot_pipeline.py` 작성 완료 (22개 테스트 통과)
      - ShortsBot 초기화 (일반/멀티 플랫폼 모드)
@@ -413,19 +389,16 @@
    - 파일 없음/API 에러 예외 처리 테스트 수정
    - `get_video_stats` 테스트에 `snippet` 필드 추가
    - `check_today_uploaded` 테스트 날짜 형식 수정
-
 2. **test_multi_platform_uploader.py 작성 완료**
    - 9개 테스트 모두 통과
    - 초기화 테스트 (YouTube만, 모든 플랫폼, TikTok 사용 불가)
    - 업로드 테스트 (단일/다중 플랫폼, 파일 없음, 플랫폼별 에러 처리)
    - 통합 테스트 (썸네일 포함)
-
 3. **test_social_upload.py 업데이트 완료**
    - 7개 테스트 모두 통과
    - unittest → pytest 스타일로 변환
    - InstagramUploader, TikTokUploader, SocialManager 테스트 추가
    - 부분 실패 및 미설정 상태 테스트 추가
-
 4. **전체 시스템 동작 검증**
    - 실제 영상 생성 테스트 완료 (55.93초 영상 생성 성공)
    - 주제: "How to build wealth with index funds in 2025"
@@ -453,7 +426,6 @@
    - 영상 길이에 따라 책 권수 자동 조절 (5권/7권/10권)
    - 각 책마다 제목, 작가, 핵심 인사이트, 실용적 적용법 포함
    - 영어/한국어 프롬프트 모두 지원
-
 2. **배경 영상 다양성 대폭 개선**
    - Pexels API 검색 결과 증가: `per_page=20` → `per_page=80` (4배 증가)
    - 랜덤 선택 시스템: 상위 10개 품질 좋은 영상 중 랜덤 선택
@@ -461,18 +433,15 @@
    - 키워드 재시도 확대: 최대 5개 → 최대 8개로 증가
    - 키워드 셔플: 중복 제거 후 랜덤 순서로 섞기
    - AI 프롬프트 개선: 다양한 키워드 요청 (객체, 액션, 분위기, 설정 등)
-
 3. **Temp 폴더 자동 정리 기능 추가**
    - `TempCleaner` 클래스 생성 (`src/utils/temp_cleaner.py`)
    - 영상 생성 후 자동으로 1시간 이상 된 임시 파일 삭제
    - 삭제 통계 출력 (파일 수, 해제된 용량)
    - 최근 생성된 파일은 보존하여 안전성 확보
-
 4. **Google Trends API Rate Limiting 추가**
    - 요청 사이 최소 2초 간격 유지
    - 배치 사이 1초 추가 지연
    - Google의 rate limiting 정책 준수로 400 에러 방지
-
 5. **검색 기반 주제 생성 시스템 완성**
    - 하드코딩된 주제 완전 제거
    - Reddit RSS 피드 통합 (API 승인 불필요)
@@ -506,7 +475,6 @@
    - Mindset Flip, Shocking Number, Contrarian Statement, Personal Revelation 패턴 포함
    - CPM 점수 1.3~1.7로 설정
    - 예시: "The $100 you save today becomes $1,000 in 10 years." (CPM: 1.7)
-
 2. **배경 영상 다양성 개선**
    - 주제 카테고리별 특화 키워드 시스템 도입
    - 재태크: money, finance, investment, savings, budget, wealth, business
@@ -514,13 +482,11 @@
    - 자기계발: growth, motivation, success, achievement, goal, inspiration, mindset
    - 생활/정리: home, lifestyle, minimalism, organization, declutter, interior
    - 각 주제가 다른 카테고리 키워드를 사용하여 배경 영상 다양성 확보
-
 3. **업로드 전 사용자 확인 기능 추가**
    - `create_and_upload` 메서드에 `auto_upload` 파라미터 추가 (기본값: False)
    - 영상 생성 후 업로드 전에 사용자 확인 요청
    - 제목, 주제, 영상 파일 경로, 썸네일 경로 표시 후 y/n 입력 요청
    - 스케줄러나 명시적 업로드 명령어(`python main.py upload`)는 자동 업로드 모드 유지
-
 4. **유사성 최소화 주제 선정 시스템**
    - 이전 업로드 영상과의 유사성 체크 로직 추가
    - 서로 다른 카테고리(재태크, 생산성, 정리/생활) 주제 선정
@@ -561,337 +527,304 @@
   - **주제**: Why Smart People Max Out Their 401k in December (Not January)
   - **콘텐츠 타입**: auto
   - **Video ID**: 0x6WPchQ96c
-  - **URL**: https://www.youtube.com/watch?v=0x6WPchQ96c
+  - **URL**: <https://www.youtube.com/watch?v=0x6WPchQ96c>
   - **영상 파일**: output/videos/shorts_20251202_232456.mp4
   - **썸네일**: output/thumbnails/thumb_20251202_232616.jpg
   - **업로드 시간**: 2025-12-02T23:27:24.328471
-
 - **2025-12-02 - 영상 업로드 완료**
   - **제목**: The  December Mistake That Kills Your January Budget #Shorts
   - **주제**: The  December Mistake That Kills Your January Budget
   - **콘텐츠 타입**: auto
   - **Video ID**: nXFG9QRHWhM
-  - **URL**: https://www.youtube.com/watch?v=nXFG9QRHWhM
+  - **URL**: <https://www.youtube.com/watch?v=nXFG9QRHWhM>
   - **영상 파일**: output/videos/shorts_20251202_232248.mp4
   - **썸네일**: output/thumbnails/thumb_20251202_232417.jpg
   - **업로드 시간**: 2025-12-02T23:27:06.540909
-
 - **2025-12-02 - 영상 업로드 완료**
   - **제목**: 새해를 위한 비상금 만들기: 3개월 안에 100만원 모으는 실전 방법 #Shorts
   - **주제**: 새해를 위한 비상금 만들기: 3개월 안에 100만원 모으는 실전 방법
   - **콘텐츠 타입**: auto
   - **Video ID**: gkJSlhFaCCY
-  - **URL**: https://www.youtube.com/watch?v=gkJSlhFaCCY
+  - **URL**: <https://www.youtube.com/watch?v=gkJSlhFaCCY>
   - **영상 파일**: output/videos/shorts_20251202_214154.mp4
   - **썸네일**: output/thumbnails/thumb_20251202_214314.jpg
   - **업로드 시간**: 2025-12-02T21:44:16.354546
-
 - **2025-12-02 - 영상 업로드 완료**
   - **제목**: 연말정산 세금 절감: 12월 31일 전에 꼭 해야 할 3가지 #Shorts
   - **주제**: 연말정산 세금 절감: 12월 31일 전에 꼭 해야 할 3가지
   - **콘텐츠 타입**: auto
   - **Video ID**: ROHc7zf0h4Y
-  - **URL**: https://www.youtube.com/watch?v=ROHc7zf0h4Y
+  - **URL**: <https://www.youtube.com/watch?v=ROHc7zf0h4Y>
   - **영상 파일**: output/videos/shorts_20251202_213957.mp4
   - **썸네일**: output/thumbnails/thumb_20251202_214118.jpg
   - **업로드 시간**: 2025-12-02T21:44:01.155735
-
 - **2025-12-02 - 영상 업로드 완료**
   - **제목**: 크리스마스 선물 아이디어: 예산 안에서 특별함 더하기 #Shorts
   - **주제**: 크리스마스 선물 아이디어: 예산 안에서 특별함 더하기
   - **콘텐츠 타입**: auto
   - **Video ID**: eC5EAXss-7w
-  - **URL**: https://www.youtube.com/watch?v=eC5EAXss-7w
+  - **URL**: <https://www.youtube.com/watch?v=eC5EAXss-7w>
   - **영상 파일**: output/videos/shorts_20251202_002613.mp4
   - **썸네일**: output/thumbnails/thumb_20251202_002835.jpg
   - **업로드 시간**: 2025-12-02T00:29:34.771809
-
 - **2025-12-01 - 영상 업로드 완료**
   - **제목**: Time is Money: The Secret to Maximizing Your Daily Productivity #Shorts
   - **주제**: Time is Money: The Secret to Maximizing Your Daily Productivity
   - **콘텐츠 타입**: auto
   - **Video ID**: seLGHtHg750
-  - **URL**: https://www.youtube.com/watch?v=seLGHtHg750
+  - **URL**: <https://www.youtube.com/watch?v=seLGHtHg750>
   - **영상 파일**: output/videos/shorts_20251201_183255.mp4
   - **썸네일**: output/thumbnails/thumb_20251201_183451.jpg
   - **업로드 시간**: 2025-12-01T18:35:47.494974
-
 - **2025-12-01 - 영상 업로드 완료**
   - **제목**: Create a Cozy Winter Workspace: Boost Productivity with Seasonal Decor #Shorts
   - **주제**: Create a Cozy Winter Workspace: Boost Productivity with Seasonal Decor
   - **콘텐츠 타입**: auto
   - **Video ID**: rL__NbB3a8k
-  - **URL**: https://www.youtube.com/watch?v=rL__NbB3a8k
+  - **URL**: <https://www.youtube.com/watch?v=rL__NbB3a8k>
   - **영상 파일**: output/videos/shorts_20251201_183002.mp4
   - **썸네일**: output/thumbnails/thumb_20251201_183147.jpg
   - **업로드 시간**: 2025-12-01T18:32:35.952536
-
 - **2025-12-01 - 영상 업로드 완료**
   - **제목**: Consistency outruns talent every single time. #Shorts
   - **주제**: Consistency outruns talent every single time.
   - **콘텐츠 타입**: auto
   - **Video ID**: fO26Q-6Eb_8
-  - **URL**: https://www.youtube.com/watch?v=fO26Q-6Eb_8
+  - **URL**: <https://www.youtube.com/watch?v=fO26Q-6Eb_8>
   - **영상 파일**: output/videos/shorts_20251201_182701.mp4
   - **썸네일**: output/thumbnails/thumb_20251201_182855.jpg
   - **업로드 시간**: 2025-12-01T18:29:38.695649
-
 - **2025-11-30 - 영상 업로드 완료**
   - **제목**: Test Video
   - **주제**: Test Topic
   - **콘텐츠 타입**: hook
   - **Video ID**: test_video_123
-  - **URL**: https://www.youtube.com/watch?v=test_video_123
+  - **URL**: <https://www.youtube.com/watch?v=test_video_123>
   - **영상 파일**: None
   - **썸네일**: None
   - **업로드 시간**: 2025-11-30T22:51:25.494692
-
 - **2025-11-30 - 영상 업로드 완료**
   - **제목**: Test Topic #Shorts
   - **주제**: Test Topic
   - **콘텐츠 타입**: auto
   - **Video ID**: test_video_id_123
-  - **URL**: https://www.youtube.com/watch?v=test_video_id_123
+  - **URL**: <https://www.youtube.com/watch?v=test_video_id_123>
   - **영상 파일**: /private/var/folders/zb/w2ldjmt504jcjsjhvfytbxlr0000gn/T/pytest-of-jsong/pytest-16/test_create_and_upload_success0/test_video.mp4
   - **썸네일**: /private/var/folders/zb/w2ldjmt504jcjsjhvfytbxlr0000gn/T/pytest-of-jsong/pytest-16/test_create_and_upload_success0/test_thumbnail.jpg
   - **업로드 시간**: 2025-11-30T22:51:25.476261
-
 - **2025-11-30 - 영상 업로드 완료**
   - **제목**: A messy closet is a money leak in disguise. #Shorts
   - **주제**: A messy closet is a money leak in disguise.
   - **콘텐츠 타입**: hook
   - **Video ID**: _MtYtTPwpx0
-  - **URL**: https://www.youtube.com/watch?v=_MtYtTPwpx0
+  - **URL**: <https://www.youtube.com/watch?v=_MtYtTPwpx0>
   - **영상 파일**: output/videos/shorts_20251130_120010.mp4
   - **썸네일**: output/thumbnails/thumb_20251130_120249.jpg
   - **업로드 시간**: 2025-11-30T12:04:15.857254
-
 - **2025-11-30 - 영상 업로드 완료**
   - **제목**: Morning routine tips #Shorts
   - **주제**: Morning routine tips
   - **콘텐츠 타입**: quote
   - **Video ID**: bqJkrhcdNzs
-  - **URL**: https://www.youtube.com/watch?v=bqJkrhcdNzs
+  - **URL**: <https://www.youtube.com/watch?v=bqJkrhcdNzs>
   - **영상 파일**: output/videos/shorts_20251130_115611.mp4
   - **썸네일**: output/thumbnails/thumb_20251130_115836.jpg
   - **업로드 시간**: 2025-11-30T12:00:04.456622
-
 - **2025-11-30 - 영상 업로드 완료**
   - **제목**: The $100 you save today becomes $1,000 in 10 years. #Shorts
   - **주제**: The $100 you save today becomes $1,000 in 10 years.
   - **콘텐츠 타입**: hook
   - **Video ID**: l8cB8AK-9z8
-  - **URL**: https://www.youtube.com/watch?v=l8cB8AK-9z8
+  - **URL**: <https://www.youtube.com/watch?v=l8cB8AK-9z8>
   - **영상 파일**: output/videos/shorts_20251130_115221.mp4
   - **썸네일**: output/thumbnails/thumb_20251130_115452.jpg
   - **업로드 시간**: 2025-11-30T11:56:07.071038
-
 - **2025-11-29 - 영상 업로드 완료**
   - **제목**: Why Smart Investors Buy Index Funds in December #Shorts
   - **주제**: Why Smart Investors Buy Index Funds in December
   - **콘텐츠 타입**: auto
   - **Video ID**: W85xa0RxETo
-  - **URL**: https://www.youtube.com/watch?v=W85xa0RxETo
+  - **URL**: <https://www.youtube.com/watch?v=W85xa0RxETo>
   - **영상 파일**: output/videos/shorts_20251129_221649.mp4
   - **썸네일**: output/thumbnails/thumb_20251129_221836.jpg
   - **업로드 시간**: 2025-11-29T22:19:26.673472
-
 - **2025-11-29 - 영상 업로드 완료**
   - **제목**: The Hidden Tax Deduction That Could Save You $500 This Year #Shorts
   - **주제**: The Hidden Tax Deduction That Could Save You $500 This Year
   - **콘텐츠 타입**: auto
   - **Video ID**: DzOOz9dGUg0
-  - **URL**: https://www.youtube.com/watch?v=DzOOz9dGUg0
+  - **URL**: <https://www.youtube.com/watch?v=DzOOz9dGUg0>
   - **영상 파일**: output/videos/shorts_20251129_221419.mp4
   - **썸네일**: output/thumbnails/thumb_20251129_221557.jpg
   - **업로드 시간**: 2025-11-29T22:16:43.472398
-
 - **2025-11-29 - 영상 업로드 완료**
   - **제목**: Emergency Fund Challenge: How to Save $1,000 in 90 Days Without a Second Job #Shorts
   - **주제**: Emergency Fund Challenge: How to Save $1,000 in 90 Days Without a Second Job
   - **콘텐츠 타입**: auto
   - **Video ID**: DEnaIwOiRvs
-  - **URL**: https://www.youtube.com/watch?v=DEnaIwOiRvs
+  - **URL**: <https://www.youtube.com/watch?v=DEnaIwOiRvs>
   - **영상 파일**: output/videos/shorts_20251129_221156.mp4
   - **썸네일**: output/thumbnails/thumb_20251129_221333.jpg
   - **업로드 시간**: 2025-11-29T22:14:15.578658
-
 - **2025-11-29 - 영상 업로드 완료**
   - **제목**: The 30-Day No-Spend Challenge That Changed My Relationship With Money #Shorts
   - **주제**: The 30-Day No-Spend Challenge That Changed My Relationship With Money
   - **콘텐츠 타입**: auto
   - **Video ID**: TTLLyJoX2jw
-  - **URL**: https://www.youtube.com/watch?v=TTLLyJoX2jw
+  - **URL**: <https://www.youtube.com/watch?v=TTLLyJoX2jw>
   - **영상 파일**: output/videos/shorts_20251129_220850.mp4
   - **썸네일**: output/thumbnails/thumb_20251129_221035.jpg
   - **업로드 시간**: 2025-11-29T22:11:26.616078
-
 - **2025-11-29 - 영상 업로드 완료**
   - **제목**: 401k vs Roth IRA: The One Choice That Determines Your Retirement #Shorts
   - **주제**: 401k vs Roth IRA: The One Choice That Determines Your Retirement
   - **콘텐츠 타입**: auto
   - **Video ID**: j223jh6mrog
-  - **URL**: https://www.youtube.com/watch?v=j223jh6mrog
+  - **URL**: <https://www.youtube.com/watch?v=j223jh6mrog>
   - **영상 파일**: output/videos/shorts_20251129_220609.mp4
   - **썸네일**: output/thumbnails/thumb_20251129_220751.jpg
   - **업로드 시간**: 2025-11-29T22:08:46.049657
-
 - **2025-11-29 - 영상 업로드 완료**
   - **제목**: The Subscription Trap: How I Saved $2,400 by Canceling These 5 Services #Shorts
   - **주제**: The Subscription Trap: How I Saved $2,400 by Canceling These 5 Services
   - **콘텐츠 타입**: auto
   - **Video ID**: sKGaSFp47MI
-  - **URL**: https://www.youtube.com/watch?v=sKGaSFp47MI
+  - **URL**: <https://www.youtube.com/watch?v=sKGaSFp47MI>
   - **영상 파일**: output/videos/shorts_20251129_220334.mp4
   - **썸네일**: output/thumbnails/thumb_20251129_220517.jpg
   - **업로드 시간**: 2025-11-29T22:06:04.502970
-
 - **2025-11-29 - 영상 업로드 완료**
   - **제목**: Why Smart Investors Buy Index Funds in December #Shorts
   - **주제**: Why Smart Investors Buy Index Funds in December
   - **콘텐츠 타입**: auto
   - **Video ID**: cLvEiaE0H8U
-  - **URL**: https://www.youtube.com/watch?v=cLvEiaE0H8U
+  - **URL**: <https://www.youtube.com/watch?v=cLvEiaE0H8U>
   - **영상 파일**: output/videos/shorts_20251129_220101.mp4
   - **썸네일**: output/thumbnails/thumb_20251129_220241.jpg
   - **업로드 시간**: 2025-11-29T22:03:29.204870
-
 - **2025-11-29 - 영상 업로드 완료**
   - **제목**: The Hidden Tax Deduction That Could Save You $500 This Year #Shorts
   - **주제**: The Hidden Tax Deduction That Could Save You $500 This Year
   - **콘텐츠 타입**: auto
   - **Video ID**: jCJ5DGge5l0
-  - **URL**: https://www.youtube.com/watch?v=jCJ5DGge5l0
+  - **URL**: <https://www.youtube.com/watch?v=jCJ5DGge5l0>
   - **영상 파일**: output/videos/shorts_20251129_215832.mp4
   - **썸네일**: output/thumbnails/thumb_20251129_220008.jpg
   - **업로드 시간**: 2025-11-29T22:00:56.851025
-
 - **2025-11-29 - 영상 업로드 완료**
   - **제목**: Emergency Fund Challenge: How to Save $1,000 in 90 Days Without a Second Job #Shorts
   - **주제**: Emergency Fund Challenge: How to Save $1,000 in 90 Days Without a Second Job
   - **콘텐츠 타입**: auto
   - **Video ID**: ZWpxDTlairM
-  - **URL**: https://www.youtube.com/watch?v=ZWpxDTlairM
+  - **URL**: <https://www.youtube.com/watch?v=ZWpxDTlairM>
   - **영상 파일**: output/videos/shorts_20251129_215557.mp4
   - **썸네일**: output/thumbnails/thumb_20251129_215737.jpg
   - **업로드 시간**: 2025-11-29T21:58:25.604438
-
 - **2025-11-29 - 영상 업로드 완료**
   - **제목**: Emergency Fund Challenge: How to Save $1,000 in 90 Days Without a Second Job #Shorts
   - **주제**: Emergency Fund Challenge: How to Save $1,000 in 90 Days Without a Second Job
   - **콘텐츠 타입**: auto
   - **Video ID**: 4jIBbg2r5ww
-  - **URL**: https://www.youtube.com/watch?v=4jIBbg2r5ww
+  - **URL**: <https://www.youtube.com/watch?v=4jIBbg2r5ww>
   - **영상 파일**: output/videos/shorts_20251129_215312.mp4
   - **썸네일**: output/thumbnails/thumb_20251129_215451.jpg
   - **업로드 시간**: 2025-11-29T21:55:38.499020
-
 - **2025-11-28 - 영상 업로드 완료**
   - **제목**: It's Not That You're Lazy—It's Brain Fatigue #Shorts
   - **주제**: It's Not That You're Lazy—It's Brain Fatigue
   - **콘텐츠 타입**: auto
   - **Video ID**: GTRn7Z9G2SU
-  - **URL**: https://www.youtube.com/watch?v=GTRn7Z9G2SU
+  - **URL**: <https://www.youtube.com/watch?v=GTRn7Z9G2SU>
   - **영상 파일**: output/videos/shorts_20251127_224903.mp4
   - **썸네일**: output/thumbnails/thumb_20251127_225410.jpg
   - **업로드 시간**: 2025-11-28T00:03:42.261540
-
 - **2025-11-28 - 영상 업로드 완료**
   - **제목**: I lost ,000 in one year because of this single mistake #Shorts
   - **주제**: I lost ,000 in one year because of this single mistake
   - **콘텐츠 타입**: auto
   - **Video ID**: oshdynFnc0o
-  - **URL**: https://www.youtube.com/watch?v=oshdynFnc0o
+  - **URL**: <https://www.youtube.com/watch?v=oshdynFnc0o>
   - **영상 파일**: output/videos/shorts_20251127_231608.mp4
   - **썸네일**: output/thumbnails/thumb_20251127_231931.jpg
   - **업로드 시간**: 2025-11-28T00:03:28.904527
-
 - **2025-11-28 - 영상 업로드 완료**
   - **제목**: I lost ,000 in Bitcoin because I made this one mistake #Shorts
   - **주제**: I lost ,000 in Bitcoin because I made this one mistake
   - **콘텐츠 타입**: auto
   - **Video ID**: pSbpYa19HqA
-  - **URL**: https://www.youtube.com/watch?v=pSbpYa19HqA
+  - **URL**: <https://www.youtube.com/watch?v=pSbpYa19HqA>
   - **영상 파일**: output/videos/shorts_20251127_235526.mp4
   - **썸네일**: output/thumbnails/thumb_20251127_235841.jpg
   - **업로드 시간**: 2025-11-28T00:02:43.663732
-
 - **2025-11-28 - 영상 업로드 완료**
   - **제목**: I failed 100 times, then this one change made me successful #Shorts
   - **주제**: I failed 100 times, then this one change made me successful
   - **콘텐츠 타입**: auto
   - **Video ID**: 60eCUtP-26w
-  - **URL**: https://www.youtube.com/watch?v=60eCUtP-26w
+  - **URL**: <https://www.youtube.com/watch?v=60eCUtP-26w>
   - **영상 파일**: output/videos/shorts_20251127_235131.mp4
   - **썸네일**: output/thumbnails/thumb_20251127_235444.jpg
   - **업로드 시간**: 2025-11-28T00:02:26.949738
-
 - **2025-11-28 - 영상 업로드 완료**
   - **제목**: The morning routine that made me a millionaire #Shorts
   - **주제**: The morning routine that made me a millionaire
   - **콘텐츠 타입**: auto
   - **Video ID**: 9IHclxN9LCs
-  - **URL**: https://www.youtube.com/watch?v=9IHclxN9LCs
+  - **URL**: <https://www.youtube.com/watch?v=9IHclxN9LCs>
   - **영상 파일**: output/videos/shorts_20251127_234731.mp4
   - **썸네일**: output/thumbnails/thumb_20251127_235046.jpg
   - **업로드 시간**: 2025-11-28T00:02:09.750172
-
 - **2025-11-28 - 영상 업로드 완료**
   - **제목**: Why 99% of people fail at their goals (and the 1% who don't) #Shorts
   - **주제**: Why 99% of people fail at their goals (and the 1% who don't)
   - **콘텐츠 타입**: auto
   - **Video ID**: IUhqj5_yxyQ
-  - **URL**: https://www.youtube.com/watch?v=IUhqj5_yxyQ
+  - **URL**: <https://www.youtube.com/watch?v=IUhqj5_yxyQ>
   - **영상 파일**: output/videos/shorts_20251127_234320.mp4
   - **썸네일**: output/thumbnails/thumb_20251127_234636.jpg
   - **업로드 시간**: 2025-11-28T00:01:55.756218
-
 - **2025-11-27 - 영상 업로드 완료**
   - **제목**: I went from minimum wage to millionaire in 5 years—here's how. #Shorts
   - **주제**: I went from minimum wage to millionaire in 5 years—here's how.
   - **콘텐츠 타입**: auto
   - **Video ID**: fzRECnj0zMo
-  - **URL**: https://www.youtube.com/watch?v=fzRECnj0zMo
+  - **URL**: <https://www.youtube.com/watch?v=fzRECnj0zMo>
   - **영상 파일**: output/videos/shorts_20251126_223640.mp4
   - **썸네일**: output/thumbnails/thumb_20251126_224026.jpg
   - **업로드 시간**: 2025-11-27T01:16:00.688047
-
 - **2025-11-27 - 영상 업로드 완료**
   - **제목**: He went from minimum wage to millionaire in 5 years with one strategy. #Shorts
   - **주제**: He went from minimum wage to millionaire in 5 years with one strategy.
   - **콘텐츠 타입**: auto
   - **Video ID**: tRQsnQlfR1Y
-  - **URL**: https://www.youtube.com/watch?v=tRQsnQlfR1Y
+  - **URL**: <https://www.youtube.com/watch?v=tRQsnQlfR1Y>
   - **영상 파일**: output/videos/shorts_20251126_222757.mp4
   - **썸네일**: output/thumbnails/thumb_20251126_223200.jpg
   - **업로드 시간**: 2025-11-27T01:15:59.682312
-
 - **2025-11-27 - 영상 업로드 완료**
   - **제목**: He was rejected 100 times, then became a millionaire with one idea. #Shorts
   - **주제**: He was rejected 100 times, then became a millionaire with one idea.
   - **콘텐츠 타입**: auto
   - **Video ID**: EWQ_CHSkFMg
-  - **URL**: https://www.youtube.com/watch?v=EWQ_CHSkFMg
+  - **URL**: <https://www.youtube.com/watch?v=EWQ_CHSkFMg>
   - **영상 파일**: output/videos/shorts_20251126_222310.mp4
   - **썸네일**: output/thumbnails/thumb_20251126_222721.jpg
   - **업로드 시간**: 2025-11-27T01:15:58.907071
-
 - **2025-11-27 - 영상 업로드 완료**
   - **제목**: The morning routine that made me a millionaire #Shorts
   - **주제**: The morning routine that made me a millionaire
   - **콘텐츠 타입**: auto
   - **Video ID**: LBT8k3Vx1fg
-  - **URL**: https://www.youtube.com/watch?v=LBT8k3Vx1fg
+  - **URL**: <https://www.youtube.com/watch?v=LBT8k3Vx1fg>
   - **영상 파일**: output/videos/shorts_20251126_221834.mp4
   - **썸네일**: output/thumbnails/thumb_20251126_222233.jpg
   - **업로드 시간**: 2025-11-27T01:15:58.211000
-
 - **2025-11-27 - 영상 업로드 완료**
   - **제목**: Why 99% of people fail at their goals (and the 1% who don't) #Shorts
   - **주제**: Why 99% of people fail at their goals (and the 1% who don't)
   - **콘텐츠 타입**: auto
   - **Video ID**: VLH3q4iDboU
-  - **URL**: https://www.youtube.com/watch?v=VLH3q4iDboU
+  - **URL**: <https://www.youtube.com/watch?v=VLH3q4iDboU>
   - **영상 파일**: output/videos/shorts_20251126_221428.mp4
   - **썸네일**: output/thumbnails/thumb_20251126_221757.jpg
   - **업로드 시간**: 2025-11-27T01:15:41.630599
@@ -933,183 +866,165 @@
 - 각 영상의 썸네일이 DALL-E 3로 생성되어 함께 업로드
 - 업로드 후 원본 영상 파일 및 메타데이터 파일 자동 삭제
 - 모든 업로드 기록이 데이터베이스 및 HISTORY.md에 저장됨
-
 - **2025-11-25 - 영상 업로드 완료**
   - **제목**: The January Budget Reset: 5 Moves That Saved Me ,000 Last Year #Shorts
   - **주제**: The January Budget Reset: 5 Moves That Saved Me ,000 Last Year
   - **콘텐츠 타입**: auto
   - **Video ID**: WeoC6EB92Qc
-  - **URL**: https://www.youtube.com/watch?v=WeoC6EB92Qc
+  - **URL**: <https://www.youtube.com/watch?v=WeoC6EB92Qc>
   - **영상 파일**: output/videos/shorts_20251122_214817.mp4
   - **썸네일**: output/thumbnails/thumb_20251122_215121.jpg
   - **업로드 시간**: 2025-11-25T00:38:29.393784
-
 - **2025-11-25 - 영상 업로드 완료**
   - **제목**: Year-End Expense Audit: The Hidden Subscription That Cost Me $1,200 #Shorts
   - **주제**: Year-End Expense Audit: The Hidden Subscription That Cost Me $1,200
   - **콘텐츠 타입**: auto
   - **Video ID**: Pteq_ItjEHQ
-  - **URL**: https://www.youtube.com/watch?v=Pteq_ItjEHQ
+  - **URL**: <https://www.youtube.com/watch?v=Pteq_ItjEHQ>
   - **영상 파일**: output/videos/shorts_20251125_003157.mp4
   - **썸네일**: output/thumbnails/thumb_20251125_003447.jpg
   - **업로드 시간**: 2025-11-25T00:37:54.172694
-
 - **2025-11-25 - 영상 업로드 완료**
   - **제목**: January Investment Strategy: Why Smart People Buy Stocks in the First Week #Shorts
   - **주제**: January Investment Strategy: Why Smart People Buy Stocks in the First Week
   - **콘텐츠 타입**: auto
   - **Video ID**: _pkdQrpFuwI
-  - **URL**: https://www.youtube.com/watch?v=_pkdQrpFuwI
+  - **URL**: <https://www.youtube.com/watch?v=_pkdQrpFuwI>
   - **영상 파일**: output/videos/shorts_20251125_002731.mp4
   - **썸네일**: output/thumbnails/thumb_20251125_003115.jpg
   - **업로드 시간**: 2025-11-25T00:37:37.067776
-
 - **2025-11-25 - 영상 업로드 완료**
   - **제목**: Holiday Gift Budget Hack: How I Saved $300 Without Looking Cheap #Shorts
   - **주제**: Holiday Gift Budget Hack: How I Saved $300 Without Looking Cheap
   - **콘텐츠 타입**: auto
   - **Video ID**: oISKpLCxjZA
-  - **URL**: https://www.youtube.com/watch?v=oISKpLCxjZA
+  - **URL**: <https://www.youtube.com/watch?v=oISKpLCxjZA>
   - **영상 파일**: output/videos/shorts_20251125_002348.mp4
   - **썸네일**: output/thumbnails/thumb_20251125_002648.jpg
   - **업로드 시간**: 2025-11-25T00:37:23.454412
-
 - **2025-11-25 - 영상 업로드 완료**
   - **제목**: New Year Financial Reset: The 3 Numbers That Changed My Money Game #Shorts
   - **주제**: New Year Financial Reset: The 3 Numbers That Changed My Money Game
   - **콘텐츠 타입**: auto
   - **Video ID**: e-oqjbCya1A
-  - **URL**: https://www.youtube.com/watch?v=e-oqjbCya1A
+  - **URL**: <https://www.youtube.com/watch?v=e-oqjbCya1A>
   - **영상 파일**: output/videos/shorts_20251125_001927.mp4
   - **썸네일**: output/thumbnails/thumb_20251125_002259.jpg
   - **업로드 시간**: 2025-11-25T00:37:05.174273
-
 - **2025-11-25 - 영상 업로드 완료**
   - **제목**: Black Friday Regret: The $500 Mistake I Made Last Year and How to Avoid It #Shorts
   - **주제**: Black Friday Regret: The $500 Mistake I Made Last Year and How to Avoid It
   - **콘텐츠 타입**: auto
   - **Video ID**: 8R8g-e-b-80
-  - **URL**: https://www.youtube.com/watch?v=8R8g-e-b-80
+  - **URL**: <https://www.youtube.com/watch?v=8R8g-e-b-80>
   - **영상 파일**: output/videos/shorts_20251125_001535.mp4
   - **썸네일**: output/thumbnails/thumb_20251125_001851.jpg
   - **업로드 시간**: 2025-11-25T00:36:50.762621
-
 - **2025-11-24 - 영상 업로드 완료**
   - **제목**: I automated emails with AI and finally slept. #Shorts
   - **주제**: I automated emails with AI and finally slept.
   - **콘텐츠 타입**: auto
   - **Video ID**: xfinnIPll8s
-  - **URL**: https://www.youtube.com/watch?v=xfinnIPll8s
+  - **URL**: <https://www.youtube.com/watch?v=xfinnIPll8s>
   - **영상 파일**: output/videos/shorts_20251123_235439.mp4
   - **썸네일**: output/thumbnails/thumb_20251123_235620.jpg
   - **업로드 시간**: 2025-11-24T00:00:38.518713
-
 - **2025-11-24 - 영상 업로드 완료**
   - **제목**: Skipping a winter oil check can cost an engine replacement. #Shorts
   - **주제**: Skipping a winter oil check can cost an engine replacement.
   - **콘텐츠 타입**: auto
   - **Video ID**: sXeekCuUT6E
-  - **URL**: https://www.youtube.com/watch?v=sXeekCuUT6E
+  - **URL**: <https://www.youtube.com/watch?v=sXeekCuUT6E>
   - **영상 파일**: output/videos/shorts_20251123_235649.mp4
   - **썸네일**: output/thumbnails/thumb_20251123_235841.jpg
   - **업로드 시간**: 2025-11-24T00:00:18.050549
-
 - **2025-11-24 - 영상 업로드 완료**
   - **제목**: Decluttered desks raise focus by 25%. #Shorts
   - **주제**: Decluttered desks raise focus by 25%.
   - **콘텐츠 타입**: auto
   - **Video ID**: 7uiXBX449t0
-  - **URL**: https://www.youtube.com/watch?v=7uiXBX449t0
+  - **URL**: <https://www.youtube.com/watch?v=7uiXBX449t0>
   - **영상 파일**: output/videos/shorts_20251123_235222.mp4
   - **썸네일**: output/thumbnails/thumb_20251123_235406.jpg
   - **업로드 시간**: 2025-11-24T00:00:02.557644
-
 - **2025-11-23 - 영상 업로드 완료**
   - **제목**: A five-minute evening review saved a burned-out manager. #Shorts
   - **주제**: A five-minute evening review saved a burned-out manager.
   - **콘텐츠 타입**: auto
   - **Video ID**: crHDt--ftZk
-  - **URL**: https://www.youtube.com/watch?v=crHDt--ftZk
+  - **URL**: <https://www.youtube.com/watch?v=crHDt--ftZk>
   - **영상 파일**: output/videos/shorts_20251123_235004.mp4
   - **썸네일**: output/thumbnails/thumb_20251123_235150.jpg
   - **업로드 시간**: 2025-11-23T23:59:51.988647
-
 - **2025-11-23 - 영상 업로드 완료**
   - **제목**: Preparing for winter is really about removing future discomfort. #Shorts
   - **주제**: Preparing for winter is really about removing future discomfort.
   - **콘텐츠 타입**: auto
   - **Video ID**: eU9YwDbnyOI
-  - **URL**: https://www.youtube.com/watch?v=eU9YwDbnyOI
+  - **URL**: <https://www.youtube.com/watch?v=eU9YwDbnyOI>
   - **영상 파일**: output/videos/shorts_20251123_234745.mp4
   - **썸네일**: output/thumbnails/thumb_20251123_234932.jpg
   - **업로드 시간**: 2025-11-23T23:59:41.394912
-
 - **2025-11-23 - 영상 업로드 완료**
   - **제목**: Declutter one room and watch your stress plummet #Shorts
   - **주제**: Declutter one room and watch your stress plummet
   - **콘텐츠 타입**: auto
   - **Video ID**: LD-_METRnQ0
-  - **URL**: https://www.youtube.com/watch?v=LD-_METRnQ0
+  - **URL**: <https://www.youtube.com/watch?v=LD-_METRnQ0>
   - **영상 파일**: output/videos/shorts_20251123_234514.mp4
   - **썸네일**: output/thumbnails/thumb_20251123_234701.jpg
   - **업로드 시간**: 2025-11-23T23:59:25.230665
-
 - **2025-11-23 - 영상 업로드 완료**
   - **제목**: The Hidden Cost of Free Shipping That's Costing You  a Year #Shorts
   - **주제**: The Hidden Cost of Free Shipping That's Costing You  a Year
   - **콘텐츠 타입**: auto
   - **Video ID**: t18QLHi_GgI
-  - **URL**: https://www.youtube.com/watch?v=t18QLHi_GgI
+  - **URL**: <https://www.youtube.com/watch?v=t18QLHi_GgI>
   - **영상 파일**: output/videos/shorts_20251122_221040.mp4
   - **썸네일**: output/thumbnails/thumb_20251122_221329.jpg
   - **업로드 시간**: 2025-11-23T00:02:06.682831
-
 - **2025-11-23 - 영상 업로드 완료**
   - **제목**: Why I Stopped Saving Money and Started Investing Instead #Shorts
   - **주제**: Why I Stopped Saving Money and Started Investing Instead
   - **콘텐츠 타입**: auto
   - **Video ID**: O7CbNnLi3O0
-  - **URL**: https://www.youtube.com/watch?v=O7CbNnLi3O0
+  - **URL**: <https://www.youtube.com/watch?v=O7CbNnLi3O0>
   - **영상 파일**: output/videos/shorts_20251122_220631.mp4
   - **썸네일**: output/thumbnails/thumb_20251122_220936.jpg
   - **업로드 시간**: 2025-11-23T00:01:56.927945
-
 - **2025-11-23 - 영상 업로드 완료**
   - **제목**: The 5-Minute Morning Routine That Doubled My Income #Shorts
   - **주제**: The 5-Minute Morning Routine That Doubled My Income
   - **콘텐츠 타입**: auto
   - **Video ID**: CUmhC0l1eIE
-  - **URL**: https://www.youtube.com/watch?v=CUmhC0l1eIE
+  - **URL**: <https://www.youtube.com/watch?v=CUmhC0l1eIE>
   - **영상 파일**: output/videos/shorts_20251122_220239.mp4
   - **썸네일**: output/thumbnails/thumb_20251122_220551.jpg
   - **업로드 시간**: 2025-11-23T00:01:47.373702
-
 - **2025-11-23 - 영상 업로드 완료**
   - **제목**: How I Cut My Monthly Bills by 40% in 30 Days #Shorts
   - **주제**: How I Cut My Monthly Bills by 40% in 30 Days
   - **콘텐츠 타입**: auto
   - **Video ID**: AHoVY5_0oIg
-  - **URL**: https://www.youtube.com/watch?v=AHoVY5_0oIg
+  - **URL**: <https://www.youtube.com/watch?v=AHoVY5_0oIg>
   - **영상 파일**: output/videos/shorts_20251122_215912.mp4
   - **썸네일**: output/thumbnails/thumb_20251122_220203.jpg
   - **업로드 시간**: 2025-11-23T00:01:36.529674
-
 - **2025-11-23 - 영상 업로드 완료**
   - **제목**: The Side Hustle That Made Me $500 in January Alone #Shorts
   - **주제**: The Side Hustle That Made Me $500 in January Alone
   - **콘텐츠 타입**: auto
   - **Video ID**: TIRNqdikhbU
-  - **URL**: https://www.youtube.com/watch?v=TIRNqdikhbU
+  - **URL**: <https://www.youtube.com/watch?v=TIRNqdikhbU>
   - **영상 파일**: output/videos/shorts_20251122_215530.mp4
   - **썸네일**: output/thumbnails/thumb_20251122_215827.jpg
   - **업로드 시간**: 2025-11-23T00:01:21.936569
-
 - **2025-11-23 - 영상 업로드 완료**
   - **제목**: Why Your December Credit Card Statement Is Lying to You #Shorts
   - **주제**: Why Your December Credit Card Statement Is Lying to You
   - **콘텐츠 타입**: auto
   - **Video ID**: j9lULl6fUyI
-  - **URL**: https://www.youtube.com/watch?v=j9lULl6fUyI
+  - **URL**: <https://www.youtube.com/watch?v=j9lULl6fUyI>
   - **영상 파일**: output/videos/shorts_20251122_215158.mp4
   - **썸네일**: output/thumbnails/thumb_20251122_215453.jpg
   - **업로드 시간**: 2025-11-23T00:01:06.201545
@@ -1363,6 +1278,7 @@
 ## 개발 히스토리 (Git Log 기반)
 
 ### 2025-11-20: 모바일 시청 시 자막 가독성 개선
+
 - `_create_subtitle_clip()`에서 자막 위치 계산 시 클립 높이만큼 추가로 올려 하단 여백을 확보
 - ImageMagick/PIL 경로 모두 동일하게 적용하여 Shorts 영상 하단 UI 영역과 겹치지 않도록 조정
 - 추가로 약 3줄 간격(기본 180px → 90px) 만큼 위로 이동시키는 오프셋을 도입·조정해 실제 기기 재생 시 가려지는 문제를 해소하면서도 화면 중앙으로 치우치지 않도록 튜닝
@@ -1385,6 +1301,7 @@
 - **계절별 주제**: 명상/호흡 타입에도 계절별 주제 추가
 
 ### 2025-11-21: 6개 영어 재태크 콘텐츠 생성 및 즉시 업로드
+
 - 자막 위치 조정값(추가 오프셋 90px)을 유지한 채로 6개 영어 주제를 연속 생성·업로드하여 실제 YouTube 채널에 공개 배포
 - `main.py upload "<topic>" --force` 워크플로로 생성 → 썸네일 생성/삽입 → YouTube 업로드 → 썸네일 업로드까지 자동화 확인
 - 업로드된 영상 (파일 → ID → 주제):
@@ -1397,6 +1314,7 @@
 - 각 영상은 썸네일까지 정상 업로드 되었으며, `token.json` 기반 인증이 안정적으로 재사용됨
 
 ### 2025-11-21: 트렌드 가중치 기반 주제 선택 + 2025 콘텐츠 가이드
+
 - `docs/CONTENT_OPTIMIZATION.md`를 2025 트렌드 버전으로 전면 교체하고, README/.env 예시/.cursorrules에도 영어 전용 정책과 `TREND_MODE` 옵션을 반영
 - `config.py`에 `TREND_MODE` 환경 변수를 추가하고, `AIVideoGenerator`에 글로벌/계절/성과/탐색 가중치(40/25/20/15) 기반 주제 선택 헬퍼를 도입
 - 콘텐츠 타입별 기본 주제 목록을 2025 확장 주제팩(심플 라이프, AI 자동화, 금융 한 줄, 심리 팩트, 변화 스토리)으로 보강하고, 성과형 주제 풀과 출처 로그(🌍/🍂/📈/🎲)를 출력
@@ -1404,11 +1322,13 @@
 - 테스트: `python main.py test` 실행으로 `output/videos/shorts_20251121_150056.mp4` (약 54초, 타입: `short_story`, 주제: *Logging expenses for 30 days changed my bank balance*) 생성, 썸네일 `output/thumbnails/thumb_20251121_150222.jpg`는 DALL·E 3로 자동 생성 및 영상 첫 프레임 삽입
 
 ### 2025-11-19: Instagram 연결 테스트 명령 추가
+
 - `InstagramUploader`가 Instagram Graph API(`v21.0`) 계정 정보를 직접 조회해 자격 증명을 검증하도록 개선
 - `python main.py instagram-test` 명령으로 `.env` 자격 증명을 사용해 연결을 점검하고 성공/실패 로그를 출력
 - README, MULTI_PLATFORM_SETUP.md, .cursorrules에 Instagram 연결 테스트 절차 문서화
 
 ### 2025-11-19: 테스트용으로 생성했던 6개 영상 YouTube 업로드
+
 - 기존 `output/videos/shorts_20251119_*.mp4`를 다시 생성하지 않고 `YouTubeUploader`를 직접 호출해 순차 업로드
 - 업로드된 영상 ID:
   1. `shorts_20251119_171551.mp4` → `OaqGCXeROeo`
@@ -1421,6 +1341,7 @@
 - 인증은 기존 `token.json`으로 진행되었고, 새로 발급받은 refresh token이 만료되었다는 경고가 한 번 출력됨
 
 ### 2025-11-19: 모든 콘텐츠 타입 영어 테스트 러닝
+
 - `main.py test` 모드로 5개 콘텐츠 타입(HOOK, QUOTE, STORY, FACT, SHORT_STORY) + AUTO 시나리오를 각각 실행하여 6개의 영어 Shorts를 생성
 - 각 테스트는 썸네일 삽입, 영어 자막/스크립트/썸네일 텍스트, 배경 영상 무중복, 오디오-비디오 길이 일치 여부를 점검
 - 생성 결과 (파일명/길이):
@@ -1433,6 +1354,7 @@
 - 모든 테스트는 업로드 없이 로컬 생성만 수행했으며, 영어 전용 파이프라인과 썸네일 첫 프레임 삽입이 정상 동작함을 확인
 
 ### 2025-11-20: Instagram Graph API 테스트 보류
+
 - Long-lived Access Token을 생성하여 `.env`에 적용하고 Instagram 인증은 성공했으나, `me/accounts` 호출 시 Facebook 페이지가 반환되지 않는 문제 지속
 - 토큰 권한(`pages_show_list`, `pages_manage_posts`, `instagram_content_publish` 등)은 정상이나 Graph API가 해당 페이지를 “관리 대상”으로 인식하지 않아 Facebook 업로드 단계에서 오류 발생
 - 임시 방편으로 Instagram 업로드 비활성화 (`ENABLE_INSTAGRAM_UPLOAD=false`) 상태로 전환하고, 권한 전파/토큰 갱신을 기다린 뒤 추후 재시도 예정
@@ -1480,28 +1402,23 @@
    - 주제가 영어인 경우 자동으로 영어 콘텐츠 생성
    - 영어 스크립트, 자막, 썸네일 모두 영어로 생성
    - 영어 폰트 지원 (Arial Bold, Arial 등)
-
 2. **핵심 단어 자막 표시**
    - 전체 스크립트 대신 핵심 단어(1-3개)만 자막으로 표시
    - AI를 활용한 핵심 단어 추출 (`_extract_key_words_for_subtitle`)
    - 가독성 향상 및 자막-음성 싱크 정확도 개선
-
 3. **동일 영상 반복 방지**
    - 하나의 Shorts 영상 내에서 동일한 배경 영상이 반복되지 않도록 개선
    - 영상 ID 추적 및 중복 방지 로직 구현
    - `exclude_videos` 파라미터로 이미 다운로드한 영상 제외
    - 영상 파일명에 영상 ID 포함 (`bg_video_{index}_{video_id}.mp4`)
-
 4. **주제 관련 배경 선택 강화**
    - 주제 키워드를 우선 사용하여 주제와 관련된 배경만 선택
    - Pexels API 검색 결과에서 주제 키워드가 포함된 영상 우선 선택
    - 주제와 무관한 배경(예: 폭포 등 자연 배경) 제외
-
 5. **음성과 영상 동기화 개선**
    - 자막 클립의 시작 시간을 명시적으로 0으로 설정
    - duration을 실제 음성 길이(`sentence_audio_durations`)와 정확히 일치시킴
    - CompositeVideoClip 생성 후 duration 재확인
-
 6. **문서 업데이트 규칙 추가**
    - 작업 완료 후 HISTORY.md, TODO.md, .cursorrules 자동 업데이트 규칙 추가
 
@@ -1619,7 +1536,7 @@
 
 ## 프로젝트 구조
 
-```
+```text
 youtubeshorts/
 ├── main.py                      # 메인 실행 파일
 ├── config.py                    # 설정 관리
@@ -1665,6 +1582,7 @@ youtubeshorts/
 ## 주요 설정 파일
 
 ### `.env` 파일 주요 설정
+
 - `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`, `YOUTUBE_REFRESH_TOKEN`: YouTube API
 - `OPENAI_API_KEY`: OpenAI API 키
 - `CLAUDE_API_KEY`: Claude API 키
@@ -1675,6 +1593,7 @@ youtubeshorts/
 - `UPLOAD_TIMEZONE`: 타임존 (기본값: `Asia/Seoul`)
 
 ### `config.py` 주요 설정
+
 - `SHORTS_TARGET_DURATION`: 목표 영상 길이 (55초)
 - `SHORTS_MAX_DURATION`: 최대 영상 길이 (60초)
 - `ENABLE_TIKTOK_UPLOAD`: TikTok 업로드 활성화 (기본값: `false`)
@@ -1683,6 +1602,7 @@ youtubeshorts/
 ## 콘텐츠 타입 및 주제 카테고리
 
 ### 콘텐츠 타입
+
 1. **HOOK**: 한국어 속담/관용어 한 문장 학습 (짧고 강한 Hook)
 2. **QUOTE**: AI·비즈니스·명언·지식 한 줄
 3. **STORY**: 스토리텔링 (심리/역사/부자습관)
@@ -1693,6 +1613,7 @@ youtubeshorts/
 8. **AUTO**: 자동 선택
 
 ### 주제 카테고리
+
 - 🌤 **계절**: 봄/여름/가을/겨울에 맞는 실용적인 주제
 - 🏠 **생활**: 집 정리, 냉장고 관리, 옷장 정리 등 일상 생활 팁
 - 🚗 **자동차**: 자동차 점검, 유지보수, 계절별 관리
@@ -1711,11 +1632,13 @@ youtubeshorts/
 ## 알려진 이슈 및 해결
 
 ### 자막과 음성 싱크 문제
+
 - **이슈**: 자막과 음성이 싱크가 맞지 않음
 - **원인**: 자막 클립의 시작 시간이 명시되지 않아 발생
 - **해결**: 자막 클립에 시작 시간을 명시적으로 0으로 설정하고, duration을 정확히 오디오 세그먼트 duration과 일치하도록 수정
 
 ### 오디오 클립 동기화 문제
+
 - **이슈**: 스크립트 트리밍 시 오디오 클립 동기화 문제
 - **해결**: 오디오 클립 동기화 로직 수정
 
@@ -1731,6 +1654,7 @@ youtubeshorts/
 ### 2025-11-22: 콘텐츠 관련 기능 구현
 
 #### 시리즈 콘텐츠 생성 시스템
+
 - **목적**: 연속된 주제로 여러 영상을 생성하여 시리즈 콘텐츠 제작
 - **구현 내용**:
   - `src/generators/series_generator.py` 생성
@@ -1747,6 +1671,7 @@ youtubeshorts/
   - POST 요청으로 시리즈 주제 생성 가능
 
 #### 사용자 요청 주제 반영 시스템
+
 - **목적**: 사용자가 요청한 주제를 우선적으로 사용하여 영상 생성
 - **구현 내용**:
   - `src/generators/user_request_handler.py` 생성
@@ -1769,6 +1694,7 @@ youtubeshorts/
   - `POST /api/content/user-requests/<id>/approve`: 요청 승인
 
 #### 댓글 기반 다음 주제 제안 시스템
+
 - **목적**: YouTube 댓글에서 주제 제안을 자동으로 추출하여 다음 영상 주제로 활용
 - **구현 내용**:
   - `src/analytics/comment_analyzer.py` 생성
@@ -1784,6 +1710,7 @@ youtubeshorts/
   - 특정 영상 ID 또는 최근 영상 수를 지정하여 분석 가능
 
 #### 대시보드 영상 목록 개선
+
 - **문제**: 대시보드에서 모든 영상이 표시되지 않음 (필터 제한)
 - **해결**:
   - `VideoDatabase.get_all_videos()` 메서드 추가
@@ -1835,4 +1762,3 @@ youtubeshorts/
 
 **마지막 업데이트**: 2025-11-22 (구독자 수 증가 전략 적용 완료)
 **프로젝트 상태**: 활발히 개발 중
-
