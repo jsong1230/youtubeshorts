@@ -10,7 +10,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-import config
+from src.core.config import settings
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -67,7 +67,7 @@ class YouTubeUploader:
         
         # 예약 업로드 지연 시간 설정 (파라미터가 없으면 config에서 읽음)
         if schedule_delay_hours is None:
-            schedule_delay_hours = config.UPLOAD_DELAY_HOURS
+            schedule_delay_hours = settings.UPLOAD_DELAY_HOURS
         
         # 예약 업로드 시간 계산
         scheduled_start_time = None
@@ -94,7 +94,7 @@ class YouTubeUploader:
             'snippet': {
                 'title': title,
                 'description': description,
-                'tags': tags or config.DEFAULT_TAGS,
+                'tags': tags or settings.DEFAULT_TAGS,
                 'categoryId': category_id
             },
             'status': {

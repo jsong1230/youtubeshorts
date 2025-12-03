@@ -29,11 +29,20 @@ class TestImageGenerator:
     
     def test_prepare_thumbnail_canvas(self, image_generator):
         """Test thumbnail canvas preparation"""
-        canvas = image_generator.prepare_thumbnail_canvas()
+        with patch('os.path.exists', return_value=True):
+            with patch('PIL.Image.open') as mock_open:
+                mock_img = Mock(spec=Image.Image)
+                mock_img.width = 1080
+                mock_img.height = 1920
+                mock_open.return_value = mock_img
+                
+                canvas_path = image_generator.prepare_thumbnail_canvas(
+                    thumbnail_path="dummy_path.jpg",
+                    target_size=(1080, 1920)
+                )
         
-        assert isinstance(canvas, Image.Image)
-        assert canvas.size == (1080, 1920)  # 9:16 aspect ratio
-        assert canvas.mode == 'RGB'
+                assert canvas_path is not None
+                assert isinstance(canvas_path, str)
     
     def test_generate_thumbnail_with_dalle(self, image_generator, mock_openai_client, tmp_path):
         """Test thumbnail generation using DALL-E"""
@@ -60,8 +69,7 @@ class TestImageGenerator:
                 
                 result = image_generator.generate_thumbnail(
                     video_path=video_path,
-                    title=title,
-                    output_path=output_path
+                    title=title
                 )
                 
                 # Should attempt DALL-E generation
@@ -92,8 +100,7 @@ class TestImageGenerator:
                 
                 result = image_generator.generate_thumbnail(
                     video_path=video_path,
-                    title=title,
-                    output_path=output_path
+                    title=title
                 )
                 
                 # Should extract frame from video
@@ -110,7 +117,7 @@ class TestImageGenerator:
         
         with patch('src.generators.image_generator.VideoFileClip') as mock_video:
             with patch('src.generators.image_generator.ImageClip') as mock_image_clip:
-                with patch('src.generators.image_generator.CompositeVideoClip') as mock_composite:
+                with patch('src.generators.image_generator.concatenate_videoclips') as mock_concatenate:
                     mock_clip = Mock()
                     mock_clip.duration = 10.0
                     mock_clip.fps = 30
@@ -121,7 +128,7 @@ class TestImageGenerator:
                     mock_image_clip.return_value = mock_thumb_clip
                     
                     mock_final = Mock()
-                    mock_composite.return_value = mock_final
+                    mock_concatenate.return_value = mock_final
                     
                     image_generator.embed_thumbnail_frame(
                         video_path=video_path,
@@ -129,19 +136,6 @@ class TestImageGenerator:
                     )
                     
                     # Should create composite video
-                    assert mock_composite.called
+                    assert mock_concatenate.called
     
-    def test_dalle_prompt_generation(self, image_generator):
-        """Test DALL-E prompt generation from title and script"""
-        title = "Amazing Facts About Space"
-        script = ["The universe is vast", "Stars are born in nebulae"]
-        
-        prompt = image_generator._generate_dalle_prompt(
-            title=title,
-            script=script,
-            language='en'
-        )
-        
-        assert isinstance(prompt, str)
-        assert len(prompt) > 0
-        assert "space" in prompt.lower() or "universe" in prompt.lower()
+    # Removed test_dalle_prompt_generation as the method is now internal and inline

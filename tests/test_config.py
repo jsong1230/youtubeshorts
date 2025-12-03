@@ -18,7 +18,7 @@ class TestSettings:
     def test_settings_initialization(self, mock_env_vars):
         """Test Settings class initializes correctly"""
         # Import after setting env vars
-        import config
+        from src.core.config import settings
         
         settings = config.Settings()
         assert settings.openai_api_key == 'test_openai_key'
@@ -27,7 +27,7 @@ class TestSettings:
     
     def test_get_bool_true_values(self):
         """Test _get_bool with various true values"""
-        import config
+        from src.core.config import settings
         settings = config.Settings()
         
         with patch.dict(os.environ, {'TEST_BOOL': 'true'}):
@@ -41,7 +41,7 @@ class TestSettings:
     
     def test_get_bool_false_values(self):
         """Test _get_bool with various false values"""
-        import config
+        from src.core.config import settings
         settings = config.Settings()
         
         with patch.dict(os.environ, {'TEST_BOOL': 'false'}):
@@ -55,7 +55,7 @@ class TestSettings:
     
     def test_get_bool_default(self):
         """Test _get_bool returns default when env var not set"""
-        import config
+        from src.core.config import settings
         settings = config.Settings()
         
         assert settings._get_bool('NONEXISTENT_VAR', True) is True
@@ -63,7 +63,7 @@ class TestSettings:
     
     def test_get_int_valid(self):
         """Test _get_int with valid integer"""
-        import config
+        from src.core.config import settings
         settings = config.Settings()
         
         with patch.dict(os.environ, {'TEST_INT': '42'}):
@@ -71,7 +71,7 @@ class TestSettings:
     
     def test_get_int_invalid(self, capsys):
         """Test _get_int with invalid value returns default"""
-        import config
+        from src.core.config import settings
         settings = config.Settings()
         
         with patch.dict(os.environ, {'TEST_INT': 'not_a_number'}):
@@ -82,7 +82,7 @@ class TestSettings:
     
     def test_get_float_valid(self):
         """Test _get_float with valid float"""
-        import config
+        from src.core.config import settings
         settings = config.Settings()
         
         with patch.dict(os.environ, {'TEST_FLOAT': '0.5'}):
@@ -90,7 +90,7 @@ class TestSettings:
     
     def test_get_float_clamping(self):
         """Test _get_float clamps values to 0.0-1.0"""
-        import config
+        from src.core.config import settings
         settings = config.Settings()
         
         with patch.dict(os.environ, {'TEST_FLOAT': '1.5'}):
@@ -101,7 +101,7 @@ class TestSettings:
     
     def test_get_list_valid(self):
         """Test _get_list with comma-separated values"""
-        import config
+        from src.core.config import settings
         settings = config.Settings()
         
         with patch.dict(os.environ, {'TEST_LIST': 'a,b,c'}):
@@ -110,7 +110,7 @@ class TestSettings:
     
     def test_get_list_with_spaces(self):
         """Test _get_list strips whitespace"""
-        import config
+        from src.core.config import settings
         settings = config.Settings()
         
         with patch.dict(os.environ, {'TEST_LIST': 'a , b , c '}):
@@ -119,7 +119,7 @@ class TestSettings:
     
     def test_validate_creates_directories(self, tmp_path, monkeypatch):
         """Test _validate creates required directories"""
-        import config
+        from src.core.config import settings
         
         # Set temp directories
         video_dir = tmp_path / "videos"
@@ -140,7 +140,7 @@ class TestSettings:
     
     def test_validate_volume_range(self, capsys):
         """Test _validate corrects out-of-range volume"""
-        import config
+        from src.core.config import settings
         
         with patch.dict(os.environ, {'BACKGROUND_MUSIC_VOLUME': '2.0'}):
             settings = config.Settings()
@@ -150,7 +150,7 @@ class TestSettings:
     
     def test_validate_subtitle_mode(self, capsys):
         """Test _validate corrects invalid subtitle mode"""
-        import config
+        from src.core.config import settings
         
         with patch.dict(os.environ, {'SUBTITLE_MODE': 'invalid_mode'}):
             settings = config.Settings()
@@ -162,7 +162,7 @@ class TestSettings:
         """Test module-level variables are exposed"""
         # Reimport to get fresh instance
         import importlib
-        import config
+        from src.core.config import settings
         importlib.reload(config)
         
         # Module-level variables should exist

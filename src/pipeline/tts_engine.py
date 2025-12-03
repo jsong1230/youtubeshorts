@@ -6,7 +6,7 @@ import os
 import re
 from abc import ABC, abstractmethod
 from enum import Enum
-import config
+from src.core.config import settings
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -226,10 +226,10 @@ class OpenAIEngine(TTSEngineBase):
         if not OPENAI_AVAILABLE:
             raise ImportError("OpenAI가 설치되지 않았습니다. pip install openai로 설치하세요.")
         
-        if not config.OPENAI_API_KEY:
+        if not settings.OPENAI_API_KEY:
             raise ValueError("OPENAI_API_KEY가 설정되지 않았습니다.")
         
-        self.client = OpenAI(api_key=config.OPENAI_API_KEY)
+        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
     
     def generate(self, text: str, output_path: str, lang: str = 'ko', content_type: str = None, voice: str = None, speed: float = None) -> bool:
         """OpenAI TTS로 음성 생성 (콘텐츠 타입별 voice/speed 최적화)"""
@@ -325,7 +325,7 @@ class GoogleCloudEngine(TTSEngineBase):
             raise ImportError("google-cloud-texttospeech가 설치되지 않았습니다. pip install google-cloud-texttospeech로 설치하세요.")
         
         # Google Cloud 인증 확인
-        google_credentials = getattr(config, 'GOOGLE_CLOUD_CREDENTIALS_PATH', None)
+        google_credentials = settings.GOOGLE_CLOUD_CREDENTIALS_PATH
         if google_credentials and os.path.exists(google_credentials):
             os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = google_credentials
         
@@ -411,7 +411,7 @@ class TTSEngine:
         """
         if provider is None:
             # 자동 선택: 한글인 경우 Google Cloud 우선, 아니면 OpenAI 우선
-            tts_provider_str = getattr(config, 'TTS_PROVIDER', None)
+            tts_provider_str = settings.TTS_PROVIDER
             if tts_provider_str:
                 try:
                     provider = TTSProvider(tts_provider_str.lower())
@@ -421,10 +421,10 @@ class TTSEngine:
             if provider is None:
                 # 자동 선택 로직
                 # Google Cloud가 설정되어 있으면 우선 사용 (한글 발음 우수)
-                if GOOGLE_CLOUD_TTS_AVAILABLE and getattr(config, 'GOOGLE_CLOUD_CREDENTIALS_PATH', None):
+                if GOOGLE_CLOUD_TTS_AVAILABLE and settings.GOOGLE_CLOUD_CREDENTIALS_PATH:
                     provider = TTSProvider.GOOGLE_CLOUD
                 # OpenAI가 설정되어 있으면 사용
-                elif config.OPENAI_API_KEY and OPENAI_AVAILABLE:
+                elif settings.OPENAI_API_KEY and OPENAI_AVAILABLE:
                     provider = TTSProvider.OPENAI
                 # 그 외에는 gTTS
                 elif GTTS_AVAILABLE:

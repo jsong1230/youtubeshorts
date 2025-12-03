@@ -13,7 +13,7 @@ class TestMultiPlatformUploaderInit:
     """Test MultiPlatformUploader initialization"""
     
     @patch('src.uploaders.multi_platform_uploader.YouTubeUploader')
-    @patch('src.uploaders.multi_platform_uploader.config')
+    @patch('src.uploaders.multi_platform_uploader.settings')
     def test_init_with_youtube_only(self, mock_config, mock_youtube):
         """Test initialization with only YouTube enabled"""
         mock_config.ENABLE_TIKTOK_UPLOAD = False
@@ -32,7 +32,7 @@ class TestMultiPlatformUploaderInit:
     @patch('src.uploaders.multi_platform_uploader.InstagramUploader')
     @patch('src.uploaders.multi_platform_uploader.TikTokUploader')
     @patch('src.uploaders.multi_platform_uploader.YouTubeUploader')
-    @patch('src.uploaders.multi_platform_uploader.config')
+    @patch('src.uploaders.multi_platform_uploader.settings')
     def test_init_with_all_platforms(self, mock_config, mock_youtube, 
                                      mock_tiktok, mock_instagram):
         """Test initialization with all platforms enabled"""
@@ -58,7 +58,7 @@ class TestMultiPlatformUploaderInit:
     
     @patch('src.uploaders.multi_platform_uploader.TikTokUploader')
     @patch('src.uploaders.multi_platform_uploader.YouTubeUploader')
-    @patch('src.uploaders.multi_platform_uploader.config')
+    @patch('src.uploaders.multi_platform_uploader.settings')
     def test_init_handles_tiktok_unavailable(self, mock_config, mock_youtube, mock_tiktok):
         """Test initialization handles TikTok when unavailable"""
         mock_config.ENABLE_TIKTOK_UPLOAD = True
@@ -84,7 +84,7 @@ class TestMultiPlatformUploaderUpload:
     """Test video upload functionality"""
     
     @patch('src.uploaders.multi_platform_uploader.YouTubeUploader')
-    @patch('src.uploaders.multi_platform_uploader.config')
+    @patch('src.uploaders.multi_platform_uploader.settings')
     def test_upload_to_all_youtube_only(self, mock_config, mock_youtube, 
                                        temp_video_file, sample_video_metadata):
         """Test upload to all platforms with only YouTube"""
@@ -112,7 +112,7 @@ class TestMultiPlatformUploaderUpload:
     @patch('src.uploaders.multi_platform_uploader.InstagramUploader')
     @patch('src.uploaders.multi_platform_uploader.TikTokUploader')
     @patch('src.uploaders.multi_platform_uploader.YouTubeUploader')
-    @patch('src.uploaders.multi_platform_uploader.config')
+    @patch('src.uploaders.multi_platform_uploader.settings')
     def test_upload_to_all_multiple_platforms(self, mock_config, mock_youtube,
                                              mock_tiktok, mock_instagram,
                                              temp_video_file, sample_video_metadata):
@@ -147,7 +147,7 @@ class TestMultiPlatformUploaderUpload:
         assert results['instagram'] == 'instagram_id'
     
     @patch('src.uploaders.multi_platform_uploader.YouTubeUploader')
-    @patch('src.uploaders.multi_platform_uploader.config')
+    @patch('src.uploaders.multi_platform_uploader.settings')
     def test_upload_to_all_file_not_found(self, mock_config, mock_youtube, sample_video_metadata):
         """Test upload with non-existent file"""
         mock_config.ENABLE_TIKTOK_UPLOAD = False
@@ -166,7 +166,7 @@ class TestMultiPlatformUploaderUpload:
             )
     
     @patch('src.uploaders.multi_platform_uploader.YouTubeUploader')
-    @patch('src.uploaders.multi_platform_uploader.config')
+    @patch('src.uploaders.multi_platform_uploader.settings')
     def test_upload_to_specific_platforms(self, mock_config, mock_youtube,
                                         temp_video_file, sample_video_metadata):
         """Test upload to specific platforms only"""
@@ -192,7 +192,7 @@ class TestMultiPlatformUploaderUpload:
     @patch('src.uploaders.multi_platform_uploader.InstagramUploader')
     @patch('src.uploaders.multi_platform_uploader.TikTokUploader')
     @patch('src.uploaders.multi_platform_uploader.YouTubeUploader')
-    @patch('src.uploaders.multi_platform_uploader.config')
+    @patch('src.uploaders.multi_platform_uploader.settings')
     def test_upload_handles_platform_errors(self, mock_config, mock_youtube,
                                           mock_tiktok, mock_instagram,
                                           temp_video_file, sample_video_metadata):
@@ -233,7 +233,7 @@ class TestMultiPlatformUploaderIntegration:
     """Integration tests for MultiPlatformUploader"""
     
     @patch('src.uploaders.multi_platform_uploader.YouTubeUploader')
-    @patch('src.uploaders.multi_platform_uploader.config')
+    @patch('src.uploaders.multi_platform_uploader.settings')
     def test_upload_with_thumbnail(self, mock_config, mock_youtube,
                                   temp_video_file, temp_thumbnail_file, sample_video_metadata):
         """Test upload with thumbnail to all platforms"""

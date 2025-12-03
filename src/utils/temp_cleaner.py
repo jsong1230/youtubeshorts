@@ -6,7 +6,7 @@ import os
 import time
 from pathlib import Path
 from datetime import datetime, timedelta
-import config
+from src.core.config import settings
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -23,7 +23,7 @@ class TempCleaner:
             max_age_hours: 최대 보관 시간 (시간 단위, 기본값: 24시간)
         """
         self.max_age_hours = max_age_hours
-        self.temp_dir = config.TEMP_DIR
+        self.temp_dir = settings.TEMP_DIR
     
     def clean_old_files(self, dry_run: bool = False) -> dict:
         """

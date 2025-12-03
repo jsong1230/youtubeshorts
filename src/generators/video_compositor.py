@@ -6,7 +6,7 @@ import os
 from typing import Optional, List
 from moviepy.editor import AudioFileClip
 
-import config
+from src.core.config import settings
 from .video_constants import VideoConstants
 from .content_type import ContentType
 from .audio_generator import AudioGenerator
@@ -57,7 +57,7 @@ class VideoCompositor:
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             output_filename = f"shorts_{timestamp}.mp4"
         
-        output_path = os.path.join(config.VIDEO_OUTPUT_DIR, output_filename)
+        output_path = os.path.join(settings.VIDEO_OUTPUT_DIR, output_filename)
         
         # 각 문장별로 음성 생성 및 실제 길이 측정
         sentence_audio_durations = []

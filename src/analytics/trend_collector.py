@@ -7,7 +7,7 @@ import re
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 from collections import Counter
-import config
+from src.core.config import settings
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -52,9 +52,9 @@ class TrendCollector:
                 logger.warning(f"⚠️ YouTube API 클라이언트 초기화 실패: {e}")
         
         # OpenAI API 초기화 (키워드 추출용)
-        if OPENAI_AVAILABLE and config.OPENAI_API_KEY:
+        if OPENAI_AVAILABLE and settings.OPENAI_API_KEY:
             try:
-                self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
+                self.openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
             except Exception as e:
                 logger.warning(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
     

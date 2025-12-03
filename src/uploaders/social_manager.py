@@ -1,7 +1,7 @@
 """
 소셜 미디어 업로드 매니저
 """
-import config
+from src.core.config import settings
 from .instagram_uploader import InstagramUploader
 from .tiktok_uploader import TikTokUploader
 from src.utils.logger import get_logger
@@ -15,8 +15,8 @@ class SocialManager:
         self.instagram = InstagramUploader()
         self.tiktok = TikTokUploader()
         
-        self.enable_instagram = config.ENABLE_INSTAGRAM_UPLOAD
-        self.enable_tiktok = config.ENABLE_TIKTOK_UPLOAD
+        self.enable_instagram = settings.ENABLE_INSTAGRAM_UPLOAD
+        self.enable_tiktok = settings.ENABLE_TIKTOK_UPLOAD
 
     def upload_all(self, video_path: str, title: str, description: str = "") -> dict:
         """

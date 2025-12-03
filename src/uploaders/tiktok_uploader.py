@@ -3,7 +3,7 @@ TikTok 업로더 (Content Posting API 사용)
 """
 import os
 import requests
-import config
+from src.core.config import settings
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -12,7 +12,7 @@ class TikTokUploader:
     """TikTok Content Posting API를 사용하여 영상 업로드"""
     
     def __init__(self):
-        self.access_token = config.TIKTOK_ACCESS_TOKEN
+        self.access_token = settings.TIKTOK_ACCESS_TOKEN
         self.base_url = "https://open.tiktokapis.com/v2"
         
         if not self.access_token:

@@ -14,7 +14,7 @@ from src.uploaders.social_manager import SocialManager
 class TestInstagramUploader:
     """Test InstagramUploader functionality"""
     
-    @patch('src.uploaders.instagram_uploader.config')
+    @patch('src.uploaders.instagram_uploader.settings')
     def test_instagram_uploader_init(self, mock_config):
         """Test InstagramUploader initialization"""
         mock_config.INSTAGRAM_ACCESS_TOKEN = 'test_token'
@@ -24,7 +24,7 @@ class TestInstagramUploader:
         assert uploader.is_configured is True
         assert uploader.access_token == 'test_token'
     
-    @patch('src.uploaders.instagram_uploader.config')
+    @patch('src.uploaders.instagram_uploader.settings')
     def test_instagram_uploader_not_configured(self, mock_config):
         """Test InstagramUploader when not configured"""
         mock_config.INSTAGRAM_ACCESS_TOKEN = None
@@ -37,7 +37,7 @@ class TestInstagramUploader:
 class TestTikTokUploader:
     """Test TikTokUploader functionality"""
     
-    @patch('src.uploaders.tiktok_uploader.config')
+    @patch('src.uploaders.tiktok_uploader.settings')
     def test_tiktok_uploader_init(self, mock_config):
         """Test TikTokUploader initialization"""
         mock_config.TIKTOK_ACCESS_TOKEN = 'test_token'
@@ -46,7 +46,7 @@ class TestTikTokUploader:
         assert uploader.is_configured is True
         assert uploader.access_token == 'test_token'
     
-    @patch('src.uploaders.tiktok_uploader.config')
+    @patch('src.uploaders.tiktok_uploader.settings')
     def test_tiktok_uploader_not_configured(self, mock_config):
         """Test TikTokUploader when not configured"""
         mock_config.TIKTOK_ACCESS_TOKEN = None
@@ -60,7 +60,7 @@ class TestSocialManager:
     
     @patch('src.uploaders.social_manager.InstagramUploader')
     @patch('src.uploaders.social_manager.TikTokUploader')
-    @patch('src.uploaders.social_manager.config')
+    @patch('src.uploaders.social_manager.settings')
     def test_social_manager_upload_all(self, mock_config, MockTikTok, MockInstagram):
         """Test SocialManager upload_all method"""
         # Setup config
@@ -90,7 +90,7 @@ class TestSocialManager:
     
     @patch('src.uploaders.social_manager.InstagramUploader')
     @patch('src.uploaders.social_manager.TikTokUploader')
-    @patch('src.uploaders.social_manager.config')
+    @patch('src.uploaders.social_manager.settings')
     def test_social_manager_upload_all_partial_failure(self, mock_config, MockTikTok, MockInstagram):
         """Test SocialManager handles partial failures"""
         mock_config.ENABLE_INSTAGRAM_UPLOAD = True
@@ -115,7 +115,7 @@ class TestSocialManager:
     
     @patch('src.uploaders.social_manager.InstagramUploader')
     @patch('src.uploaders.social_manager.TikTokUploader')
-    @patch('src.uploaders.social_manager.config')
+    @patch('src.uploaders.social_manager.settings')
     def test_social_manager_upload_all_not_configured(self, mock_config, MockTikTok, MockInstagram):
         """Test SocialManager when platforms are not configured"""
         mock_config.ENABLE_INSTAGRAM_UPLOAD = True

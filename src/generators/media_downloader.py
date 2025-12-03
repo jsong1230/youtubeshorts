@@ -9,7 +9,7 @@ from PIL import Image
 from io import BytesIO
 from moviepy.editor import VideoFileClip
 
-import config
+from src.core.config import settings
 from src.utils.retry_decorator import retry, retry_on_rate_limit
 from src.utils.logger import get_logger
 
@@ -191,7 +191,7 @@ class MediaDownloader:
             pexels_url = f"https://api.pexels.com/v1/search?query={primary_keyword}&per_page=5&orientation=portrait"
             pexels_headers = {
                 **headers,
-                'Authorization': config.PEXELS_API_KEY
+                'Authorization': settings.PEXELS_API_KEY
             }
             response = self._http_get_with_retry(
                 pexels_url, headers=pexels_headers, timeout=10)
@@ -236,7 +236,7 @@ class MediaDownloader:
             unsplash_url = f"https://api.unsplash.com/search/photos?query={primary_keyword}&orientation=portrait&per_page=5"
             unsplash_headers = {
                 **headers,
-                'Authorization': f'Client-ID {config.UNSPLASH_ACCESS_KEY}'
+                'Authorization': f'Client-ID {settings.UNSPLASH_ACCESS_KEY}'
             }
             response = self._http_get_with_retry(
                 unsplash_url, headers=unsplash_headers, timeout=10)

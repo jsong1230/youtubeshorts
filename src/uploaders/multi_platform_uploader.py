@@ -6,7 +6,7 @@ from typing import Dict, Optional, List
 from src.uploaders.youtube_uploader import YouTubeUploader
 from src.uploaders.tiktok_uploader import TikTokUploader
 from src.uploaders.instagram_uploader import InstagramUploader
-import config
+from src.core.config import settings
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -28,7 +28,7 @@ class MultiPlatformUploader:
             logger.warning(f"⚠️ YouTube 업로더 초기화 실패: {e}")
         
         # TikTok 업로더 (선택사항)
-        if config.ENABLE_TIKTOK_UPLOAD:
+        if settings.ENABLE_TIKTOK_UPLOAD:
             try:
                 self.uploaders['tiktok'] = TikTokUploader()
                 if self.uploaders['tiktok'].is_available():
@@ -39,7 +39,7 @@ class MultiPlatformUploader:
                 logger.warning(f"⚠️ TikTok 업로더 초기화 실패: {e}")
         
         # Instagram 업로더 (선택사항)
-        if config.ENABLE_INSTAGRAM_UPLOAD:
+        if settings.ENABLE_INSTAGRAM_UPLOAD:
             try:
                 self.uploaders['instagram'] = InstagramUploader()
                 if self.uploaders['instagram'].is_available():
@@ -93,11 +93,11 @@ class MultiPlatformUploader:
                 youtube_id = self.uploaders['youtube'].upload_video(
                     video_path=video_path,
                     title=title,
-                    description=description or config.DEFAULT_DESCRIPTION,
-                    tags=tags or config.DEFAULT_TAGS,
+                    description=description or settings.DEFAULT_DESCRIPTION,
+                    tags=tags or settings.DEFAULT_TAGS,
                     privacy_status='public',
                     thumbnail_path=thumbnail_path,
-                    schedule_delay_hours=config.UPLOAD_DELAY_HOURS  # 예약 업로드 지연 시간
+                    schedule_delay_hours=settings.UPLOAD_DELAY_HOURS  # 예약 업로드 지연 시간
                 )
                 results['youtube'] = youtube_id
                 if youtube_id:

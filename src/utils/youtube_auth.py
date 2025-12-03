@@ -4,7 +4,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
-import config
+from src.core.config import settings
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -21,7 +21,7 @@ def get_authenticated_service():
     creds = None
     
     # 환경 변수에서 refresh token 확인
-    if config.YOUTUBE_REFRESH_TOKEN and config.YOUTUBE_CLIENT_ID and config.YOUTUBE_CLIENT_SECRET:
+    if settings.YOUTUBE_REFRESH_TOKEN and settings.YOUTUBE_CLIENT_ID and settings.YOUTUBE_CLIENT_SECRET:
         try:
             # Refresh token을 사용하여 인증
             from google.oauth2.credentials import Credentials as RefreshCredentials
@@ -29,10 +29,10 @@ def get_authenticated_service():
             # Refresh token으로 Credentials 생성
             creds = RefreshCredentials(
                 token=None,
-                refresh_token=config.YOUTUBE_REFRESH_TOKEN,
+                refresh_token=settings.YOUTUBE_REFRESH_TOKEN,
                 token_uri='https://oauth2.googleapis.com/token',
-                client_id=config.YOUTUBE_CLIENT_ID,
-                client_secret=config.YOUTUBE_CLIENT_SECRET,
+                client_id=settings.YOUTUBE_CLIENT_ID,
+                client_secret=settings.YOUTUBE_CLIENT_SECRET,
                 scopes=SCOPES
             )
             
@@ -73,16 +73,16 @@ def get_authenticated_service():
     if not creds or not creds.valid:
         # client_secrets.json이 없으면 환경 변수로 생성 시도
         if not os.path.exists('client_secrets.json'):
-            if config.YOUTUBE_CLIENT_ID and config.YOUTUBE_CLIENT_SECRET:
+            if settings.YOUTUBE_CLIENT_ID and settings.YOUTUBE_CLIENT_SECRET:
                 logger.info("📝 client_secrets.json 파일을 생성합니다...")
                 client_secrets = {
                     "installed": {
-                        "client_id": config.YOUTUBE_CLIENT_ID,
+                        "client_id": settings.YOUTUBE_CLIENT_ID,
                         "project_id": "youtube-shorts-bot",
                         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                         "token_uri": "https://oauth2.googleapis.com/token",
                         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                        "client_secret": config.YOUTUBE_CLIENT_SECRET,
+                        "client_secret": settings.YOUTUBE_CLIENT_SECRET,
                         "redirect_uris": [
                             "http://localhost:8080/",
                             "http://127.0.0.1:8080/",

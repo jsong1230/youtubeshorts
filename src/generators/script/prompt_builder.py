@@ -1,6 +1,6 @@
 from typing import Tuple, Dict
 from src.generators.content_type import ContentType
-import config
+
 
 class PromptBuilder:
     """Handles construction of prompts for AI script generation."""

@@ -12,7 +12,7 @@ from moviepy.video.fx.all import fadein, fadeout
 from PIL import Image
 import numpy as np
 
-import config
+from src.core.config import settings
 from src.generators.video_constants import VideoConstants
 from src.generators.content_type import ContentType
 from src.generators.audio_generator import AudioGenerator
@@ -158,7 +158,7 @@ class VideoEditor:
                 final_audio = final_audio.subclip(0, actual_video_duration)
             
             # 배경 음악 추가
-            if getattr(config, 'USE_BACKGROUND_MUSIC', True):
+            if settings.USE_BACKGROUND_MUSIC:
                 try:
                     background_music_path = self.audio_generator.download_background_music(
                         content_type=content_type if content_type else ContentType.AUTO,

@@ -11,7 +11,7 @@ from PIL import Image
 import numpy as np
 from moviepy.editor import VideoFileClip, ImageClip, concatenate_videoclips
 
-import config
+from src.core.config import settings
 from .video_constants import VideoConstants
 from src.utils.retry_decorator import retry
 from src.utils.logger import get_logger
@@ -69,7 +69,7 @@ class ImageGenerator:
             canvas.paste(resized, offset)
 
             temp_path = os.path.join(
-                config.TEMP_DIR,
+                settings.TEMP_DIR,
                 f"thumb_canvas_{int(time.time()*1000)}.jpg")
             canvas.save(temp_path, 'JPEG')
             return temp_path
@@ -111,10 +111,10 @@ class ImageGenerator:
                 [intro_clip, video_clip], method="compose")
 
             temp_output = os.path.join(
-                config.TEMP_DIR,
+                settings.TEMP_DIR,
                 f"with_thumb_{int(time.time()*1000)}.mp4")
             temp_audio = os.path.join(
-                config.TEMP_DIR,
+                settings.TEMP_DIR,
                 f"with_thumb_audio_{int(time.time()*1000)}.m4a")
             combined_clip.write_videofile(
                 temp_output,
@@ -258,7 +258,7 @@ class ImageGenerator:
         """
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         thumbnail_path = os.path.join(
-            config.THUMBNAIL_OUTPUT_DIR,
+            settings.THUMBNAIL_OUTPUT_DIR,
             f"thumb_{timestamp}.jpg")
 
         # DALL-E 3로 썸네일 이미지 생성 시도 (OpenAI API 사용)

@@ -5,7 +5,7 @@ import json
 import os
 from datetime import datetime, timedelta
 from typing import Dict, List
-import config
+from src.core.config import settings
 from src.uploaders.youtube_uploader import YouTubeUploader
 from src.utils.logger import get_logger
 
@@ -16,7 +16,7 @@ class MonetizationTracker:
     """YouTube 수익화 추적 및 분석 클래스"""
     
     def __init__(self):
-        self.data_file = getattr(config, 'MONETIZATION_DATA_PATH', 'data/monetization_data.json')
+        self.data_file = settings.MONETIZATION_DATA_PATH
         # data 폴더가 없으면 생성
         data_dir = os.path.dirname(self.data_file)
         if data_dir and not os.path.exists(data_dir):

@@ -2,7 +2,7 @@ from typing import Optional, Dict, Any, Tuple
 from datetime import datetime
 import json
 from pathlib import Path
-import config
+from src.core.config import settings
 from src.generators.content_type import ContentType
 from src.utils.logger import get_logger
 from src.pipeline.metadata_manager import MetadataManager
@@ -227,7 +227,7 @@ class VideoPipeline:
             'thumbnail_path': thumbnail_path,
             'title': title,
             'description': description,
-            'tags': config.DEFAULT_TAGS,
+            'tags': settings.DEFAULT_TAGS,
             'actual_topic': actual_topic,
             'script': script,
             'topic_source': topic_source
@@ -273,9 +273,9 @@ class VideoPipeline:
                 title=video_assets['title'],
                 description=video_assets['description'],
                 tags=video_assets['tags'],
-                privacy_status=config.PRIVACY_STATUS,
+                privacy_status=settings.PRIVACY_STATUS,
                 thumbnail_path=video_assets['thumbnail_path'],
-                schedule_delay_hours=config.UPLOAD_DELAY_HOURS
+                schedule_delay_hours=settings.UPLOAD_DELAY_HOURS
             )
             if video_id:
                 results['youtube'] = video_id
@@ -294,10 +294,10 @@ class VideoPipeline:
             title=assets['title'],
             topic=assets['actual_topic'],
             video_path=assets['video_path'],
-            privacy_status=config.PRIVACY_STATUS,
+            privacy_status=settings.PRIVACY_STATUS,
             tags=assets['tags'],
-            category_id=config.CATEGORY_ID,
-            language=config.VIDEO_LANGUAGE,
+            category_id=settings.CATEGORY_ID,
+            language=settings.VIDEO_LANGUAGE,
             script=assets['script'],
             topic_source=self._last_topic_source
         )

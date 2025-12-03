@@ -30,7 +30,7 @@ def test_repetition_removal():
     for i, sent in enumerate(test_sentences, 1):
         print(f"  {i}. {sent}")
     
-    cleaned = generator._remove_repetitive_phrases(test_sentences)
+    cleaned = generator.script_parser.remove_repetitive_phrases(test_sentences)
     
     print("\n정리된 문장:")
     for i, sent in enumerate(cleaned, 1):
@@ -120,11 +120,11 @@ def test_uniqueness_check():
     script3 = ["Completely different", "Unique content", "New ideas"]
     
     print("\n동일한 스크립트 비교:")
-    is_unique = generator._is_script_unique(script2)
+    is_unique = generator.script_validator.is_script_unique(script2)
     print(f"  결과: {'유니크함' if is_unique else '중복됨'}")
     
     print("\n다른 스크립트 비교:")
-    is_unique = generator._is_script_unique(script3)
+    is_unique = generator.script_validator.is_script_unique(script3)
     print(f"  결과: {'유니크함' if is_unique else '중복됨'}")
     
     print("\n✅ 유니크성 검사 테스트 완료\n")

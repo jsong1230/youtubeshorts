@@ -453,5 +453,96 @@
       "youtube": "0x6WPchQ96c"
     },
     "url": "https://www.youtube.com/watch?v=0x6WPchQ96c"
+  },
+  {
+    "timestamp": "2025-12-03T09:42:05.775515",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2025-12-03T14:38:14.697182",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2025-12-03T14:39:23.342714",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2025-12-03T14:40:31.613305",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2025-12-03T14:41:37.634004",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2025-12-03T14:55:38.053643",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2025-12-03T14:57:13.978583",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
   }
 ]

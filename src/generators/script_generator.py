@@ -21,7 +21,7 @@ try:
 except ImportError:
     ANTHROPIC_AVAILABLE = False
 
-import config
+from src.core.config import settings
 from .content_type import ContentType
 from src.pipeline.topic_database import TopicDatabase
 from src.utils.logger import get_logger
@@ -129,13 +129,13 @@ class ScriptGenerator:
         try:
             # 콘텐츠 타입별 설정
             if content_type is None:
-                content_type_str = getattr(config, 'CONTENT_TYPE', 'auto')
+                content_type_str = settings.CONTENT_TYPE
                 try:
                     content_type = ContentType(content_type_str.lower())
                 except ValueError:
                     content_type = ContentType.AUTO
             
-            target_duration = config.SHORTS_TARGET_DURATION  # 55초
+            target_duration = settings.SHORTS_TARGET_DURATION  # 55초
             
             # 타입별 시스템 프롬프트 구성
             system_prompt, max_sentences = self.prompt_builder.get_system_prompt(
@@ -219,13 +219,13 @@ class ScriptGenerator:
         
         try:
             if content_type is None:
-                content_type_str = getattr(config, 'CONTENT_TYPE', 'auto')
+                content_type_str = settings.CONTENT_TYPE
                 try:
                     content_type = ContentType(content_type_str.lower())
                 except ValueError:
                     content_type = ContentType.AUTO
             
-            target_duration = config.SHORTS_TARGET_DURATION  # 55초
+            target_duration = settings.SHORTS_TARGET_DURATION  # 55초
             models_to_try = ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"]
             response = None
             last_error = None
@@ -375,7 +375,7 @@ class ScriptGenerator:
             (topic, source) 튜플
         """
         if content_type is None:
-            content_type_str = getattr(config, 'CONTENT_TYPE', 'auto')
+            content_type_str = settings.CONTENT_TYPE
             try:
                 content_type = ContentType(content_type_str.lower())
             except ValueError:
@@ -586,7 +586,7 @@ Return only the topic, no numbering or bullets."""
             import os
             
             # 캐시 파일 경로
-            cache_file = os.path.join(config.TEMP_DIR, 'trending_topics_cache.json')
+            cache_file = os.path.join(settings.TEMP_DIR, 'trending_topics_cache.json')
             cache_duration = 24 * 3600  # 24시간 캐시
             
             # 캐시 확인
@@ -611,7 +611,7 @@ Return only the topic, no numbering or bullets."""
             
             # 캐시 저장
             if topics:
-                os.makedirs(config.TEMP_DIR, exist_ok=True)
+                os.makedirs(settings.TEMP_DIR, exist_ok=True)
                 import json
                 import time
                 with open(cache_file, 'w', encoding='utf-8') as f:
@@ -641,7 +641,7 @@ Return only the topic, no numbering or bullets."""
             
             # 캐시 파일 경로
             cache_file = os.path.join(
-                config.TEMP_DIR, 
+                settings.TEMP_DIR, 
                 f'ai_seasonal_topics_cache_{season}_{content_type.value}_{language}.json'
             )
             cache_duration = 7 * 24 * 3600  # 7일 캐시
@@ -699,7 +699,7 @@ Return only the topic, no numbering or bullets."""
             
             # 캐시 저장
             if validated_topics:
-                os.makedirs(config.TEMP_DIR, exist_ok=True)
+                os.makedirs(settings.TEMP_DIR, exist_ok=True)
                 import json
                 import time
                 with open(cache_file, 'w', encoding='utf-8') as f:
@@ -764,7 +764,7 @@ Return only the topic, no numbering or bullets."""
             import os
             
             cache_file = os.path.join(
-                config.TEMP_DIR, 
+                settings.TEMP_DIR, 
                 f'ai_topics_cache_{content_type.value}_{language}.json'
             )
             cache_duration = 12 * 3600

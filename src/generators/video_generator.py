@@ -19,7 +19,7 @@ try:
 except ImportError:
     ANTHROPIC_AVAILABLE = False
 
-import config
+from src.core.config import settings
 from .content_type import ContentType
 from .video_constants import VideoConstants
 from .script_generator import ScriptGenerator
@@ -40,9 +40,9 @@ class AIVideoGenerator:
     
     def __init__(self, tts_provider=None):
         # OpenAI 클라이언트 초기화
-        if config.OPENAI_API_KEY and OPENAI_AVAILABLE:
+        if settings.OPENAI_API_KEY and OPENAI_AVAILABLE:
             try:
-                self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
+                self.openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
             except Exception as e:
                 logger.warning(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
                 self.openai_client = None
@@ -50,9 +50,9 @@ class AIVideoGenerator:
             self.openai_client = None
         
         # Claude (Anthropic) 클라이언트 초기화
-        if config.CLAUDE_API_KEY and ANTHROPIC_AVAILABLE:
+        if settings.CLAUDE_API_KEY and ANTHROPIC_AVAILABLE:
             try:
-                self.claude_client = Anthropic(api_key=config.CLAUDE_API_KEY)
+                self.claude_client = Anthropic(api_key=settings.CLAUDE_API_KEY)
                 logger.info(f"✅ Claude API 클라이언트 초기화 완료")
             except Exception as e:
                 logger.warning(f"⚠️ Claude 클라이언트 초기화 실패: {e}")
@@ -61,7 +61,7 @@ class AIVideoGenerator:
             self.claude_client = None
 
         # AI API 제공자 확인
-        self.ai_provider = getattr(config, 'AI_API_PROVIDER', 'openai').lower()
+        self.ai_provider = settings.AI_API_PROVIDER.lower()
         if self.ai_provider == 'claude' and not self.claude_client:
             logger.warning(f"⚠️ Claude API가 설정되지 않았습니다. OpenAI를 사용합니다.")
             self.ai_provider = 'openai'
@@ -76,7 +76,7 @@ class AIVideoGenerator:
         self.tts_engine = None
         try:
             if tts_provider is None:
-                tts_provider_str = getattr(config, 'TTS_PROVIDER', None)
+                tts_provider_str = settings.TTS_PROVIDER
                 if tts_provider_str:
                     tts_provider = TTSProvider(tts_provider_str.lower())
             
@@ -113,9 +113,10 @@ class AIVideoGenerator:
         )
         
         # 출력 디렉토리 생성
-        os.makedirs(config.VIDEO_OUTPUT_DIR, exist_ok=True)
-        os.makedirs(config.TEMP_DIR, exist_ok=True)
-        os.makedirs(config.THUMBNAIL_OUTPUT_DIR, exist_ok=True)
+        # 출력 디렉토리 생성
+        os.makedirs(settings.VIDEO_OUTPUT_DIR, exist_ok=True)
+        os.makedirs(settings.TEMP_DIR, exist_ok=True)
+        os.makedirs(settings.THUMBNAIL_OUTPUT_DIR, exist_ok=True)
 
     def generate_video(
         self,

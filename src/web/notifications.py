@@ -10,7 +10,7 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 from typing import Dict, List, Optional
 import requests
-import config
+
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)

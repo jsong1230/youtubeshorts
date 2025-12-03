@@ -17,7 +17,7 @@ try:
 except ImportError:
     TTS_AVAILABLE = False
 
-import config
+from src.core.config import settings
 from .video_constants import VideoConstants
 from .content_type import ContentType
 from src.utils.retry_decorator import retry
@@ -45,7 +45,7 @@ class AudioGenerator:
                 try:
                     # tts_provider가 None이면 config에서 읽거나 자동 선택
                     if tts_provider is None:
-                        tts_provider_str = getattr(config, 'TTS_PROVIDER', None)
+                        tts_provider_str = settings.TTS_PROVIDER
                         if tts_provider_str:
                             tts_provider = TTSProvider(tts_provider_str.lower())
                     
@@ -66,7 +66,7 @@ class AudioGenerator:
         language: str = 'ko'
     ) -> Optional[str]:
         """TTS로 음성 생성 (콘텐츠 타입별 voice/speed 최적화)"""
-        audio_path = os.path.join(config.TEMP_DIR, f"audio_{index}.mp3")
+        audio_path = os.path.join(settings.TEMP_DIR, f"audio_{index}.mp3")
 
         # 언어 코드 설정
         lang_code = 'en' if language == 'en' else 'ko'
@@ -130,7 +130,7 @@ class AudioGenerator:
         """
         배경 음악 다운로드 (무료 음악 라이브러리 사용)
         """
-        if not getattr(config, 'USE_BACKGROUND_MUSIC', True):
+        if not settings.USE_BACKGROUND_MUSIC:
             return None
         
         try:
@@ -183,7 +183,7 @@ class AudioGenerator:
                             if preview_url:
                                 # 음악 다운로드
                                 music_path = os.path.join(
-                                    config.TEMP_DIR, 
+                                    settings.TEMP_DIR, 
                                     f"bg_music_{int(time.time()*1000)}.mp3"
                                 )
                                 music_response = self._http_get_with_retry(preview_url, timeout=15)
@@ -237,7 +237,7 @@ class AudioGenerator:
                 bg_music = bg_music.subclip(0, target_duration)
             
             # 볼륨 조절
-            music_volume = getattr(config, 'BACKGROUND_MUSIC_VOLUME', VideoConstants.DEFAULT_MUSIC_VOLUME)
+            music_volume = settings.BACKGROUND_MUSIC_VOLUME
             bg_music = bg_music.volumex(music_volume)
             
             # 페이드 인/아웃

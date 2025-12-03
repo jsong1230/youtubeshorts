@@ -4,7 +4,7 @@ Instagram Reels 업로더 (Graph API 사용)
 import os
 import time
 import requests
-import config
+from src.core.config import settings
 from pathlib import Path
 from src.utils.logger import get_logger
 
@@ -14,8 +14,8 @@ class InstagramUploader:
     """Instagram Graph API를 사용하여 Reels 업로드"""
     
     def __init__(self):
-        self.access_token = config.INSTAGRAM_ACCESS_TOKEN
-        self.account_id = config.INSTAGRAM_ACCOUNT_ID
+        self.access_token = settings.INSTAGRAM_ACCESS_TOKEN
+        self.account_id = settings.INSTAGRAM_ACCOUNT_ID
         self.api_version = "v19.0"
         self.base_url = f"https://graph.facebook.com/{self.api_version}"
         

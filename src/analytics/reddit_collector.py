@@ -15,7 +15,7 @@ import json
 import xml.etree.ElementTree as ET
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
-import config
+from src.core.config import settings
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -100,9 +100,9 @@ class RedditCollector:
                 logger.warning(f"⚠️ Reddit API 클라이언트 초기화 실패, RSS 피드 사용: {e}")
         
         # OpenAI API 초기화 (주제 변환용)
-        if OPENAI_AVAILABLE and config.OPENAI_API_KEY:
+        if OPENAI_AVAILABLE and settings.OPENAI_API_KEY:
             try:
-                self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
+                self.openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
             except Exception as e:
                 logger.warning(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
         
@@ -437,7 +437,7 @@ Return only the topics, one per line."""
         # 캐시 확인 (Reddit API 호출 최소화)
         if use_cache:
             cache_file = os.path.join(
-                config.TEMP_DIR,
+                settings.TEMP_DIR,
                 f'reddit_topics_cache_{content_type}_{language}.json'
             )
             cache_duration = 6 * 3600  # 6시간 캐시 (Reddit API 정책 준수)
@@ -476,7 +476,7 @@ Return only the topics, one per line."""
         # 캐시 저장
         if use_cache and topics:
             try:
-                os.makedirs(config.TEMP_DIR, exist_ok=True)
+                os.makedirs(settings.TEMP_DIR, exist_ok=True)
                 with open(cache_file, 'w', encoding='utf-8') as f:
                     json.dump({
                         'timestamp': time.time(),

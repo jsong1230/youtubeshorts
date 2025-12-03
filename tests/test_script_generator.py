@@ -18,18 +18,18 @@ class TestScriptGenerator:
     """Test ScriptGenerator class"""
     
     @pytest.fixture
-    def script_generator(self, mock_openai_client, mock_anthropic_client):
+    def script_generator(self, mock_openai_client, mock_claude_client):
         """Create ScriptGenerator instance with mocked clients"""
         generator = ScriptGenerator(
             openai_client=mock_openai_client,
-            anthropic_client=mock_anthropic_client
+            claude_client=mock_claude_client
         )
         return generator
     
     def test_initialization(self, script_generator):
         """Test ScriptGenerator initializes correctly"""
         assert script_generator.openai_client is not None
-        assert script_generator.anthropic_client is not None
+        assert script_generator.claude_client is not None
     
     def test_generate_script_with_topic(self, script_generator, mock_openai_client):
         """Test script generation with provided topic"""
@@ -42,7 +42,6 @@ class TestScriptGenerator:
         
         script = script_generator.generate_script(
             topic="Test Topic",
-            duration=55,
             content_type=ContentType.FACT,
             language='en'
         )
@@ -51,24 +50,23 @@ class TestScriptGenerator:
         assert isinstance(script, list)
         assert len(script) > 0
     
-    def test_generate_script_with_claude(self, script_generator, mock_anthropic_client):
+    def test_generate_script_with_claude(self, script_generator, mock_claude_client):
         """Test script generation using Claude API"""
         # Mock Claude response
         mock_response = Mock()
         mock_response.content = [Mock()]
         mock_response.content[0].text = "Test script from Claude"
-        mock_anthropic_client.messages.create.return_value = mock_response
+        mock_claude_client.messages.create.return_value = mock_response
         
-        with patch('config.AI_API_PROVIDER', 'claude'):
-            script = script_generator.generate_script(
-                topic="Test Topic",
-                duration=55,
-                content_type=ContentType.STORY,
-                language='ko'
-            )
-            
-            assert script is not None
-            assert isinstance(script, list)
+        script_generator.ai_provider = 'claude'
+        script = script_generator.generate_script(
+            topic="Test Topic",
+            content_type=ContentType.STORY,
+            language='ko'
+        )
+        
+        assert script is not None
+        assert isinstance(script, list)
     
     def test_parse_script_text(self, script_generator):
         """Test script text parsing"""
@@ -182,8 +180,7 @@ class TestScriptGenerator:
         mock_openai_client.chat.completions.create.return_value = mock_response
         
         topic, source = script_generator.generate_topic(
-            content_type=ContentType.FACT,
-            language='en'
+            content_type=ContentType.FACT
         )
         
         assert topic is not None

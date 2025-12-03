@@ -7,7 +7,7 @@ import os
 import json
 from datetime import datetime, timedelta
 from typing import Dict, List
-import config
+
 from src.pipeline.database import VideoDatabase
 from src.analytics.monetization import MonetizationTracker
 from src.analytics.ab_testing import ABTestDatabase

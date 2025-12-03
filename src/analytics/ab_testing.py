@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
 from enum import Enum
 import json
-import config
+
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)

@@ -9,7 +9,7 @@ from moviepy.editor import VideoFileClip, ImageClip, concatenate_videoclips
 from PIL import Image
 import numpy as np
 
-import config
+from src.core.config import settings
 from src.generators.video_constants import VideoConstants
 from src.utils.retry_decorator import retry
 from src.utils.logger import get_logger
@@ -63,7 +63,7 @@ class BackgroundVideoManager:
             logger.debug(f"🎬 배경 영상 다운로드 시도: {keyword} -> {english_keyword}")
             
             # Download from Pexels
-            if config.PEXELS_API_KEY:
+            if settings.PEXELS_API_KEY:
                 bg_video_path, video_id = self._download_from_pexels(
                     english_keyword, index, duration, exclude_video_ids
                 )
@@ -88,7 +88,7 @@ class BackgroundVideoManager:
         """
         background_groups = []
         group_size = VideoConstants.BACKGROUND_GROUP_SIZE
-        use_background_video = getattr(config, 'USE_BACKGROUND_VIDEO', True)
+        use_background_video = settings.USE_BACKGROUND_VIDEO
         downloaded_video_ids = set()
         
         for i in range(0, len(script), group_size):
@@ -97,7 +97,7 @@ class BackgroundVideoManager:
             group_duration = sum(audio_durations[i:group_end])
             
             bg_video_path = None
-            if use_background_video and config.PEXELS_API_KEY:
+            if use_background_video and settings.PEXELS_API_KEY:
                 bg_video_path, video_id = self._download_with_retry_strategy(
                     group_sentence, i, group_duration, topic, downloaded_video_ids
                 )
@@ -262,7 +262,7 @@ class BackgroundVideoManager:
             pexels_video_url = f"https://api.pexels.com/videos/search?query={english_keyword}&per_page=80&orientation=portrait"
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-                'Authorization': config.PEXELS_API_KEY
+                'Authorization': settings.PEXELS_API_KEY
             }
             
             response = self.http_get_with_retry(pexels_video_url, headers=headers)
@@ -310,7 +310,7 @@ class BackgroundVideoManager:
                         
                         video_url = video_data['url']
                         video_id = video_data['id']
-                        bg_video_path = os.path.join(config.TEMP_DIR, f"bg_video_{index}_{video_id}.mp4")
+                        bg_video_path = os.path.join(settings.TEMP_DIR, f"bg_video_{index}_{video_id}.mp4")
                         
                         video_response = self.http_get_with_retry(video_url, stream=True)
                         if video_response.status_code == 200:

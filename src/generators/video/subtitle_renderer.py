@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import TextClip, ImageClip
 from moviepy.video.fx.all import fadein, fadeout
 
-import config
+from src.core.config import settings
 from src.generators.video_constants import VideoConstants
 from src.utils.logger import get_logger
 
@@ -31,7 +31,7 @@ class SubtitleRenderer:
         """자막 클립 생성"""
         try:
             subtitle_text = text
-            subtitle_mode = getattr(config, "SUBTITLE_MODE", "full_sentence")
+            subtitle_mode = settings.SUBTITLE_MODE
             use_keywords = subtitle_mode != 'full_sentence'
             
             if use_keywords:
@@ -375,7 +375,7 @@ class SubtitleRenderer:
             
             # Save and create clip
             temp_subtitle_path = os.path.join(
-                config.TEMP_DIR, f"subtitle_{int(time.time()*1000)}.png")
+                settings.TEMP_DIR, f"subtitle_{int(time.time()*1000)}.png")
             subtitle_img.save(temp_subtitle_path, 'PNG')
             
             txt_clip = ImageClip(temp_subtitle_path)

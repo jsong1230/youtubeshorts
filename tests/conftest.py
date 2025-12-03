@@ -23,7 +23,7 @@ def mock_openai_client():
 
 
 @pytest.fixture
-def mock_anthropic_client():
+def mock_claude_client():
     """Mock Anthropic client"""
     client = Mock()
     client.messages = Mock()

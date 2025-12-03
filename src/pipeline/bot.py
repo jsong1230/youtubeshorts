@@ -31,7 +31,7 @@ from src.generators.user_request_handler import UserRequestHandler
 from src.analytics.comment_analyzer import CommentAnalyzer
 from src.utils.logger import get_logger
 from src.pipeline.video_pipeline import VideoPipeline
-import config
+from src.core.config import settings
 import json
 
 logger = get_logger(__name__)
@@ -44,7 +44,7 @@ class ShortsBot:
         self.video_generator = AIVideoGenerator()
         # YouTube만 사용 (기본값)
         # 멀티 플랫폼 업로드를 사용하려면 .env에서 ENABLE_TIKTOK_UPLOAD 또는 ENABLE_INSTAGRAM_UPLOAD를 true로 설정
-        use_multi_platform = (config.ENABLE_TIKTOK_UPLOAD or config.ENABLE_INSTAGRAM_UPLOAD)
+        use_multi_platform = (settings.ENABLE_TIKTOK_UPLOAD or settings.ENABLE_INSTAGRAM_UPLOAD)
         if use_multi_platform:
             self.uploader = MultiPlatformUploader()
             self.use_multi_platform = True
@@ -53,9 +53,9 @@ class ShortsBot:
             self.uploader = YouTubeUploader()
             self.use_multi_platform = False
         self.monetization = MonetizationTracker()
-        self.database = VideoDatabase(db_path=config.DATABASE_PATH)
+        self.database = VideoDatabase(db_path=settings.DATABASE_PATH)
         self.sync_manager = SyncManager()
-        self.timezone = pytz.timezone(config.UPLOAD_TIMEZONE)
+        self.timezone = pytz.timezone(settings.UPLOAD_TIMEZONE)
         self.ab_test_db = ABTestDatabase()
         self.topic_database = TopicDatabase()
         self.thumbnail_optimizer = ThumbnailOptimizer()
@@ -150,7 +150,7 @@ class ShortsBot:
             import os
             video_basename = os.path.basename(video_path)
             video_name_without_ext = os.path.splitext(video_basename)[0]
-            metadata_file = os.path.join(config.VIDEO_OUTPUT_DIR, f"{video_name_without_ext}_metadata.json")
+            metadata_file = os.path.join(settings.VIDEO_OUTPUT_DIR, f"{video_name_without_ext}_metadata.json")
             
             # description 생성 (업로드 시 필요)
             # Use MetadataManager from pipeline if possible, or just duplicate logic for now
@@ -165,7 +165,7 @@ class ShortsBot:
                 'title': title,
                 'topic': actual_topic,
                 'description': description,  # description 추가
-                'tags': config.DEFAULT_TAGS,  # tags 추가
+                'tags': settings.DEFAULT_TAGS,  # tags 추가
                 'script': script,
                 'language': language,
                 'created_at': datetime.now().isoformat()
@@ -209,7 +209,7 @@ class ShortsBot:
             import os
             video_basename = os.path.basename(video_path)
             video_name_without_ext = os.path.splitext(video_basename)[0]
-            metadata_file = os.path.join(config.VIDEO_OUTPUT_DIR, f"{video_name_without_ext}_metadata.json")
+            metadata_file = os.path.join(settings.VIDEO_OUTPUT_DIR, f"{video_name_without_ext}_metadata.json")
             
             if os.path.exists(metadata_file):
                 with open(metadata_file, 'r', encoding='utf-8') as f:

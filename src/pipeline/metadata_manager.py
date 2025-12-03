@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, Dict, Any
-import config
+from src.core.config import settings
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -43,7 +43,7 @@ class MetadataManager:
         channel_info: Optional[Dict[str, Any]], 
         recent_videos: list
     ) -> str:
-        description = f"{config.DEFAULT_DESCRIPTION}\n\n"
+        description = f"{settings.DEFAULT_DESCRIPTION}\n\n"
         description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         description += "📺 Video Information\n"
         description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -96,7 +96,7 @@ class MetadataManager:
         channel_info: Optional[Dict[str, Any]], 
         recent_videos: list
     ) -> str:
-        description = f"{config.DEFAULT_DESCRIPTION}\n\n"
+        description = f"{settings.DEFAULT_DESCRIPTION}\n\n"
         description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         description += "📺 영상 정보\n"
         description += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
