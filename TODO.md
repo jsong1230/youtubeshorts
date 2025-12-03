@@ -300,8 +300,8 @@
   - [ ] CI/CD 파이프라인 구축 (GitHub Actions)
 - [x] **코드 리팩토링**
   - [x] `ShortsBot` 클래스의 거대한 메서드(`create_and_upload`) 분리 (VideoPipeline, MetadataManager 도입)
-  - [x] `ScriptGenerator` 클래스(3800+라인) 분리 및 모듈화 (PromptBuilder, ScriptParser, ScriptValidator 도입)
-  - [ ] `VideoGenerator` 클래스(3800+라인) 분리 및 모듈화 (VideoEditor, ThumbnailCreator 등)
+  - [x] `ScriptGenerator` 클래스 분리 및 모듈화 (PromptBuilder, ScriptParser, ScriptValidator 도입)
+  - [x] `VideoCompositor` 클래스 분리 및 모듈화 (SubtitleRenderer, BackgroundVideoManager 도입)
   - [ ] `config.py` 직접 의존성 제거 및 설정 관리자(Configuration Manager) 도입
   - [ ] 하드코딩된 상수값들을 설정 파일이나 상수 클래스로 이동
 - [ ] **타입 힌트 강화**
