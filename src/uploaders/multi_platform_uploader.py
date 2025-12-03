@@ -2,7 +2,7 @@
 멀티 플랫폼 동시 업로드 모듈
 """
 import os
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Union, Any
 from src.uploaders.youtube_uploader import YouTubeUploader
 from src.uploaders.tiktok_uploader import TikTokUploader
 from src.uploaders.instagram_uploader import InstagramUploader
@@ -17,8 +17,8 @@ class MultiPlatformUploader:
     
     def __init__(self):
         """각 플랫폼 업로더 초기화"""
-        self.uploaders = {}
-        self.results = {}
+        self.uploaders: Dict[str, Any] = {}
+        self.results: Dict[str, Optional[str]] = {}
         
         # YouTube 업로더 (항상 활성화)
         try:
@@ -94,7 +94,7 @@ class MultiPlatformUploader:
                     video_path=video_path,
                     title=title,
                     description=description or settings.DEFAULT_DESCRIPTION,
-                    tags=tags or settings.DEFAULT_TAGS,
+                    tags=tags or settings.DEFAULT_TAGS if isinstance(settings.DEFAULT_TAGS, list) else [],  # type: ignore[arg-type]
                     privacy_status='public',
                     thumbnail_path=thumbnail_path,
                     schedule_delay_hours=settings.UPLOAD_DELAY_HOURS  # 예약 업로드 지연 시간

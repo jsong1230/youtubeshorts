@@ -8,7 +8,7 @@ import json
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import requests
 
 from src.utils.logger import get_logger
@@ -99,7 +99,7 @@ class NotificationService:
             }
             
             if attachments:
-                payload['attachments'] = attachments
+                payload['attachments'] = attachments  # type: ignore[assignment]
             
             response = requests.post(self.slack_webhook_url, json=payload)
             response.raise_for_status()

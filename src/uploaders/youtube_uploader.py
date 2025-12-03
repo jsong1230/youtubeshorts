@@ -3,6 +3,7 @@ YouTube Shorts 자동 업로드 모듈
 """
 import os
 import json
+from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 from dateutil import parser as date_parser
 from google.oauth2.credentials import Credentials
@@ -105,11 +106,11 @@ class YouTubeUploader:
         
         # 예약 업로드 시간 설정
         if scheduled_start_time:
-            body['status']['scheduledStartTime'] = scheduled_start_time
+            body['status']['scheduledStartTime'] = scheduled_start_time  # type: ignore[index]
         
         # Shorts로 표시하기 위한 설정
-        body['snippet']['defaultLanguage'] = 'ko'
-        body['snippet']['defaultAudioLanguage'] = 'ko'
+        body['snippet']['defaultLanguage'] = 'ko'  # type: ignore[index]
+        body['snippet']['defaultAudioLanguage'] = 'ko'  # type: ignore[index]
         
         media = MediaFileUpload(
             video_path,

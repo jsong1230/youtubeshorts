@@ -110,7 +110,7 @@ class ScriptGenerator:
             logger.warning("⚠️ AI 클라이언트가 없어 기본 스크립트를 사용합니다.")
             return self._build_default_script(topic, language=language)
         
-        # 이 코드는 실행되지 않아야 하지만 안전을 위해 추가
+        # Fallback to default script
         return self._build_default_script(topic, language=language)
     
     def _generate_script_with_claude(
@@ -809,7 +809,7 @@ Return only the topic, no numbering or bullets."""
                     validated_topics.append(topic)
             
             if validated_topics:
-                os.makedirs(config.TEMP_DIR, exist_ok=True)
+                os.makedirs(settings.TEMP_DIR, exist_ok=True)
                 import json
                 import time
                 with open(cache_file, 'w', encoding='utf-8') as f:
@@ -872,7 +872,7 @@ Return only the topic, no numbering or bullets."""
         performance_pool = [topic for topic in performance_topics if topic]
         trending_pool = [topic for topic in (youtube_trending_topics or []) if topic]
 
-        if getattr(config, 'TREND_MODE', False):
+        if getattr(settings, 'TREND_MODE', False):
             pools: List[Tuple[List[str], str]] = []
             weights: List[float] = []
 

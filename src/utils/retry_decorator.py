@@ -4,11 +4,13 @@ Retry decorator with exponential backoff for handling transient failures.
 import time
 import random
 import functools
-from typing import Callable, Tuple, Type
+from typing import Callable, Tuple, Type, TypeVar, Any, cast
 import logging
 
 logger = logging.getLogger(__name__)
 
+T = TypeVar("T")
+P = TypeVar("P")  # Using TypeVar for arguments since ParamSpec might be too strict for some users, or use Any
 
 def retry(
     max_retries: int = 3,
@@ -17,7 +19,7 @@ def retry(
     exceptions: Tuple[Type[Exception], ...] = (Exception,),
     backoff_factor: float = 2.0,
     jitter: bool = True
-):
+) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """
     Retry decorator with exponential backoff.
     
@@ -34,10 +36,10 @@ def retry(
         def fetch_data():
             return requests.get(url)
     """
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            last_exception = None
+        def wrapper(*args: Any, **kwargs: Any) -> T:
+            last_exception: Exception | None = None
             
             for attempt in range(max_retries + 1):
                 try:
@@ -68,12 +70,13 @@ def retry(
             # This should never be reached, but just in case
             if last_exception:
                 raise last_exception
+            raise RuntimeError("Unexpected retry loop exit")
                 
         return wrapper
     return decorator
 
 
-def retry_on_rate_limit(max_retries: int = 5, base_delay: float = 2.0):
+def retry_on_rate_limit(max_retries: int = 5, base_delay: float = 2.0) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """
     Specialized retry decorator for API rate limits.
     Uses longer delays and more retries.

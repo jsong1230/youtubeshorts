@@ -1,7 +1,11 @@
 import os
 import json
+from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from src.utils.youtube_auth import get_authenticated_service
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 class AnalyticsManager:
     """YouTube Shorts 성과 분석 관리 클래스"""
@@ -112,11 +116,7 @@ class AnalyticsManager:
             logger.error(f"❌ 영상 통계 조회 실패: {e}")
             return []
 
-            return results
-            
-        except Exception as e:
-            logger.error(f"❌ 영상 통계 조회 실패: {e}")
-            return []
+
 
     def _extract_topic(self, title):
         """영상 제목에서 주제 추출"""
@@ -148,7 +148,7 @@ class AnalyticsManager:
         """주제별 성과 분석"""
         from collections import defaultdict
         
-        topic_stats = defaultdict(lambda: {
+        topic_stats: Dict[str, Dict[str, Any]] = defaultdict(lambda: {
             'count': 0,
             'views': 0,
             'likes': 0,
@@ -188,7 +188,7 @@ class AnalyticsManager:
         """업로드 시간대별 성과 분석"""
         from collections import defaultdict
         
-        hour_stats = defaultdict(lambda: {
+        hour_stats: Dict[int, Dict[str, Any]] = defaultdict(lambda: {
             'count': 0,
             'views': 0,
             'likes': 0,

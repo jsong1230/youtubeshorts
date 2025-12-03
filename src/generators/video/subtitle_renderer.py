@@ -4,7 +4,7 @@
 import os
 import re
 import time
-from typing import Optional
+from typing import Optional, List
 from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import TextClip, ImageClip
 from moviepy.video.fx.all import fadein, fadeout
@@ -197,7 +197,7 @@ class SubtitleRenderer:
         """텍스트를 여러 줄로 자동 분할"""
         words = text.split()
         lines = []
-        current_line = []
+        current_line: List[str] = []
         
         temp_image = Image.new('RGB', (VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT))
         temp_draw = ImageDraw.Draw(temp_image)
@@ -329,7 +329,7 @@ class SubtitleRenderer:
             max_width = 1000
             words = subtitle_text.split()
             lines = []
-            current_line = []
+            current_line: List[str] = []
             
             for word in words:
                 test_line = ' '.join(current_line + [word])

@@ -25,7 +25,7 @@ class TempCleaner:
         self.max_age_hours = max_age_hours
         self.temp_dir = settings.TEMP_DIR
     
-    def clean_old_files(self, dry_run: bool = False) -> dict:
+    def clean_old_files(self, dry_run: bool = False) -> dict[str, int]:
         """
         오래된 임시 파일 삭제
         
@@ -88,7 +88,7 @@ class TempCleaner:
         
         return stats
     
-    def clean_after_video_generation(self):
+    def clean_after_video_generation(self) -> None:
         """
         영상 생성 후 즉시 임시 파일 정리 (최근 생성된 파일 제외)
         """

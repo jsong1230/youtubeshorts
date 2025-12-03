@@ -5,7 +5,7 @@ import os
 import random
 import time
 import requests
-from typing import Optional, List
+from typing import Optional, List, Any
 from moviepy.editor import AudioFileClip, CompositeAudioClip, concatenate_audioclips
 from moviepy.audio.fx.all import audio_fadein, audio_fadeout
 # moviepy version compatibility: some versions use volumex as method, some as fx
@@ -35,7 +35,7 @@ except ImportError:
 class AudioGenerator:
     """오디오 생성 및 관리 클래스"""
     
-    def __init__(self, tts_provider=None, tts_engine=None):
+    def __init__(self, tts_provider: Optional[str] = None, tts_engine: Optional[Any] = None) -> None:
         if tts_engine:
             self.tts_engine = tts_engine
             logger.info(f"✅ TTS 엔진 주입됨: {self.tts_engine.get_provider().value}")

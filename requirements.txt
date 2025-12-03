@@ -36,5 +36,9 @@ pytest-mock>=3.12.0
 
 # 트렌드 수집
 praw>=7.7.1  # Reddit API (선택사항, RSS 피드 사용 시 불필요)
-pytrends>=5.0.0  # Google Trends API
+pytrends>=4.9.0  # Google Trends API
 # requests는 이미 requirements.txt에 포함되어 있음 (RSS 피드 파싱용)
+pydantic-settings>=2.0.0
+mypy>=1.0.0
+types-requests>=2.31.0
+types-python-dateutil>=2.8.0

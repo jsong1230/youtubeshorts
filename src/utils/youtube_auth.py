@@ -1,5 +1,6 @@
 import os
 import json
+from typing import Any
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -16,7 +17,7 @@ SCOPES = [
 API_SERVICE_NAME = 'youtube'
 API_VERSION = 'v3'
 
-def get_authenticated_service():
+def get_authenticated_service() -> Any:
     """YouTube API 인증 및 서비스 객체 반환"""
     creds = None
     

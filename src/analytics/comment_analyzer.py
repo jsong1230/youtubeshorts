@@ -8,6 +8,9 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from src.uploaders.youtube_uploader import YouTubeUploader
 from src.generators.user_request_handler import UserRequestHandler, RequestStatus
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class CommentAnalyzer:
@@ -21,7 +24,7 @@ class CommentAnalyzer:
         self,
         video_id: str,
         max_comments: int = 100
-    ) -> List[Dict]:
+    ) -> Dict:
         """
         영상 댓글 분석
         
@@ -56,7 +59,7 @@ class CommentAnalyzer:
             if not youtube:
                 return []
             
-            comments = []
+            comments: List[Dict] = []
             next_page_token = None
             
             while len(comments) < max_comments:

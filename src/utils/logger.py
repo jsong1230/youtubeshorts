@@ -8,7 +8,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from datetime import datetime
 import sys
-
+from typing import Optional, Dict, Any, Callable, TypeVar, cast
 
 # ANSI color codes for console output
 class LogColors:
@@ -23,7 +23,7 @@ class LogColors:
 class ColoredFormatter(logging.Formatter):
     """Custom formatter with color-coded output for console."""
     
-    COLORS = {
+    COLORS: Dict[str, str] = {
         'DEBUG': LogColors.DEBUG,
         'INFO': LogColors.INFO,
         'WARNING': LogColors.WARNING,
@@ -31,7 +31,7 @@ class ColoredFormatter(logging.Formatter):
         'CRITICAL': LogColors.CRITICAL,
     }
     
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         # Add color to levelname
         levelname = record.levelname
         if levelname in self.COLORS:
@@ -43,7 +43,7 @@ class ColoredFormatter(logging.Formatter):
 def setup_logger(
     name: str = 'youtubeshorts',
     level: str = 'INFO',
-    log_dir: str = None
+    log_dir: Optional[str] = None
 ) -> logging.Logger:
     """
     Setup structured logger with file and console output.
@@ -125,8 +125,10 @@ def get_logger(name: str = 'youtubeshorts') -> logging.Logger:
     return logger
 
 
+F = TypeVar('F', bound=Callable[..., Any])
+
 # Performance tracking decorator
-def log_performance(logger: logging.Logger = None):
+def log_performance(logger: Optional[logging.Logger] = None) -> Callable[[F], F]:
     """
     Decorator to log function execution time.
     
@@ -138,28 +140,31 @@ def log_performance(logger: logging.Logger = None):
     import time
     import functools
     
+    final_logger: logging.Logger
     if logger is None:
-        logger = get_logger()
+        final_logger = get_logger()
+    else:
+        final_logger = logger
     
-    def decorator(func):
+    def decorator(func: F) -> F:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             start_time = time.time()
             try:
                 result = func(*args, **kwargs)
                 elapsed = time.time() - start_time
-                logger.info(f"⏱️ {func.__name__} completed in {elapsed:.2f}s")
+                final_logger.info(f"⏱️ {func.__name__} completed in {elapsed:.2f}s")
                 return result
             except Exception as e:
                 elapsed = time.time() - start_time
-                logger.error(f"❌ {func.__name__} failed after {elapsed:.2f}s: {e}")
+                final_logger.error(f"❌ {func.__name__} failed after {elapsed:.2f}s: {e}")
                 raise
-        return wrapper
+        return cast(F, wrapper)
     return decorator
 
 
 # Global logger instance
-_default_logger = None
+_default_logger: Optional[logging.Logger] = None
 
 
 def get_default_logger() -> logging.Logger:

@@ -11,6 +11,8 @@ import sys
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+import config
+
 
 class TestSettings:
     """Test Settings class"""
@@ -162,6 +164,8 @@ class TestSettings:
         """Test module-level variables are exposed"""
         # Reimport to get fresh instance
         import importlib
+        import src.core.config
+        importlib.reload(src.core.config)
         from src.core.config import settings
         importlib.reload(config)
         

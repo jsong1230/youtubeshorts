@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 def main():
     """메인 함수"""
     import sys
-    import config
+    from src.core.config import settings
 
     if len(sys.argv) > 1 and sys.argv[1] == 'instagram-test':
         from src.uploaders.instagram_uploader import InstagramUploader
@@ -108,7 +108,7 @@ def main():
                         'thumbnail_path': thumbnail_path,
                         'title': title,
                         'description': description,
-                        'tags': config.DEFAULT_TAGS,
+                        'tags': settings.DEFAULT_TAGS,
                         'actual_topic': topic,
                         'script': metadata.get('script', []),
                         'language': metadata.get('language', 'en')
@@ -120,7 +120,7 @@ def main():
                         video_path=video_path,
                         title=title,
                         description=description,
-                        tags=config.DEFAULT_TAGS,
+                        tags=settings.DEFAULT_TAGS,
                         privacy_status='private',  # 비공개로 설정
                         thumbnail_path=thumbnail_path,
                         schedule_delay_hours=0  # 즉시 업로드

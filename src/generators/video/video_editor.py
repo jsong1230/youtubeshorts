@@ -283,3 +283,5 @@ class VideoEditor:
                 logger.info(f"🧹 임시 파일 자동 정리: {stats['deleted']}개 파일 삭제 ({stats['size_freed'] / 1024 / 1024:.2f} MB 해제)")
         except Exception as e:
             logger.warning(f"   ⚠️ 임시 파일 정리 실패 (무시): {e}")
+
+

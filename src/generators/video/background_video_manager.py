@@ -89,7 +89,7 @@ class BackgroundVideoManager:
         background_groups = []
         group_size = VideoConstants.BACKGROUND_GROUP_SIZE
         use_background_video = settings.USE_BACKGROUND_VIDEO
-        downloaded_video_ids = set()
+        downloaded_video_ids: Set[int] = set()
         
         for i in range(0, len(script), group_size):
             group_end = min(i + group_size, len(script))

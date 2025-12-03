@@ -1,123 +1,97 @@
 """
-설정 관리 모듈
+설정 관리 모듈 (Facade for src.core.config)
+Deprecated: Use src.core.config.settings instead.
 """
+import warnings
 import os
-from pathlib import Path
-from dotenv import load_dotenv
-from typing import List, Optional
+from src.core.config import settings
 
-# 프로젝트 루트 디렉토리 찾기
-BASE_DIR = Path(__file__).resolve().parent
+# Deprecation Warning
+warnings.warn("config.py is deprecated. Use src.core.config.settings instead.", DeprecationWarning, stacklevel=2)
 
-# .env 파일 경로 명시적으로 지정
-env_path = BASE_DIR / '.env'
-try:
-    load_dotenv(dotenv_path=env_path)
-except PermissionError:
-    print("⚠️ .env 파일을 읽을 권한이 없습니다. 파일 권한을 확인하세요.")
-    print(f"   경로: {env_path}")
+# Expose settings as module-level variables
+YOUTUBE_CLIENT_ID = settings.YOUTUBE_CLIENT_ID
+YOUTUBE_CLIENT_SECRET = settings.YOUTUBE_CLIENT_SECRET
+YOUTUBE_REFRESH_TOKEN = settings.YOUTUBE_REFRESH_TOKEN
 
+OPENAI_API_KEY = settings.OPENAI_API_KEY
+CLAUDE_API_KEY = settings.CLAUDE_API_KEY
+AI_API_PROVIDER = settings.AI_API_PROVIDER
 
+PEXELS_API_KEY = settings.PEXELS_API_KEY
+UNSPLASH_ACCESS_KEY = settings.UNSPLASH_ACCESS_KEY
+
+OPENAI_RPM_LIMIT = settings.OPENAI_RPM_LIMIT
+PEXELS_HOURLY_LIMIT = settings.PEXELS_HOURLY_LIMIT
+YOUTUBE_DAILY_QUOTA = settings.YOUTUBE_DAILY_QUOTA
+
+QUOTA_WARNING_THRESHOLD = settings.QUOTA_WARNING_THRESHOLD
+QUOTA_CRITICAL_THRESHOLD = settings.QUOTA_CRITICAL_THRESHOLD
+
+USE_BACKGROUND_VIDEO = settings.USE_BACKGROUND_VIDEO
+USE_BACKGROUND_MUSIC = settings.USE_BACKGROUND_MUSIC
+BACKGROUND_MUSIC_VOLUME = settings.BACKGROUND_MUSIC_VOLUME
+
+CONTENT_TYPE = settings.CONTENT_TYPE
+TREND_MODE = settings.TREND_MODE
+PREFER_SHORT_VIDEOS = settings.PREFER_SHORT_VIDEOS
+
+UPLOAD_SCHEDULE_TIME = settings.UPLOAD_SCHEDULE_TIME
+UPLOAD_TIMEZONE = settings.UPLOAD_TIMEZONE
+UPLOAD_DELAY_HOURS = settings.UPLOAD_DELAY_HOURS
+
+DEFAULT_TITLE_PREFIX = settings.DEFAULT_TITLE_PREFIX
+DEFAULT_DESCRIPTION = settings.DEFAULT_DESCRIPTION
+DEFAULT_TAGS = settings.DEFAULT_TAGS
+
+VIDEO_OUTPUT_DIR = settings.VIDEO_OUTPUT_DIR
+THUMBNAIL_OUTPUT_DIR = settings.THUMBNAIL_OUTPUT_DIR
+TEMP_DIR = settings.TEMP_DIR
+
+TTS_PROVIDER = settings.TTS_PROVIDER
+GOOGLE_CLOUD_CREDENTIALS_PATH = settings.GOOGLE_CLOUD_CREDENTIALS_PATH
+
+SHORTS_MIN_DURATION = settings.SHORTS_MIN_DURATION
+SHORTS_MAX_DURATION = settings.SHORTS_MAX_DURATION
+SHORTS_TARGET_DURATION = settings.SHORTS_TARGET_DURATION
+SHORTS_ASPECT_RATIO = settings.SHORTS_ASPECT_RATIO
+
+SUBTITLE_MODE = settings.SUBTITLE_MODE
+
+DATABASE_PATH = settings.DATABASE_PATH
+MONETIZATION_DATA_PATH = settings.MONETIZATION_DATA_PATH
+
+ENABLE_TIKTOK_UPLOAD = settings.ENABLE_TIKTOK_UPLOAD
+ENABLE_INSTAGRAM_UPLOAD = settings.ENABLE_INSTAGRAM_UPLOAD
+
+TIKTOK_CLIENT_KEY = settings.TIKTOK_CLIENT_KEY
+TIKTOK_CLIENT_SECRET = settings.TIKTOK_CLIENT_SECRET
+TIKTOK_ACCESS_TOKEN = settings.TIKTOK_ACCESS_TOKEN
+TIKTOK_REFRESH_TOKEN = settings.TIKTOK_REFRESH_TOKEN
+
+INSTAGRAM_APP_ID = settings.INSTAGRAM_APP_ID
+INSTAGRAM_APP_SECRET = settings.INSTAGRAM_APP_SECRET
+INSTAGRAM_ACCESS_TOKEN = settings.INSTAGRAM_ACCESS_TOKEN
+INSTAGRAM_ACCOUNT_ID = settings.INSTAGRAM_ACCOUNT_ID
+
+MAX_PARALLEL_WORKERS = settings.MAX_PARALLEL_WORKERS
+ENABLE_PARALLEL_GENERATION = settings.ENABLE_PARALLEL_GENERATION
+
+PRIVACY_STATUS = settings.PRIVACY_STATUS
+VIDEO_LANGUAGE = settings.VIDEO_LANGUAGE
+CATEGORY_ID = settings.CATEGORY_ID
+
+# For backward compatibility with `from config import Settings`
 class Settings:
-    """애플리케이션 설정 클래스"""
-    
     def __init__(self):
-        # YouTube API 설정
-        self.youtube_client_id = os.getenv('YOUTUBE_CLIENT_ID')
-        self.youtube_client_secret = os.getenv('YOUTUBE_CLIENT_SECRET')
-        self.youtube_refresh_token = os.getenv('YOUTUBE_REFRESH_TOKEN')
+        # Create a FRESH instance of src.core.config.Settings to pick up current env vars
+        from src.core.config import Settings as CoreSettings
+        core_settings = CoreSettings()
         
-        # AI API 설정
-        self.openai_api_key = os.getenv('OPENAI_API_KEY')
-        self.claude_api_key = os.getenv('CLAUDE_API_KEY')
-        self.ai_api_provider = os.getenv('AI_API_PROVIDER', 'openai').lower()
-        
-        # 이미지/영상 API 설정
-        self.pexels_api_key = os.getenv('PEXELS_API_KEY')
-        self.unsplash_access_key = os.getenv('UNSPLASH_ACCESS_KEY')
-        
-        # API Quota Limits
-        self.openai_rpm_limit = self._get_int('OPENAI_RPM_LIMIT', 500)
-        self.pexels_hourly_limit = self._get_int('PEXELS_HOURLY_LIMIT', 200)
-        self.youtube_daily_quota = self._get_int('YOUTUBE_DAILY_QUOTA', 10000)
-        
-        # Quota Warning Thresholds
-        self.quota_warning_threshold = 0.8
-        self.quota_critical_threshold = 0.95
-        
-        # 영상 생성 설정
-        self.use_background_video = self._get_bool('USE_BACKGROUND_VIDEO', True)
-        self.use_background_music = self._get_bool('USE_BACKGROUND_MUSIC', True)
-        self.background_music_volume = self._get_float('BACKGROUND_MUSIC_VOLUME', 0.25)
-        
-        # 콘텐츠 타입 설정
-        self.content_type = os.getenv('CONTENT_TYPE', 'auto')
-        self.trend_mode = self._get_bool('TREND_MODE', False)
-        self.prefer_short_videos = self._get_bool('PREFER_SHORT_VIDEOS', True)
-        
-        # 업로드 스케줄 설정
-        self.upload_schedule_time = os.getenv('UPLOAD_SCHEDULE_TIME', '09:00')
-        self.upload_timezone = os.getenv('UPLOAD_TIMEZONE', 'Asia/Seoul')
-        self.upload_delay_hours = self._get_float('UPLOAD_DELAY_HOURS', 0.0)  # 예약 업로드 지연 시간 (시간 단위, 0이면 즉시 업로드)
-        
-        # 영상 기본 설정
-        self.default_title_prefix = os.getenv('DEFAULT_TITLE_PREFIX', 'Shorts')
-        self.default_description = os.getenv('DEFAULT_DESCRIPTION', 
-            'AI로 자동 생성된 YouTube Shorts 영상입니다. 유용한 정보와 팁을 매일 공유합니다. 구독과 좋아요 부탁드립니다!')
-        # 기본 태그: shorts,쇼츠,ai,인공지능,자동생성,유용한정보,팁,라이프스타일,일상,정보,꿀팁,생활정보
-        self.default_tags = self._get_list('DEFAULT_TAGS', 
-            'shorts,쇼츠,ai,인공지능,자동생성,유용한정보,팁,라이프스타일,일상,정보,꿀팁,생활정보')
-        
-        # 디렉토리 설정
-        self.video_output_dir = 'output/videos'
-        self.thumbnail_output_dir = 'output/thumbnails'
-        self.temp_dir = 'output/temp'
-        
-        # TTS 설정
-        self.tts_provider = os.getenv('TTS_PROVIDER', None)
-        self.google_cloud_credentials_path = os.getenv('GOOGLE_CLOUD_CREDENTIALS_PATH', None)  # Google Cloud TTS용 서비스 계정 키 경로
-        
-        # YouTube Shorts 요구사항
-        self.shorts_min_duration = 15
-        self.shorts_max_duration = 60
-        self.shorts_target_duration = 55
-        self.shorts_aspect_ratio = (9, 16)
-        
-        # 자막 설정
-        self.subtitle_mode = os.getenv('SUBTITLE_MODE', 'full_sentence').lower()
-        
-        # 데이터베이스 설정
-        self.database_path = os.getenv('DATABASE_PATH', 'data/videos.db')
-        self.monetization_data_path = os.getenv('MONETIZATION_DATA_PATH', 'data/monetization_data.json')
-        
-        # 멀티 플랫폼 업로드 설정
-        self.enable_tiktok_upload = self._get_bool('ENABLE_TIKTOK_UPLOAD', False)
-        self.enable_instagram_upload = self._get_bool('ENABLE_INSTAGRAM_UPLOAD', False)
-        
-        # TikTok API 설정
-        self.tiktok_client_key = os.getenv('TIKTOK_CLIENT_KEY')
-        self.tiktok_client_secret = os.getenv('TIKTOK_CLIENT_SECRET')
-        self.tiktok_access_token = os.getenv('TIKTOK_ACCESS_TOKEN')
-        self.tiktok_refresh_token = os.getenv('TIKTOK_REFRESH_TOKEN')
-        
-        # Instagram Graph API 설정
-        self.instagram_app_id = os.getenv('INSTAGRAM_APP_ID')
-        self.instagram_app_secret = os.getenv('INSTAGRAM_APP_SECRET')
-        self.instagram_access_token = os.getenv('INSTAGRAM_ACCESS_TOKEN')
-        self.instagram_account_id = os.getenv('INSTAGRAM_ACCOUNT_ID')
-        
-        # Parallel Processing 설정
-        self.max_parallel_workers = self._get_int('MAX_PARALLEL_WORKERS', 3)
-        self.enable_parallel_generation = self._get_bool('ENABLE_PARALLEL_GENERATION', True)
-        
-        # 추가 설정
-        self.privacy_status = os.getenv('PRIVACY_STATUS', 'private')
-        self.video_language = os.getenv('VIDEO_LANGUAGE', 'en')
-        self.category_id = os.getenv('CATEGORY_ID', '22')  # 22: People & Blogs
-        
-        # 설정 검증
-        self._validate()
-        
+        # Map UPPERCASE keys to lowercase attributes to match old behavior
+        for key, value in core_settings.model_dump().items():
+            setattr(self, key.lower(), value)
+            
     def _get_bool(self, key: str, default: bool) -> bool:
         """환경 변수를 bool로 변환"""
         value = os.getenv(key, str(default)).lower()
@@ -140,105 +114,10 @@ class Settings:
             print(f"⚠️ {key} 값이 올바르지 않습니다. 기본값 {default}를 사용합니다.")
             return default
     
-    def _get_list(self, key: str, default: str) -> List[str]:
+    def _get_list(self, key: str, default: str) -> list:
         """환경 변수를 리스트로 변환"""
         value = os.getenv(key, default)
         return [item.strip() for item in value.split(',') if item.strip()]
-    
-    def _validate(self):
-        """설정 검증"""
-        # 필수 디렉토리 생성
-        for directory in [self.video_output_dir, self.thumbnail_output_dir, self.temp_dir]:
-            Path(directory).mkdir(parents=True, exist_ok=True)
-        
-        # API 키 검증 (경고만 출력)
-        if not self.openai_api_key and not self.claude_api_key:
-            print("⚠️ OpenAI 또는 Claude API 키가 설정되지 않았습니다.")
-        
-        # 볼륨 범위 검증
-        if not 0.0 <= self.background_music_volume <= 1.0:
-            print(f"⚠️ BACKGROUND_MUSIC_VOLUME이 범위를 벗어났습니다 ({self.background_music_volume}). 0.25로 설정합니다.")
-            self.background_music_volume = 0.25
-        
-        # 자막 모드 검증
-        if self.subtitle_mode not in ('key_words', 'full_sentence'):
-            print(f"⚠️ SUBTITLE_MODE가 올바르지 않습니다 ({self.subtitle_mode}). 'full_sentence'로 설정합니다.")
-            self.subtitle_mode = 'full_sentence'
 
-
-# 싱글톤 인스턴스 생성
+# Singleton instance
 _settings = Settings()
-
-# 하위 호환성을 위한 모듈 레벨 변수 노출
-YOUTUBE_CLIENT_ID = _settings.youtube_client_id
-YOUTUBE_CLIENT_SECRET = _settings.youtube_client_secret
-YOUTUBE_REFRESH_TOKEN = _settings.youtube_refresh_token
-
-OPENAI_API_KEY = _settings.openai_api_key
-CLAUDE_API_KEY = _settings.claude_api_key
-AI_API_PROVIDER = _settings.ai_api_provider
-
-PEXELS_API_KEY = _settings.pexels_api_key
-UNSPLASH_ACCESS_KEY = _settings.unsplash_access_key
-
-OPENAI_RPM_LIMIT = _settings.openai_rpm_limit
-PEXELS_HOURLY_LIMIT = _settings.pexels_hourly_limit
-YOUTUBE_DAILY_QUOTA = _settings.youtube_daily_quota
-
-QUOTA_WARNING_THRESHOLD = _settings.quota_warning_threshold
-QUOTA_CRITICAL_THRESHOLD = _settings.quota_critical_threshold
-
-USE_BACKGROUND_VIDEO = _settings.use_background_video
-USE_BACKGROUND_MUSIC = _settings.use_background_music
-BACKGROUND_MUSIC_VOLUME = _settings.background_music_volume
-
-CONTENT_TYPE = _settings.content_type
-TREND_MODE = _settings.trend_mode
-PREFER_SHORT_VIDEOS = _settings.prefer_short_videos
-
-UPLOAD_SCHEDULE_TIME = _settings.upload_schedule_time
-UPLOAD_TIMEZONE = _settings.upload_timezone
-
-DEFAULT_TITLE_PREFIX = _settings.default_title_prefix
-DEFAULT_DESCRIPTION = _settings.default_description
-DEFAULT_TAGS = _settings.default_tags
-
-VIDEO_OUTPUT_DIR = _settings.video_output_dir
-THUMBNAIL_OUTPUT_DIR = _settings.thumbnail_output_dir
-TEMP_DIR = _settings.temp_dir
-
-TTS_PROVIDER = _settings.tts_provider
-GOOGLE_CLOUD_CREDENTIALS_PATH = _settings.google_cloud_credentials_path
-
-SHORTS_MIN_DURATION = _settings.shorts_min_duration
-SHORTS_MAX_DURATION = _settings.shorts_max_duration
-SHORTS_TARGET_DURATION = _settings.shorts_target_duration
-SHORTS_ASPECT_RATIO = _settings.shorts_aspect_ratio
-
-SUBTITLE_MODE = _settings.subtitle_mode
-
-DATABASE_PATH = _settings.database_path
-MONETIZATION_DATA_PATH = _settings.monetization_data_path
-
-ENABLE_TIKTOK_UPLOAD = _settings.enable_tiktok_upload
-ENABLE_INSTAGRAM_UPLOAD = _settings.enable_instagram_upload
-
-UPLOAD_DELAY_HOURS = _settings.upload_delay_hours
-
-TIKTOK_CLIENT_KEY = _settings.tiktok_client_key
-TIKTOK_CLIENT_SECRET = _settings.tiktok_client_secret
-TIKTOK_ACCESS_TOKEN = _settings.tiktok_access_token
-TIKTOK_REFRESH_TOKEN = _settings.tiktok_refresh_token
-
-INSTAGRAM_APP_ID = _settings.instagram_app_id
-INSTAGRAM_APP_SECRET = _settings.instagram_app_secret
-INSTAGRAM_ACCESS_TOKEN = _settings.instagram_access_token
-INSTAGRAM_ACCOUNT_ID = _settings.instagram_account_id
-
-# Parallel Processing
-MAX_PARALLEL_WORKERS = _settings.max_parallel_workers
-ENABLE_PARALLEL_GENERATION = _settings.enable_parallel_generation
-
-PRIVACY_STATUS = _settings.privacy_status
-VIDEO_LANGUAGE = _settings.video_language
-CATEGORY_ID = _settings.category_id
