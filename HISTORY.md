@@ -1,52 +1,11 @@
 ## Recent Updates
 
-- **2025-12-03 - Video Uploaded**
-  - **Title**: Test Topic #Shorts
-  - **Topic**: Test Topic
-  - **Type**: fact
-  - **Video ID**: VIDEO_ID_123
-  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
-
-
-- **2025-12-03 - Video Uploaded**
-  - **Title**: Test Topic #Shorts
-  - **Topic**: Test Topic
-  - **Type**: fact
-  - **Video ID**: VIDEO_ID_123
-  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
-
-
-- **2025-12-03 - Video Uploaded**
-  - **Title**: Test Topic #Shorts
-  - **Topic**: Test Topic
-  - **Type**: fact
-  - **Video ID**: VIDEO_ID_123
-  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
-
-
-- **2025-12-03 - Video Uploaded**
-  - **Title**: Test Topic #Shorts
-  - **Topic**: Test Topic
-  - **Type**: fact
-  - **Video ID**: VIDEO_ID_123
-  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
-
-
-- **2025-12-03 - Video Uploaded**
-  - **Title**: Test Topic #Shorts
-  - **Topic**: Test Topic
-  - **Type**: fact
-  - **Video ID**: VIDEO_ID_123
-  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
-
-
-- **2025-12-03 - Video Uploaded**
-  - **Title**: Test Topic #Shorts
-  - **Topic**: Test Topic
-  - **Type**: fact
-  - **Video ID**: VIDEO_ID_123
-  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
-
+- **2025-12-03 - Configuration Refactoring Completed**
+  - **Pydantic BaseSettings**: Migrated to type-safe configuration system
+  - **Modules Refactored**: 40+ files updated to use `settings` instead of `config`
+  - **Test Improvements**: 90 → 98 passing tests
+  - **Production Verified**: Test video generation successful
+  - **Commit**: 1af4a9f
 
 - **2025-12-03 - VideoCompositor 리팩토링 완료**
   - **VideoEditor 클래스 생성**: 영상 합성 및 편집 로직을 별도 클래스로 분리 (285줄)
@@ -54,12 +13,6 @@
   - **모듈화 완료**: SubtitleRenderer, BackgroundVideoManager, VideoEditor로 책임 분리
   - **검증 완료**: 모든 컴포넌트 정상 초기화 및 import 성공 확인
 
-- **2025-12-03 - Video Uploaded**
-  - **Title**: Test Topic #Shorts
-  - **Topic**: Test Topic
-  - **Type**: fact
-  - **Video ID**: VIDEO_ID_123
-  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
 
 
 # 프로젝트 개발 히스토리
