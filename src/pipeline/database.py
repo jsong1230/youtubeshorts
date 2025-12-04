@@ -5,7 +5,7 @@ SQLite 데이터베이스 모듈
 import sqlite3
 import os
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from pathlib import Path
 from src.utils.logger import get_logger
 
@@ -260,7 +260,7 @@ class VideoDatabase:
             cursor = conn.cursor()
             
             query = 'SELECT video_id, title, topic, prompt, upload_date, views, likes, comments, engagement_rate FROM videos'
-            params = []
+            params: List[Any] = []
             
             if days:
                 cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()

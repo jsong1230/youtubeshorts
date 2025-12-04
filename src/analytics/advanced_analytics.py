@@ -404,10 +404,10 @@ class AutoOptimizer:
             # 2. 성과가 좋은 주제가 없으면 트렌드 주제 선택
             from src.analytics.trend_collector import TrendCollector
             trend_collector = TrendCollector()
-            trending_keywords = trend_collector.get_trending_keywords(days=7)
+            trending_keywords = trend_collector.collect_trending_keywords(max_videos=30)
             
             if trending_keywords:
-                return trending_keywords[0] if isinstance(trending_keywords[0], str) else trending_keywords[0].get('keyword', '')
+                return trending_keywords[0]
             
             return None
         except Exception as e:
@@ -425,7 +425,7 @@ class AutoOptimizer:
             historical_data = self.predictor._get_historical_data()
             
             # 시간별 평균 성과 계산
-            hour_performance = defaultdict(lambda: {'views': [], 'engagement_rate': []})
+            hour_performance: Dict[int, Dict[str, List[float]]] = defaultdict(lambda: {'views': [], 'engagement_rate': []})
             
             for video in historical_data:
                 try:
@@ -468,7 +468,7 @@ class AutoOptimizer:
             최적 영상 스타일
         """
         try:
-            best_style = self.ab_test_db.get_best_style_by_engagement(
+            best_style = self.ab_test_db.get_best_style(
                 content_type=content_type,
                 days=30,
                 min_views=50

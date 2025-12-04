@@ -10,21 +10,10 @@
 
 **우선순위**: 긴급
 
-- [ ] Dashboard Pydantic 마이그레이션 완료
-  - `src/web/dashboard.py`에서 구 `config` 모듈 참조 제거
-  - `from src.core.config import settings`로 변경
-  - 예상 시간: 30분
-
-- [ ] Bot Pipeline 타입 불일치 수정
-  - `src/pipeline/bot.py`의 타입 에러 수정
-  - Union 타입 또는 프로토콜 사용
-  - 예상 시간: 1시간
-
 - [ ] 타입 어노테이션 추가
-  - `src/generators/series_generator.py`: `topics` 변수 타입 추가
   - `src/pipeline/batch_generator.py`: `results` 변수 타입 추가
   - `src/web/dashboard.py`: 타입 변환 수정
-  - 예상 시간: 2시간
+  - 예상 시간: 1시간
 
 ### 테스트 수정 (진행 중)
 
@@ -53,15 +42,14 @@
 
 ### 1. Mypy 에러 완전 제거
 
-**현재**: 38개 에러 → **목표**: 0개 에러
+**현재**: 11개 에러 → **목표**: 0개 에러
 
-- [ ] Dashboard config 마이그레이션 (8개 에러 해결)
-- [ ] 타입 어노테이션 추가 (6개 에러 해결)
-- [ ] Bot pipeline 타입 수정 (1개 에러 해결)
-- [ ] Series generator 수정 (2개 에러 해결)
-- [ ] 기타 에러 수정 (21개 에러 해결)
+- [ ] topic_database 모듈 에러 수정
+- [ ] database 모듈 에러 수정
+- [ ] advanced_analytics 모듈 에러 수정
+- [ ] 기타 잔여 에러 수정
 
-**예상 시간**: 6시간
+**예상 시간**: 4시간
 
 ### 2. 테스트 커버리지 향상
 

@@ -113,6 +113,14 @@ class ScriptGenerator:
         # Fallback to default script
         logger.warning("⚠️ 모든 AI 생성 실패, 기본 스크립트 반환")
         return self._build_default_script(topic, language=language)
+
+    def _generate_script_with_prompt(self, topic: str, prompt: str, language: str = 'ko') -> List[str]:
+        """프롬프트로 스크립트 생성 (내부 메서드)"""
+        if self.openai_client:
+            return self._generate_script_with_openai(topic, prompt, language=language)
+        elif self.claude_client:
+            return self._generate_script_with_claude(topic, prompt, language=language)
+        return self._build_default_script(topic, language=language)
     
     def _generate_script_with_claude(
         self,
@@ -188,10 +196,9 @@ class ScriptGenerator:
                     continue
             
             # 모든 모델 실패 시
-            if not response:
-                error_to_raise = last_error if last_error else Exception("모든 Claude 모델 접근 실패")
-                logger.error(f"⚠️ 모든 Claude 모델 실패, 마지막 오류: {error_to_raise}")
-                raise error_to_raise
+            error_to_raise = last_error if last_error else Exception("모든 Claude 모델 접근 실패")
+            logger.error(f"❌ Claude API 실패: {error_to_raise}")
+            return self._build_default_script(topic, language=language)
         
         except Exception as e:
             logger.error(f"⚠️ Claude API 스크립트 생성 실패: {e}", exc_info=True)

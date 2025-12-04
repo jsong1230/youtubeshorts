@@ -5,7 +5,7 @@
 import sqlite3
 import os
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from enum import Enum
 from src.utils.logger import get_logger
 
@@ -209,7 +209,7 @@ class TopicDatabase:
             cursor = conn.cursor()
             
             updates = []
-            params = []
+            params: List[Any] = []
             
             if topic is not None:
                 updates.append("topic = ?")
@@ -399,7 +399,7 @@ class TopicDatabase:
             cursor = conn.cursor()
             
             conditions = []
-            params = []
+            params: List[Any] = []
             
             if content_type:
                 conditions.append("content_type = ?")
@@ -461,7 +461,7 @@ class TopicDatabase:
             cursor = conn.cursor()
             
             conditions = ["cpm_score >= ?"]
-            params = [min_cpm_score]
+            params: List[Any] = [min_cpm_score]
             
             if content_type:
                 conditions.append("content_type = ?")
@@ -524,7 +524,8 @@ class TopicDatabase:
         for topic in topics:
             if topic['total_views'] >= min_views:
                 # 최근 사용된 주제 우선
-                if topic.get('last_used_date') and topic['last_used_date'] >= cutoff_date:
+                last_used = topic.get('last_used_date')
+                if last_used and last_used >= cutoff_date:
                     filtered_topics.append(topic['topic'])
                 elif topic['use_count'] >= 2:  # 최소 2번 이상 사용된 주제
                     filtered_topics.append(topic['topic'])

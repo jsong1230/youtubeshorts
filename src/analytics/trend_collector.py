@@ -4,7 +4,7 @@ YouTube Data API v3를 사용하여 인기 Shorts를 분석하고 트렌드 키�
 """
 import os
 import re
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from datetime import datetime, timedelta
 from collections import Counter
 from src.core.config import settings
@@ -570,7 +570,7 @@ Return only the topics, one per line, without numbering or bullets. Each topic s
         self,
         topic: str,
         existing_topics: List[str] = None
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         주제 품질 검증
         

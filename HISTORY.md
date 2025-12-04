@@ -1,5 +1,20 @@
 ## Recent Updates
 
+- **2025-12-04 - Mypy 타입 에러 추가 수정 (진행 중)**
+  - **타입 어노테이션 추가**:
+    - `topic_database.py`: `params` 변수에 `List[Any]` 타입 추가 (3곳)
+    - `database.py`: `params` 변수에 `List[Any]` 타입 추가
+    - `advanced_analytics.py`: `hour_performance` 변수 타입 어노테이션 추가
+  - **메서드 호출 수정**:
+    - `advanced_analytics.py`: `get_trending_keywords()` → `collect_trending_keywords()` 변경
+    - `advanced_analytics.py`: `get_best_style_by_engagement()` → `get_best_style()` 변경
+  - **에러 처리 개선**:
+    - `script_generator.py`: `_generate_script_with_prompt` 메서드 추가
+    - `script_generator.py`: Claude API 실패 시 예외 대신 기본 스크립트 반환
+  - **로직 개선**:
+    - `topic_database.py`: `last_used_date` 비교 로직 개선 (타입 안정성 향상)
+  - **TODO.md 업데이트**: 완료된 작업 제거 및 남은 작업 정리
+
 - **2025-12-04 - Video Upload (비공개) - 4개 영상**
   - **한국어 영상 1**: 연말 보너스 활용법: 내년 1월을 위한 3가지 전략
     - Video ID: `MH3hUoOwYfk`
@@ -161,6 +176,40 @@
 이 문서는 YouTube Shorts 자동 업로드 봇 프로젝트의 개발 히스토리를 기록합니다.
 
 ## 최근 변경사항
+
+### 2025-12-04 - Mypy 타입 에러 추가 수정 (진행 중)
+
+**주요 변경사항**:
+
+1. **타입 어노테이션 추가**:
+   - `src/pipeline/topic_database.py`: `params` 변수에 `List[Any]` 타입 추가 (3곳)
+   - `src/pipeline/database.py`: `params` 변수에 `List[Any]` 타입 추가
+   - `src/analytics/advanced_analytics.py`: `hour_performance` 변수 타입 어노테이션 추가
+
+2. **메서드 호출 수정**:
+   - `advanced_analytics.py`: `get_trending_keywords()` → `collect_trending_keywords()` 변경
+   - `advanced_analytics.py`: `get_best_style_by_engagement()` → `get_best_style()` 변경
+
+3. **에러 처리 개선**:
+   - `script_generator.py`: `_generate_script_with_prompt` 메서드 추가
+   - `script_generator.py`: Claude API 실패 시 예외 대신 기본 스크립트 반환하도록 수정
+
+4. **로직 개선**:
+   - `topic_database.py`: `last_used_date` 비교 로직 개선 (타입 안정성 향상)
+
+5. **문서 업데이트**:
+   - `TODO.md`: 완료된 작업 제거 및 남은 작업 정리
+   - Mypy 에러 상태: 38개 → 11개로 업데이트
+
+**수정된 파일**:
+- `src/pipeline/topic_database.py`
+- `src/pipeline/database.py`
+- `src/analytics/advanced_analytics.py`
+- `src/analytics/google_trends_collector.py`
+- `src/analytics/trend_collector.py`
+- `src/generators/script_generator.py`
+- `src/generators/video/video_editor.py` (불필요한 빈 줄 제거)
+- `TODO.md`
 
 ### 2025-12-04 - Video Upload (비공개) - 4개 영상
 

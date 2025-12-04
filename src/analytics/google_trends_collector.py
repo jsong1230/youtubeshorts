@@ -47,7 +47,7 @@ class GoogleTrendsCollector:
         """Google Trends 수집기 초기화"""
         self.pytrends = None
         self.openai_client = None
-        self.last_request_time = 0
+        self.last_request_time: float = 0.0
         self.min_request_interval = 2.0  # 최소 요청 간격 (초) - Google Trends rate limiting 방지
         
         # pytrends 초기화
@@ -106,7 +106,7 @@ class GoogleTrendsCollector:
             )
             
             # 요청 시간 업데이트
-            self.last_request_time = time.time()
+            self.last_request_time = float(time.time())
             
             # 트렌드 데이터 가져오기
             trend_data = self.pytrends.interest_over_time()
