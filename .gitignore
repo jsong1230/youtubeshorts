@@ -52,3 +52,10 @@ Thumbs.db
 # 로그
 *.log
 logs/
+
+# Agent artifacts (temporary work files)
+.gemini/
+implementation_plan.md
+IMPLEMENTATION_PLAN.md
+walkthrough.md
+WALKTHROUGH.md
