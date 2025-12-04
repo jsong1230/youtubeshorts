@@ -18,6 +18,7 @@ logger = get_logger(__name__)
 def main():
     """메인 함수"""
     import sys
+    from typing import cast, List
     from src.core.config import settings
 
     if len(sys.argv) > 1 and sys.argv[1] == 'instagram-test':
@@ -120,7 +121,7 @@ def main():
                         video_path=video_path,
                         title=title,
                         description=description,
-                        tags=settings.DEFAULT_TAGS,
+                        tags=cast(List[str], settings.DEFAULT_TAGS),
                         privacy_status='private',  # 비공개로 설정
                         thumbnail_path=thumbnail_path,
                         schedule_delay_hours=0  # 즉시 업로드
@@ -176,7 +177,6 @@ def main():
 
         elif command == 'schedule':
             # 스케줄러 시작 (자동 업로드 모드)
-            bot.schedule_daily_upload()
             bot.run_scheduler()
 
         elif command == 'sync-status':
@@ -194,15 +194,15 @@ def main():
             title = sys.argv[3]
             
             from src.uploaders.social_manager import SocialManager
-            manager = SocialManager()
-            results = manager.upload_all(video_path, title, description=title)
+            social_manager = SocialManager()
+            results = social_manager.upload_all(video_path, title, description=title)
             logger.info(f"📊 소셜 업로드 결과: {results}")
 
         elif command == 'analyze':
             # 성과 분석 리포트
             from src.analytics.analytics_manager import AnalyticsManager
-            manager = AnalyticsManager()
-            manager.generate_performance_report()
+            analytics_manager = AnalyticsManager()
+            analytics_manager.generate_performance_report()
 
         elif command == 'batch':
             # 여러 영상 순차 생성 (2개 이상만 허용)

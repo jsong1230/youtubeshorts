@@ -199,3 +199,27 @@ class MultiPlatformUploader:
                 return False
         return False
 
+
+
+    def upload_video(
+        self,
+        video_path: str,
+        title: str,
+        description: str,
+        tags: List[str],
+        privacy_status: str = 'private',
+        thumbnail_path: str = None,
+        schedule_delay_hours: float = 0.0
+    ) -> Optional[str]:
+        """
+        단일 업로드 인터페이스 (YouTubeUploader와 호환성 유지)
+        모든 활성화된 플랫폼에 업로드하고 YouTube ID를 반환
+        """
+        results = self.upload_to_all(
+            video_path=video_path,
+            title=title,
+            description=description,
+            tags=tags,
+            thumbnail_path=thumbnail_path
+        )
+        return results.get('youtube')

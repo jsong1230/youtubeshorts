@@ -1,5 +1,59 @@
 ## Recent Updates
 
+- **2025-12-04 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
+- **2025-12-04 - Monetization 테스트 수정 완료**
+  - **테스트 파일 전면 재작성**:
+    - `tests/test_monetization.py`: fixture를 수정하여 각 테스트마다 격리된 환경 제공
+    - 실제 데이터 파일 대신 임시 디렉토리 사용
+    - 각 테스트 시작 시 빈 데이터로 초기화
+  - **결과**:
+    - 12개 테스트 모두 통과 (이전: 7개 실패, 5개 통과)
+    - 테스트 격리로 안정성 향상
+
+- **2025-12-04 - Script Generator 테스트 수정 완료**
+  - **테스트 파일 전면 재작성**:
+    - `tests/test_script_generator.py`: 실제 메서드 시그니처 및 동작에 맞게 수정
+    - `test_parse_script_text`: 파서가 문장을 추가로 분리하는 동작 반영
+    - `test_remove_repetitive_phrases`: 실제 중복 제거 로직에 맞게 수정
+    - `test_is_script_unique_*`: VideoDatabase import 경로 수정 (`src.pipeline.database`)
+    - `test_get_season`: datetime mock 경로 수정 및 'autumn' 사용
+    - `test_generate_topic_with_strategy`: 'reddit' 소스 추가
+  - **결과**:
+    - 10개 테스트 모두 통과 (이전: 5개 실패, 5개 통과)
+    - Mock 설정 개선으로 테스트 안정성 향상
+
+- **2025-12-04 - Audio Generator 테스트 수정 완료**
+  - **테스트 파일 전면 재작성**:
+    - `tests/test_audio_generator.py`: 실제 `AudioGenerator` 메서드 시그니처에 맞게 수정
+    - `generate_audio()`: `output_path` → `index`, `content_type`, `language` 파라미터로 변경
+    - `download_background_music()`: `category` → `content_type`, `duration`, `topic` 파라미터로 변경
+    - `mix_background_music()`: `AudioSegment` → `AudioFileClip` 및 `CompositeAudioClip` 사용
+    - `select_music_category_for_content_type()`: FACT 타입에 대한 올바른 카테고리 검증 ('tech' 포함)
+  - **결과**:
+    - 7개 테스트 모두 통과 (이전: 5개 실패, 2개 통과)
+    - Mock 설정 개선으로 TTS 엔진 테스트 안정성 향상
+
+
+- **2025-12-04 - Mypy 에러 완전 제거 및 테스트 리팩토링 완료**
+  - **Mypy 에러 0개 달성**:
+    - `src/pipeline/bot.py`: `pytz` 타입 무시 및 로직 수정
+    - `src/analytics/monetization.py`: `update_all_videos` 메서드 시그니처 수정
+    - `src/core/config.py`: `DEFAULT_TAGS` 타입 힌트 롤백 (`Union[List[str], str]`) 및 `main.py`에서 명시적 캐스팅으로 런타임 에러 방지
+  - **테스트 리팩토링**:
+    - `tests/test_config.py`: Pydantic 설정 시스템에 맞게 전면 재작성
+    - `tests/test_video_pipeline.py`: `VideoPipeline` 클래스 테스트 분리 및 작성
+    - `tests/test_bot_pipeline.py`: `ShortsBot` 위임 로직 위주로 리팩토링 및 `ExitStack` 도입으로 SyntaxError 해결
+  - **결과**:
+    - Mypy 에러: 0개 (완전 해결)
+    - 테스트: 18개 테스트 모두 통과 (경고 1개 제외)
+
 - **2025-12-04 - Mypy 타입 에러 추가 수정 (진행 중)**
   - **타입 어노테이션 추가**:
     - `topic_database.py`: `params` 변수에 `List[Any]` 타입 추가 (3곳)

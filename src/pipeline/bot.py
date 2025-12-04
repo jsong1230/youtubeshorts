@@ -5,7 +5,7 @@ import os
 import schedule
 import time
 from datetime import datetime
-import pytz
+import pytz  # type: ignore
 import sys
 from pathlib import Path
 from typing import Tuple, Optional, Dict, Any, Union
@@ -240,6 +240,34 @@ class ShortsBot:
         while True:
             schedule.run_pending()
             time.sleep(60)
+
+    def update_all_stats(self):
+        """모든 영상 통계 업데이트"""
+        logger.info("📊 모든 영상 통계 업데이트 시작...")
+        
+        # 1. 수익화 데이터 업데이트
+        self.monetization.update_all_videos(self.uploader)
+        
+        # 2. 데이터베이스 및 A/B 테스트 통계 업데이트
+        videos = self.database.get_all_videos()
+        for video in videos:
+            video_id = video.get('video_id')
+            if video_id:
+                stats = self.uploader.get_video_stats(video_id)
+                if stats:
+                    # 메인 DB 업데이트
+                    self.database.update_video_stats(video_id, stats)
+                    
+                    # A/B 테스트 DB 업데이트 (해당 영상이 테스트 중인 경우)
+                    self.ab_test_db.update_test_stats(
+                        video_id=video_id,
+                        views=stats.get('views'),
+                        likes=stats.get('likes'),
+                        comments=stats.get('comments')
+                    )
+        
+        logger.info("✅ 모든 통계 업데이트 완료")
+
 
 if __name__ == "__main__":
     bot = ShortsBot()

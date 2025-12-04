@@ -14,7 +14,7 @@ class TestMonetizationTracker:
     """Test MonetizationTracker class"""
     
     @pytest.fixture
-    def monetization_tracker(self, tmp_path, monkeypatch):
+    def monetization_tracker(self, tmp_path):
         """Create a temporary monetization tracker"""
         # Mock YouTubeUploader to avoid actual API calls
         with patch('src.analytics.monetization.YouTubeUploader') as mock_uploader_class:
@@ -28,11 +28,27 @@ class TestMonetizationTracker:
             
             # Set data file path to temp directory
             data_file = str(tmp_path / "monetization_data.json")
-            monkeypatch.setattr('config.MONETIZATION_DATA_PATH', data_file)
             
+            # Create tracker with custom data file
             tracker = MonetizationTracker()
             tracker.data_file = data_file
-            return tracker
+            
+            # Initialize with empty data
+            tracker.data = {
+                'videos': [],
+                'stats': {
+                    'total_views': 0,
+                    'total_likes': 0,
+                    'total_comments': 0,
+                    'total_revenue': 0,
+                    'total_videos': 0
+                },
+                'monthly_revenue': {},
+                'start_date': datetime.now().isoformat()
+            }
+            tracker._save_data()
+            
+            yield tracker
     
     def test_init_creates_data_file(self, monetization_tracker):
         """Test that initialization creates data file"""
@@ -108,6 +124,9 @@ class TestMonetizationTracker:
     
     def test_update_total_stats(self, monetization_tracker):
         """Test updating total statistics"""
+        # Clear any existing videos
+        monetization_tracker.data['videos'] = []
+        
         # Add multiple videos with stats
         for i in range(3):
             monetization_tracker.add_video(

@@ -25,6 +25,39 @@ class InstagramUploader:
         else:
             self.is_configured = True
 
+    def is_available(self) -> bool:
+        """업로더 사용 가능 여부 반환"""
+        return self.is_configured
+
+    def test_connection(self, verbose: bool = False) -> bool:
+        """Instagram Graph API 연결 테스트"""
+        if not self.is_configured:
+            if verbose:
+                logger.error("❌ Instagram 설정이 누락되었습니다.")
+            return False
+            
+        url = f"{self.base_url}/{self.account_id}"
+        params = {
+            "fields": "id,username,name",
+            "access_token": self.access_token
+        }
+        
+        try:
+            response = requests.get(url, params=params)
+            if response.status_code == 200:
+                data = response.json()
+                if verbose:
+                    logger.info(f"✅ Instagram 연결 성공: @{data.get('username')} ({data.get('name')})")
+                return True
+            else:
+                if verbose:
+                    logger.error(f"❌ Instagram 연결 실패: {response.text}")
+                return False
+        except Exception as e:
+            if verbose:
+                logger.error(f"❌ Instagram 연결 오류: {e}")
+            return False
+
     def upload_reel(self, video_path: str, caption: str = "") -> bool:
         """
         Reels 업로드 프로세스:

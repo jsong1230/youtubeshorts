@@ -81,9 +81,10 @@ class MonetizationTracker:
         self.data['videos'].append(video_entry)
         self._save_data()
     
-    def update_video_stats(self, video_id: str):
+    def update_video_stats(self, video_id: str, uploader=None):
         """영상 통계 업데이트"""
-        stats = self.uploader.get_video_stats(video_id)
+        target_uploader = uploader if uploader else self.uploader
+        stats = target_uploader.get_video_stats(video_id)
         if not stats:
             return
         
@@ -222,11 +223,14 @@ class MonetizationTracker:
         
         logger.info("="*50 + "\n")
     
-    def update_all_videos(self):
+    def update_all_videos(self, uploader=None):
         """모든 영상 통계 업데이트"""
         logger.info("📊 모든 영상 통계 업데이트 중...")
+        target_uploader = uploader if uploader else self.uploader
+        
         for video in self.data['videos']:
             logger.info(f"  업데이트 중: {video['title']}")
-            self.update_video_stats(video['video_id'])
+            # uploader를 사용하여 통계 업데이트 (update_video_stats 수정 필요)
+            self.update_video_stats(video['video_id'], target_uploader)
         logger.info("✅ 업데이트 완료!")
 
