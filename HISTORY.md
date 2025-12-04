@@ -1,5 +1,27 @@
 ## Recent Updates
 
+- **2025-12-04 - Video Upload (비공개) - 4개 영상**
+  - **한국어 영상 1**: 연말 보너스 활용법: 내년 1월을 위한 3가지 전략
+    - Video ID: `MH3hUoOwYfk`
+    - URL: <https://www.youtube.com/watch?v=MH3hUoOwYfk>
+    - 길이: 52.50초
+    - 상태: 비공개 (private)
+  - **한국어 영상 2**: 겨울 전기요금 폭탄: 12월부터 시작하는 절약 습관 3가지
+    - Video ID: `1MU31m_XilU`
+    - URL: <https://www.youtube.com/watch?v=1MU31m_XilU>
+    - 길이: 50.46초
+    - 상태: 비공개 (private)
+  - **영어 영상 1**: The December Tax Move That Saves $2,000 Before Year-End
+    - Video ID: `AE0lPhonRrM`
+    - URL: <https://www.youtube.com/watch?v=AE0lPhonRrM>
+    - 길이: 56.30초
+    - 상태: 비공개 (private)
+  - **영어 영상 2**: Why Your January Budget Fails (And How to Fix It in December)
+    - Video ID: `morARj9Piw8`
+    - URL: <https://www.youtube.com/watch?v=morARj9Piw8>
+    - 길이: 52.39초
+    - 상태: 비공개 (private)
+
 - **2025-12-04 - 최종 Mypy 에러 수정 완료**
   - **추가 타입 에러 수정** (4개 해결):
     - `batch_generator.py`: results 변수 타입 어노테이션 추가
@@ -139,6 +161,47 @@
 이 문서는 YouTube Shorts 자동 업로드 봇 프로젝트의 개발 히스토리를 기록합니다.
 
 ## 최근 변경사항
+
+### 2025-12-04 - Video Upload (비공개) - 4개 영상
+
+**업로드된 영상**:
+
+1. **한국어 영상 1**
+   - **주제**: 연말 보너스 활용법: 내년 1월을 위한 3가지 전략
+   - **Video ID**: `MH3hUoOwYfk`
+   - **URL**: <https://www.youtube.com/watch?v=MH3hUoOwYfk>
+   - **길이**: 52.50초
+   - **상태**: 비공개 (private)
+   - **썸네일**: `output/thumbnails/thumb_20251204_092908.jpg`
+
+2. **한국어 영상 2**
+   - **주제**: 겨울 전기요금 폭탄: 12월부터 시작하는 절약 습관 3가지
+   - **Video ID**: `1MU31m_XilU`
+   - **URL**: <https://www.youtube.com/watch?v=1MU31m_XilU>
+   - **길이**: 50.46초
+   - **상태**: 비공개 (private)
+   - **썸네일**: `output/thumbnails/thumb_20251204_093104.jpg`
+
+3. **영어 영상 1**
+   - **주제**: The December Tax Move That Saves $2,000 Before Year-End
+   - **Video ID**: `AE0lPhonRrM`
+   - **URL**: <https://www.youtube.com/watch?v=AE0lPhonRrM>
+   - **길이**: 56.30초
+   - **상태**: 비공개 (private)
+   - **썸네일**: `output/thumbnails/thumb_20251204_093315.jpg`
+
+4. **영어 영상 2**
+   - **주제**: Why Your January Budget Fails (And How to Fix It in December)
+   - **Video ID**: `morARj9Piw8`
+   - **URL**: <https://www.youtube.com/watch?v=morARj9Piw8>
+   - **길이**: 52.39초
+   - **상태**: 비공개 (private)
+   - **썸네일**: `output/thumbnails/thumb_20251204_093539.jpg`
+
+**주제 선정 배경**:
+- 12월 시기 적합한 재태크/생활 최적화 주제
+- 한국: 연말 보너스 활용, 겨울 전기요금 절약
+- 미국/캐나다: 연말 세금 절감, 1월 예산 실패 방지
 
 ### 2025-12-03 - Video Upload (비공개) 및 main.py 수정
 
