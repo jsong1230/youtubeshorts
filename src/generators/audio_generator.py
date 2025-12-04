@@ -44,12 +44,19 @@ class AudioGenerator:
             if NEW_TTS_AVAILABLE:
                 try:
                     # tts_provider가 None이면 config에서 읽거나 자동 선택
+                    provider_to_use: Optional[TTSProvider] = None
                     if tts_provider is None:
                         tts_provider_str = settings.TTS_PROVIDER
                         if tts_provider_str:
-                            tts_provider = TTSProvider(tts_provider_str.lower())
+                            provider_to_use = TTSProvider(tts_provider_str.lower())
+                    else:
+                        # tts_provider가 str이면 TTSProvider로 변환
+                        if isinstance(tts_provider, str):
+                            provider_to_use = TTSProvider(tts_provider.lower())
+                        else:
+                            provider_to_use = tts_provider
                     
-                    self.tts_engine = TTSEngine(provider=tts_provider)
+                    self.tts_engine = TTSEngine(provider=provider_to_use)
                     logger.info(f"✅ TTS 엔진 초기화: {self.tts_engine.get_provider().value}")
                 except Exception as e:
                     logger.warning(f"⚠️ TTS 엔진 초기화 실패: {e}")

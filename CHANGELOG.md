@@ -16,8 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Type annotations in `src/utils`, `src/generators`, `src/analytics`, `src/uploaders`, `src/web`
   - **87% reduction** in mypy errors (291 → 38 errors)
 
-
-### Added
 - **Pydantic BaseSettings Configuration System** (`src/core/config.py`)
   - Type-safe configuration management using Pydantic v2
   - Automatic environment variable loading from `.env` file
@@ -29,19 +27,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Configuration Management Refactoring** (40+ files)
   - Migrated all modules from `import config` to `from src.core.config import settings`
   - Updated all configuration access patterns across the codebase
-  - Refactored modules:
-    - `src/generators/*` - All generator modules
-    - `src/pipeline/*` - Pipeline and bot modules
-    - `src/uploaders/*` - All uploader modules
-    - `src/analytics/*` - Analytics and tracking modules
-    - `src/utils/*` - Utility modules
-    - `src/web/*` - Web interface modules
+  - Refactored modules: `src/generators/*`, `src/pipeline/*`, `src/uploaders/*`, `src/analytics/*`, `src/utils/*`, `src/web/*`
 
 - **Test Infrastructure Updates**
   - Renamed `mock_anthropic_client` to `mock_claude_client` in `tests/conftest.py`
   - Updated test files to patch `settings` instead of `config`
   - Fixed method signatures in test files to match refactored code
   - Updated `test_script_generator.py` to remove deprecated `duration` parameter
+
+- **VideoCompositor Refactoring**
+  - Created `VideoEditor` class for video composition and editing (285 lines)
+  - Simplified `VideoCompositor` from 970 lines to 159 lines (84% reduction)
+  - Modularized into `SubtitleRenderer`, `BackgroundVideoManager`, `VideoEditor`
 
 ### Fixed
 - **Type Safety Improvements**
@@ -69,5 +66,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Pexels API integration working
 - ✅ DALL-E 3 thumbnail generation working
 
-## [Previous Versions]
-See Git history for changes prior to this refactoring.
+## [0.1.0] - 2025-12-03
+
+### Added
+- Initial release of YouTube Shorts automation bot
+- AI-powered script generation (OpenAI GPT, Claude)
+- Text-to-Speech integration (OpenAI TTS, Google Cloud TTS)
+- Background video/image integration (Pexels, Unsplash, Pixabay)
+- Automated YouTube upload with OAuth 2.0
+- Subtitle rendering and synchronization
+- Thumbnail generation with DALL-E 3
+- Analytics and monetization tracking
+- Web dashboard for statistics and monitoring
+- Notification system (Email, Slack)
+- Scheduled daily uploads
+- Multi-language support (English, Korean)
+
+### Changed
+- N/A (initial release)
+
+### Fixed
+- N/A (initial release)
+
+---
+
+## Version History Summary
+
+- **[Unreleased]**: Type hinting, Pydantic configuration, code refactoring
+- **[0.1.0]**: Initial release with core automation features
+
+For detailed development history, see [HISTORY.md](./HISTORY.md).

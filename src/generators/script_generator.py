@@ -111,6 +111,7 @@ class ScriptGenerator:
             return self._build_default_script(topic, language=language)
         
         # Fallback to default script
+        logger.warning("⚠️ 모든 AI 생성 실패, 기본 스크립트 반환")
         return self._build_default_script(topic, language=language)
     
     def _generate_script_with_claude(

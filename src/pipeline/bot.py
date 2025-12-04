@@ -8,7 +8,7 @@ from datetime import datetime
 import pytz
 import sys
 from pathlib import Path
-from typing import Tuple, Optional, Dict, Any
+from typing import Tuple, Optional, Dict, Any, Union
 
 # 프로젝트 루트를 경로에 추가
 project_root = Path(__file__).parent.parent.parent
@@ -45,6 +45,10 @@ class ShortsBot:
         # YouTube만 사용 (기본값)
         # 멀티 플랫폼 업로드를 사용하려면 .env에서 ENABLE_TIKTOK_UPLOAD 또는 ENABLE_INSTAGRAM_UPLOAD를 true로 설정
         use_multi_platform = (settings.ENABLE_TIKTOK_UPLOAD or settings.ENABLE_INSTAGRAM_UPLOAD)
+        
+        # uploader 타입을 Union으로 선언
+        self.uploader: Union[YouTubeUploader, MultiPlatformUploader]
+        
         if use_multi_platform:
             self.uploader = MultiPlatformUploader()
             self.use_multi_platform = True

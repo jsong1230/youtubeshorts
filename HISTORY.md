@@ -1,4 +1,94 @@
+## Recent Updates
+
+- **2025-12-04 - 최종 Mypy 에러 수정 완료**
+  - **추가 타입 에러 수정** (4개 해결):
+    - `batch_generator.py`: results 변수 타입 어노테이션 추가
+    - `audio_generator.py`: TTSProvider 타입 변환 로직 수정
+    - `channel_history_collector.py`: videos 변수 타입 어노테이션 추가
+    - `video_pipeline.py`: recent_videos 변수 타입 어노테이션 추가
+    - `script_generator.py`: missing return statement 수정
+  - **Mypy 에러 최종 결과**: 38개 → 11개 (71% 감소) 🎉
+  - **남은 11개 에러**: topic_database, database, advanced_analytics 등 (복잡한 타입 불일치)
+
+- **2025-12-04 - 타입 에러 수정 완료 (Bot Pipeline, Series Generator)**
+
+  - **Bot Pipeline 타입 수정**:
+    - `uploader` 변수를 `Union[YouTubeUploader, MultiPlatformUploader]`로 타입 지정
+    - YouTubeUploader와 MultiPlatformUploader 모두 허용하도록 개선
+    - 타입 안정성 향상
+  - **Series Generator 타입 수정** (6개 에러 해결):
+    - `_api_call_with_retry` 메서드 호출 제거 (존재하지 않는 메서드)
+    - 직접 `openai_client.chat.completions.create()` 호출로 변경
+    - `topics` 변수에 `List[Dict]` 타입 어노테이션 추가 (4곳)
+  - **Mypy 에러 감소**: 23개 → 17개 (26% 감소)
+  - **전체 진행률**: 초기 38개 → 현재 17개 (55% 감소)
+
+- **2025-12-04 - Dashboard Pydantic 마이그레이션 완료**
+
+  - **config 모듈 참조 제거**: `src/web/dashboard.py`에서 구 config 모듈 완전히 제거
+    - `from src.core.config import settings` import 추가
+    - `get_settings()` 함수에서 `getattr(config, ...)` → `settings.ATTRIBUTE` 변경
+    - 변수명 충돌 방지를 위해 `settings` → `settings_data`로 변경
+  - **타입 에러 수정**: 
+    - `get_video_stats()` 함수의 days, limit 파라미터 타입 명확화
+    - `int | None` 타입 힌트 추가로 mypy 에러 해결
+  - **Mypy 에러 감소**: dashboard.py 관련 8개 에러 → 0개 (100% 해결)
+  - **전체 Mypy 에러**: 38개 → 30개 (21% 감소)
+
+- **2025-12-04 - README.md 전면 개선 완료**
+
+  - **대폭 간소화**: 632줄 → 350줄 (약 45% 감소)
+    - 불필요한 상세 설명 제거
+    - 중복 내용 정리
+    - 핵심 정보만 간결하게 유지
+  - **최신 기능 반영**:
+    - Pydantic BaseSettings 설정 시스템 반영
+    - 타입 안정성 (Mypy) 추가
+    - 프로젝트 구조 업데이트 (src/core/config.py 추가)
+    - 문서 관리 시스템 (CHANGELOG, HISTORY, TODO) 추가
+  - **가독성 향상**:
+    - 섹션 구조 개선
+    - 빠른 시작 가이드 강화
+    - 코드 예제 간소화
+    - 불필요한 기술적 세부사항 제거
+  - **기대 효과**:
+    - 신규 사용자 온보딩 시간 단축
+    - 핵심 기능 파악 용이
+    - 문서 유지보수 부담 감소
+
+- **2025-12-04 - 문서 일관성 정리 및 규칙 추가 완료**
+
+  - **TODO.md 대폭 간소화**: 381줄 → 150줄로 축소 (약 60% 감소)
+    - 완료된 항목 모두 제거 (체크만 되어있던 항목 정리)
+    - 미완료 작업만 포함하도록 재구성
+    - 우선순위별 구분 (긴급/중요/개선/장기)
+    - 각 항목에 예상 작업 시간 명시
+  - **CHANGELOG.md 재구성**: Keep a Changelog 형식 준수
+    - `[Unreleased]` 섹션과 `[0.1.0]` 버전 구분
+    - Added/Changed/Fixed 카테고리별 정리
+    - 사용자 친화적인 간결한 설명
+    - 버전 히스토리 요약 추가
+  - **.cursorrules에 문서 관리 규칙 추가**: 134줄 추가
+    - 문서 역할 구분 (CHANGELOG/HISTORY/TODO)
+    - 문서 업데이트 워크플로우 정의
+    - 작업 시작/완료 시 체크리스트
+    - 문서 품질 기준 및 위반 시 조치
+  - **기대 효과**:
+    - 문서 일관성 향상: 각 문서의 역할이 명확해짐
+    - 유지보수성 향상: 문서 업데이트 규칙이 명확해져 일관성 유지
+    - 가독성 향상: TODO.md가 간결해져 현재 작업 파악 용이
+    - 자동화 기반 마련: .cursorrules 규칙으로 향후 자동화 가능
+
+- **2025-12-04 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
 # Recent Updates
+
 
 - **2025-12-03 - Type Hinting Enhancement Completed**
   - **Comprehensive Type Hints**: Added Python type hints (PEP 484) to 15+ core modules
@@ -12,7 +102,7 @@
     - `src/uploaders/*` - youtube_uploader, multi_platform_uploader
     - `src/web/*` - notifications
   - **Benefits**: Better IDE support, early error detection, improved code documentation
-  - **Commit**: TBD
+  - **Commit**: 0fd7080
 
 
 - **2025-12-03 - Video Upload (비공개)**

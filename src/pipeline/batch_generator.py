@@ -19,7 +19,7 @@ class BatchVideoGenerator:
             max_workers: 호환성을 위한 파라미터 (사용하지 않음, 순차 처리)
         """
         self.max_workers = 1  # 순차 처리만 지원
-        self.results = []
+        self.results: List[Dict[str, Any]] = []
         
     def generate_batch(
         self, 

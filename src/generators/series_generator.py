@@ -92,8 +92,7 @@ Example:
 Main topic: {main_topic}
 Number of episodes: {num_episodes}"""
 
-                response = self.video_generator._api_call_with_retry(
-                    self.video_generator.openai_client.chat.completions.create,
+                response = self.video_generator.openai_client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
                         {"role": "system", "content": "You are an expert at creating engaging YouTube Shorts content."},
@@ -104,7 +103,7 @@ Number of episodes: {num_episodes}"""
                 )
                 
                 topics_text = response.choices[0].message.content.strip()
-                topics = []
+                topics: List[Dict] = []
                 
                 for line in topics_text.split('\n'):
                     line = line.strip()
@@ -178,8 +177,7 @@ Example:
 Main topic: {main_topic}
 Number of episodes: {num_episodes}"""
 
-                response = self.video_generator._api_call_with_retry(
-                    self.video_generator.openai_client.chat.completions.create,
+                response = self.video_generator.openai_client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
                         {"role": "system", "content": "You are an expert at creating engaging YouTube Shorts content."},
@@ -190,7 +188,7 @@ Number of episodes: {num_episodes}"""
                 )
                 
                 topics_text = response.choices[0].message.content.strip()
-                topics = []
+                topics: List[Dict] = []
                 
                 for line in topics_text.split('\n'):
                     line = line.strip()
@@ -263,8 +261,7 @@ Example:
 Main topic: {main_topic}
 Number of episodes: {num_episodes}"""
 
-                response = self.video_generator._api_call_with_retry(
-                    self.video_generator.openai_client.chat.completions.create,
+                response = self.video_generator.openai_client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
                         {"role": "system", "content": "You are an expert at creating step-by-step tutorials."},
@@ -275,7 +272,7 @@ Number of episodes: {num_episodes}"""
                 )
                 
                 topics_text = response.choices[0].message.content.strip()
-                topics = []
+                topics: List[Dict] = []
                 
                 for line in topics_text.split('\n'):
                     line = line.strip()
@@ -348,8 +345,7 @@ Day 3: [Third challenge]
 Main topic: {main_topic}
 Number of episodes: {num_episodes}"""
 
-                response = self.video_generator._api_call_with_retry(
-                    self.video_generator.openai_client.chat.completions.create,
+                response = self.video_generator.openai_client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
                         {"role": "system", "content": "You are an expert at creating engaging challenge content."},
@@ -360,7 +356,7 @@ Number of episodes: {num_episodes}"""
                 )
                 
                 topics_text = response.choices[0].message.content.strip()
-                topics = []
+                topics: List[Dict] = []
                 
                 for line in topics_text.split('\n'):
                     line = line.strip()

@@ -67,7 +67,7 @@ class ChannelHistoryCollector:
             return []
         
         try:
-            videos = []
+            videos: List[Dict] = []
             next_page_token = None
             max_pages = 5  # 최대 5페이지 (250개 영상)
             page_count = 0

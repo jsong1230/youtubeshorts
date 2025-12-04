@@ -8,6 +8,7 @@ import json
 from datetime import datetime, timedelta
 from typing import Dict, List
 
+from src.core.config import settings
 from src.pipeline.database import VideoDatabase
 from src.analytics.monetization import MonetizationTracker
 from src.analytics.ab_testing import ABTestDatabase
@@ -93,15 +94,13 @@ def get_overview_stats():
 def get_video_stats():
     """영상별 통계"""
     try:
-        days = request.args.get('days')
-        limit = request.args.get('limit')
+        days_str = request.args.get('days')
+        limit_str = request.args.get('limit')
         order_by = request.args.get('order_by', 'upload_date')
         
-        # days와 limit이 없으면 모든 영상 조회
-        if days:
-            days = int(days)
-        if limit:
-            limit = int(limit)
+        # days와 limit을 int로 변환 (None이면 그대로 유지)
+        days: int | None = int(days_str) if days_str else None
+        limit: int | None = int(limit_str) if limit_str else None
         
         # 모든 영상 조회 (필터 없이)
         videos = video_db.get_all_videos(limit=limit, days=days, order_by=order_by)
@@ -220,20 +219,20 @@ def get_audience_segments():
 def get_settings():
     """설정 조회"""
     try:
-        settings = {
-            'upload_schedule_time': getattr(config, 'UPLOAD_SCHEDULE_TIME', '09:00'),
-            'upload_timezone': getattr(config, 'UPLOAD_TIMEZONE', 'Asia/Seoul'),
-            'use_background_music': getattr(config, 'USE_BACKGROUND_MUSIC', True),
-            'background_music_volume': getattr(config, 'BACKGROUND_MUSIC_VOLUME', 0.25),
-            'subtitle_mode': getattr(config, 'SUBTITLE_MODE', 'full_sentence'),
-            'trend_mode': getattr(config, 'TREND_MODE', False),
-            'ai_api_provider': getattr(config, 'AI_API_PROVIDER', 'openai'),
-            'tts_provider': getattr(config, 'TTS_PROVIDER', None),
+        settings_data = {
+            'upload_schedule_time': settings.UPLOAD_SCHEDULE_TIME,
+            'upload_timezone': settings.UPLOAD_TIMEZONE,
+            'use_background_music': settings.USE_BACKGROUND_MUSIC,
+            'background_music_volume': settings.BACKGROUND_MUSIC_VOLUME,
+            'subtitle_mode': settings.SUBTITLE_MODE,
+            'trend_mode': settings.TREND_MODE,
+            'ai_api_provider': settings.AI_API_PROVIDER,
+            'tts_provider': settings.TTS_PROVIDER,
         }
         
         return jsonify({
             'success': True,
-            'data': settings
+            'data': settings_data
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

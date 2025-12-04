@@ -210,7 +210,7 @@ class VideoPipeline:
         
         # Description
         channel_info = getattr(self.uploader, 'get_channel_info', lambda: None)()
-        recent_videos = getattr(self.uploader, 'get_recent_videos', lambda **k: [])(max_results=3)
+        recent_videos: list = getattr(self.uploader, 'get_recent_videos', lambda **k: [])(max_results=3)
         description = self.metadata_manager.generate_description(
             language, topic, actual_topic, channel_info, recent_videos
         )
