@@ -1,5 +1,27 @@
 ## Recent Updates
 
+- **2025-12-05 - Video Upload (비공개) - 4개 영상**
+  - **한국어 영상 1**: 연말정산 준비 체크리스트: 12월 31일 전에 꼭 확인해야 할 3가지
+    - Video ID: `Xs73QVM3UpA`
+    - URL: <https://www.youtube.com/watch?v=Xs73QVM3UpA>
+    - 길이: 57.29초
+    - 상태: 비공개 (private)
+  - **한국어 영상 2**: 새해 재정 목표 설정: 2026년 돈 관리 시작하는 3가지 방법
+    - Video ID: `HfNekQojjYQ`
+    - URL: <https://www.youtube.com/watch?v=HfNekQojjYQ>
+    - 길이: 54.21초
+    - 상태: 비공개 (private)
+  - **영어 영상 1**: Year-End Investment Strategy: The $5,000 Move Smart Investors Make in December
+    - Video ID: `UKVRubw2BGM`
+    - URL: <https://www.youtube.com/watch?v=UKVRubw2BGM>
+    - 길이: 56.21초
+    - 상태: 비공개 (private)
+  - **영어 영상 2**: New Year Financial Reset: 3 Habits That Transform Your Money in 2026
+    - Video ID: `IJUCuS4Z1uU`
+    - URL: <https://www.youtube.com/watch?v=IJUCuS4Z1uU>
+    - 길이: 55.10초
+    - 상태: 비공개 (private)
+
 - **2025-12-05 - Video Uploaded**
   - **Title**: Test Topic #Shorts
   - **Topic**: Test Topic
@@ -266,6 +288,47 @@
 이 문서는 YouTube Shorts 자동 업로드 봇 프로젝트의 개발 히스토리를 기록합니다.
 
 ## 최근 변경사항
+
+### 2025-12-05 - Video Upload (비공개) - 4개 영상
+
+**업로드된 영상**:
+
+1. **한국어 영상 1**
+   - **주제**: 연말정산 준비 체크리스트: 12월 31일 전에 꼭 확인해야 할 3가지
+   - **Video ID**: `Xs73QVM3UpA`
+   - **URL**: <https://www.youtube.com/watch?v=Xs73QVM3UpA>
+   - **길이**: 57.29초
+   - **상태**: 비공개 (private)
+   - **썸네일**: `output/thumbnails/thumb_20251205_132842.jpg`
+
+2. **한국어 영상 2**
+   - **주제**: 새해 재정 목표 설정: 2026년 돈 관리 시작하는 3가지 방법
+   - **Video ID**: `HfNekQojjYQ`
+   - **URL**: <https://www.youtube.com/watch?v=HfNekQojjYQ>
+   - **길이**: 54.21초
+   - **상태**: 비공개 (private)
+   - **썸네일**: `output/thumbnails/thumb_20251205_133036.jpg`
+
+3. **영어 영상 1**
+   - **주제**: Year-End Investment Strategy: The $5,000 Move Smart Investors Make in December
+   - **Video ID**: `UKVRubw2BGM`
+   - **URL**: <https://www.youtube.com/watch?v=UKVRubw2BGM>
+   - **길이**: 56.21초
+   - **상태**: 비공개 (private)
+   - **썸네일**: `output/thumbnails/thumb_20251205_133248.jpg`
+
+4. **영어 영상 2**
+   - **주제**: New Year Financial Reset: 3 Habits That Transform Your Money in 2026
+   - **Video ID**: `IJUCuS4Z1uU`
+   - **URL**: <https://www.youtube.com/watch?v=IJUCuS4Z1uU>
+   - **길이**: 55.10초
+   - **상태**: 비공개 (private)
+   - **썸네일**: `output/thumbnails/thumb_20251205_133502.jpg`
+
+**주제 선정 배경**:
+- 어제 업로드된 주제와 차별화된 12월 시기 적합한 재태크/생활 최적화 주제
+- 한국: 연말정산 준비, 새해 재정 목표 설정
+- 미국/캐나다: 연말 투자 전략, 새해 재정 리셋
 
 ### 2025-12-04 - Mypy 타입 에러 추가 수정 (진행 중)
 
