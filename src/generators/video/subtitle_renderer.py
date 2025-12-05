@@ -22,6 +22,7 @@ class SubtitleRenderer:
 
     def __init__(self, openai_client=None):
         self.openai_client = openai_client
+        self.use_moviepy = True  # MoviePy TextClip 사용 여부
 
     def create_subtitle_clip(
         self, text: str, duration: float, language: str = "ko"

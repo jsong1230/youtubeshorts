@@ -42,5 +42,6 @@ pydantic-settings>=2.0.0
 mypy>=1.0.0
 types-requests>=2.31.0
 types-python-dateutil>=2.8.0
+types-pytz>=2023.3
 ruff>=0.1.0
 black>=23.0.0

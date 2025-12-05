@@ -1,5 +1,14 @@
 ## Recent Updates
 
+- **2025-12-05 - Mypy 타입 에러 수정**
+  - **SubtitleRenderer 클래스 수정**:
+    - `use_moviepy` 속성 추가: `__init__` 메서드에 `self.use_moviepy = True` 추가
+    - 286번 줄에서 사용하던 속성이 정의되지 않았던 문제 해결
+  - **타입 스텁 추가**:
+    - `requirements.txt`에 `types-pytz>=2023.3` 추가
+    - `pytz` 라이브러리의 타입 스텁으로 mypy 타입 체크 에러 해결
+  - **결과**: CI/CD에서 mypy 타입 체크 통과
+
 - **2025-12-05 - 예약 업로드 기능 및 파일 보존 정책 변경**
   - **예약 업로드 기능 구현**:
     - `calculate_hours_until_midnight()` 함수 추가: 다음날 0시까지의 시간 계산
