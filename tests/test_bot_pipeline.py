@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 # Mock cv2 before importing modules that might use it
 sys.modules["cv2"] = Mock()
 
-from src.pipeline.bot import ShortsBot
+from src.pipeline.bot import ShortsBot  # noqa: E402
 
 
 class TestShortsBot:

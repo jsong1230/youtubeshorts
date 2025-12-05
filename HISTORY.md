@@ -4,7 +4,8 @@
   - **문제**: `tests/test_bot_pipeline.py` 실행 시 `NameError: name 'LOADER_DIR' is not defined` 발생
   - **원인**: `cv2` (OpenCV) 모듈이 테스트 환경에서 임포트될 때 의존성 문제로 실패. `ShortsBot` -> `AIVideoGenerator` -> `VideoCompositor` -> `SubtitleRenderer` -> `moviepy` -> `cv2` 경로로 임포트됨.
   - **해결**: 테스트 파일에서 `sys.modules['cv2'] = Mock()`을 사용하여 `cv2`를 모의 객체로 대체, 실제 임포트 방지.
-  - **결과**: `tests/test_bot_pipeline.py`의 모든 테스트(4개) 통과.
+  - **Ruff 린트 에러 수정**: `E402` (모듈 레벨 임포트가 파일 상단에 없음) 에러를 `# noqa: E402` 주석으로 억제.
+  - **결과**: `tests/test_bot_pipeline.py`의 모든 테스트(4개) 통과, `ruff check` 통과.
 
 - **2025-12-05 - Mypy 타입 에러 수정 및 버전 제약 조건 개선**
   - **SubtitleRenderer 클래스 수정**:
