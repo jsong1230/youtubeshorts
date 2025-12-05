@@ -7,6 +7,10 @@ from pathlib import Path
 import pytest
 from unittest.mock import Mock
 
+# Mock cv2 before any imports that might use it
+# This prevents NameError in CI environments where cv2 may have dependency issues
+sys.modules["cv2"] = Mock()
+
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))

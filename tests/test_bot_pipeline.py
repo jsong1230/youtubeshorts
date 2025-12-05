@@ -3,13 +3,9 @@ Tests for bot pipeline system (ShortsBot)
 """
 
 import pytest
-import sys
 from unittest.mock import Mock, patch
 
-# Mock cv2 before importing modules that might use it
-sys.modules["cv2"] = Mock()
-
-from src.pipeline.bot import ShortsBot  # noqa: E402
+from src.pipeline.bot import ShortsBot
 
 
 class TestShortsBot:
