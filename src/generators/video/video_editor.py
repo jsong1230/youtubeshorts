@@ -324,3 +324,4 @@ class VideoEditor:
                 )
         except Exception as e:
             logger.warning(f"   ⚠️ 임시 파일 정리 실패 (무시): {e}")
+

@@ -71,9 +71,7 @@ class TestImageGenerator:
                 mock_img.crop.return_value = mock_img
                 mock_open.return_value = mock_img
 
-                image_generator.generate_thumbnail(
-                    video_path=video_path, title=title
-                )
+                image_generator.generate_thumbnail(video_path=video_path, title=title)
 
                 # Should attempt DALL-E generation
                 assert mock_openai_client.images.generate.called
@@ -103,9 +101,7 @@ class TestImageGenerator:
                 mock_img.crop.return_value = mock_img
                 mock_fromarray.return_value = mock_img
 
-                image_generator.generate_thumbnail(
-                    video_path=video_path, title=title
-                )
+                image_generator.generate_thumbnail(video_path=video_path, title=title)
 
                 # Should extract frame from video
                 assert mock_video.called

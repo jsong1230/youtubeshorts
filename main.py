@@ -122,17 +122,21 @@ def main():
                     #     "language": metadata.get("language", "en"),
                     # }
 
-                    # 비공개로 업로드 (privacy_status='private')
+                    # 다음날 0시에 공개되도록 예약 업로드
                     from src.core.config import settings
+                    from src.uploaders.youtube_uploader import calculate_hours_until_midnight
 
+                    # 다음날 0시까지의 시간 계산
+                    hours_until_midnight = calculate_hours_until_midnight(settings.UPLOAD_TIMEZONE)
+                    
                     video_id = bot.uploader.upload_video(
                         video_path=video_path,
                         title=title,
                         description=description,
                         tags=cast(List[str], settings.DEFAULT_TAGS),
-                        privacy_status="private",  # 비공개로 설정
+                        privacy_status="unlisted",  # 예약 업로드는 unlisted로 설정 (공개 시점에 public으로 변경됨)
                         thumbnail_path=thumbnail_path,
-                        schedule_delay_hours=0,  # 즉시 업로드
+                        schedule_delay_hours=hours_until_midnight,  # 다음날 0시에 공개
                     )
 
                     if video_id:
@@ -154,23 +158,10 @@ def main():
                                 bot.sync_manager.update_last_upload(video_id, title)
                         except Exception as e:
                             logger.debug(f"Sync manager 업데이트 생략: {e}")
-                        logger.info(f"\n✅ 업로드 완료! 영상 ID: {video_id} (비공개)")
+                        logger.info(f"\n✅ 업로드 완료! 영상 ID: {video_id} (예약 업로드)")
                         logger.info(f"🔗 https://www.youtube.com/watch?v={video_id}\n")
-
-                        # 업로드 성공 후 원본 파일 삭제
-                        try:
-                            # 영상 파일 삭제
-                            if os.path.exists(video_path):
-                                os.remove(video_path)
-                                logger.info(f"🗑️  원본 영상 파일 삭제: {video_path}")
-
-                            # 메타데이터 JSON 파일 삭제
-                            metadata_path = video_path.replace(".mp4", "_metadata.json")
-                            if os.path.exists(metadata_path):
-                                os.remove(metadata_path)
-                                logger.info(f"🗑️  메타데이터 파일 삭제: {metadata_path}")
-                        except Exception as e:
-                            logger.warning(f"⚠️  파일 삭제 중 오류 발생: {e}")
+                        logger.info(f"📁 원본 영상 파일: {video_path}")
+                        logger.info(f"📄 메타데이터 파일: {video_path.replace('.mp4', '_metadata.json')}")
                 else:
                     logger.error(
                         "❌ 메타데이터 파일을 찾을 수 없습니다. 영상을 다시 생성하거나 주제를 직접 입력하세요."

@@ -7,9 +7,10 @@ from unittest.mock import patch
 
 from src.core.config import Settings
 
+
 class TestSettings:
     """Test Settings class"""
-    
+
     def test_settings_initialization(self, monkeypatch):
         """Test Settings class initializes correctly with env vars"""
         monkeypatch.setenv("OPENAI_API_KEY", "test_openai_key")
