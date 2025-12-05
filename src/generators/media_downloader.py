@@ -147,7 +147,7 @@ class MediaDownloader:
             words = re.findall(r"[가-힣]+", sentence)
             if words:
                 # 가장 긴 단어를 키워드로 사용
-                longest_word = max(words, key=len)
+                # longest_word = max(words, key=len)
                 # 기본 키워드 매핑에 없으면 'nature' 사용
                 keywords = ["nature", "inspiration"]
             else:

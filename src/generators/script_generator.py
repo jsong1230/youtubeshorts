@@ -9,14 +9,14 @@ import datetime
 from typing import List, Optional, Tuple
 
 try:
-    from openai import OpenAI
+    # from openai import OpenAI
 
     OPENAI_AVAILABLE = True
 except ImportError:
     OPENAI_AVAILABLE = False
 
 try:
-    from anthropic import Anthropic
+    # from anthropic import Anthropic
 
     ANTHROPIC_AVAILABLE = True
 except ImportError:

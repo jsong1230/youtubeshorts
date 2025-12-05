@@ -380,7 +380,7 @@ class VideoPipeline:
                 try:
                     with open(log_file, "r", encoding="utf-8") as f:
                         upload_logs = json.load(f)
-                except:
+                except Exception:
                     upload_logs = []
 
             log_entry = {

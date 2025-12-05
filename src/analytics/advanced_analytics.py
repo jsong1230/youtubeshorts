@@ -12,12 +12,12 @@ from typing import List, Dict, Optional
 from collections import defaultdict
 
 from src.utils.logger import get_logger
-
-logger = get_logger(__name__)
 from src.pipeline.database import VideoDatabase
 from src.analytics.ab_testing import ABTestDatabase
 from src.analytics.thumbnail_optimizer import ThumbnailOptimizer
 from src.pipeline.topic_database import TopicDatabase
+
+logger = get_logger(__name__)
 
 
 class PerformancePredictor:
@@ -295,7 +295,7 @@ class PerformancePredictor:
     ) -> Dict:
         """콘텐츠 타입별 평균 성과 계산"""
         # topic_database에서 content_type 정보 가져오기
-        topic_db = TopicDatabase()
+        # topic_db = TopicDatabase()
 
         # 간단하게 전체 평균 반환 (실제로는 content_type별로 필터링 필요)
         return self._calculate_overall_average(historical_data)
@@ -311,7 +311,7 @@ class PerformancePredictor:
                 upload_date = datetime.fromisoformat(v.get("upload_date", ""))
                 if upload_date.hour == upload_hour:
                     time_videos.append(v)
-            except:
+            except Exception:
                 continue
 
         if not time_videos:
@@ -499,7 +499,7 @@ class AutoOptimizer:
                     hour_performance[hour]["engagement_rate"].append(
                         video.get("engagement_rate", 0)
                     )
-                except:
+                except Exception:
                     continue
 
             # 시간별 평균 계산
@@ -605,9 +605,9 @@ class CompetitorAnalyzer:
             경쟁사 채널 분석 결과
         """
         try:
-            from src.uploaders.youtube_uploader import YouTubeUploader
+            # from src.uploaders.youtube_uploader import YouTubeUploader
 
-            uploader = YouTubeUploader()
+            # uploader = YouTubeUploader()
 
             # 채널 정보 가져오기 (YouTube API 사용)
             # 실제 구현 시 YouTube Data API v3 사용 필요
@@ -895,7 +895,7 @@ class AudienceSegmentAnalyzer:
                         else:  # 밤 시간대 (22시-6시)
                             if hour >= start_hour or hour < end_hour:
                                 group_videos.append(video)
-                    except:
+                    except Exception:
                         continue
 
                 if group_videos:

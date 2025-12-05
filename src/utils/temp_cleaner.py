@@ -76,7 +76,7 @@ class TempCleaner:
                         try:
                             if not os.listdir(dir_path):  # 디렉토리가 비어있으면
                                 os.rmdir(dir_path)
-                        except:
+                        except Exception:
                             pass
 
         except Exception as e:

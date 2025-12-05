@@ -100,7 +100,7 @@ class VideoCompositor:
 
             # 마지막 문장부터 제거하여 58초 이내로 맞추기
             removed_count = 0
-            original_script_len = len(script)
+            # original_script_len = len(script)
             while total_audio_duration > max_safe_duration and len(script) > 1:
                 # pop 전 길이 저장 (동기화 확인용)
                 script_len_before_pop = len(script)

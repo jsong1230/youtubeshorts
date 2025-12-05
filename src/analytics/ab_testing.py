@@ -438,7 +438,7 @@ class ABTestDatabase:
                 if result.get("style_config"):
                     try:
                         result["style_config"] = json.loads(result["style_config"])
-                    except:
+                    except Exception:
                         pass
                 return result
             return None

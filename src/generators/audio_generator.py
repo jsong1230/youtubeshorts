@@ -294,7 +294,7 @@ class AudioGenerator:
                 bg_music = bg_music.fx(audio_fadein, fade_duration).fx(
                     audio_fadeout, fade_duration
                 )
-            except:
+            except Exception:
                 # Fallback for older moviepy versions where fadein/fadeout might be different
                 # But usually audio_fadein is correct for audio clips
                 pass

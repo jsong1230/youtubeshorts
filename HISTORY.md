@@ -1,6 +1,23 @@
 ## Recent Updates
 
-- **2025-12-05 - CI/CD 파이프라인 구축 및 테스트 수정 완료**
+- **2025-12-05 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
+- **2025-12-05 - VideoEditor 및 MetadataManager 테스트 추가**
+  - **테스트 커버리지 확대**:
+    - `tests/test_video_editor.py` 작성 (7개 테스트)
+      - `FakeClip`을 사용한 MoviePy 의존성 없는 단위 테스트 구현
+      - 영상 합성, 페이드 효과, 오디오 동기화 로직 검증
+    - `tests/test_metadata_manager.py` 작성 (7개 테스트)
+      - 제목 및 설명(국문/영문) 생성 로직 검증
+    - **결과**: 전체 테스트 147개 모두 통과 (100%)
+
+- **2025-12-05**: CI/CD 파이프라인 구축 및 테스트 커버리지 100% 달성 (147/147 passed). 전체 코드 베이스 린트 에러 해결 (ruff).
   - **테스트 수정**:
     - `test_image_generator.py`: Mock 객체 설정 수정으로 썸네일 테스트 2건 해결
     - `test_trend_collector.py`: 설정 파일(`settings`) 패치 방식 수정으로 1건 해결

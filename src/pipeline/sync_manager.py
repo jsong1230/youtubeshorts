@@ -60,7 +60,7 @@ class SyncManager:
         try:
             hostname = socket.gethostname()
             return hostname
-        except:
+        except Exception:
             return "unknown"
 
     def get_last_upload_info(self) -> Optional[Dict]:

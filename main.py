@@ -7,12 +7,11 @@ import sys
 import os
 import json
 from pathlib import Path
+from src.utils.logger import get_logger
 
 # 프로젝트 루트를 경로에 추가
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
-
-from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -112,16 +111,16 @@ def main():
                     )
 
                     # 영상 자산 딕셔너리 생성
-                    video_assets = {
-                        "video_path": video_path,
-                        "thumbnail_path": thumbnail_path,
-                        "title": title,
-                        "description": description,
-                        "tags": settings.DEFAULT_TAGS,
-                        "actual_topic": topic,
-                        "script": metadata.get("script", []),
-                        "language": metadata.get("language", "en"),
-                    }
+                    # video_assets = {
+                    #     "video_path": video_path,
+                    #     "thumbnail_path": thumbnail_path,
+                    #     "title": title,
+                    #     "description": description,
+                    #     "tags": settings.DEFAULT_TAGS,
+                    #     "actual_topic": topic,
+                    #     "script": metadata.get("script", []),
+                    #     "language": metadata.get("language", "en"),
+                    # }
 
                     # 비공개로 업로드 (privacy_status='private')
                     from src.core.config import settings

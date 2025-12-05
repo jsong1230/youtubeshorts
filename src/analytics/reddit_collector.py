@@ -170,7 +170,7 @@ class RedditCollector:
             root = ET.fromstring(response.content)
 
             # Atom 네임스페이스
-            ns = {"atom": "http://www.w3.org/2005/Atom"}
+            # ns = {"atom": "http://www.w3.org/2005/Atom"}
 
             posts = []
             # Atom 형식에서는 <entry> 태그 사용
@@ -204,12 +204,12 @@ class RedditCollector:
                             pub_date = datetime.fromisoformat(
                                 date_elem.text.replace("Z", "+00:00")
                             )
-                        except:
+                        except Exception:
                             try:
                                 from email.utils import parsedate_to_datetime
 
                                 pub_date = parsedate_to_datetime(date_elem.text)
-                            except:
+                            except Exception:
                                 pass
 
                     # Reddit RSS는 점수와 댓글 수를 직접 제공하지 않으므로 기본값 사용

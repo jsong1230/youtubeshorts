@@ -6,13 +6,8 @@ import schedule
 import time
 from datetime import datetime
 import pytz  # type: ignore
-import sys
-from pathlib import Path
 from typing import Optional, Dict, Any, Union
-
-# 프로젝트 루트를 경로에 추가
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
+import json
 
 from src.generators.video_generator import AIVideoGenerator
 from src.generators.content_type import ContentType
@@ -37,7 +32,6 @@ from src.analytics.comment_analyzer import CommentAnalyzer
 from src.utils.logger import get_logger
 from src.pipeline.video_pipeline import VideoPipeline
 from src.core.config import settings
-import json
 
 logger = get_logger(__name__)
 
@@ -141,7 +135,7 @@ class ShortsBot:
                     video_path, script, generated_topic, topic_source = result
             else:
                 video_path, thumbnail_path, generated_topic, script = result
-                topic_source = None
+                # topic_source = None
 
             if not video_path:
                 logger.error("❌ 영상 생성 실패")

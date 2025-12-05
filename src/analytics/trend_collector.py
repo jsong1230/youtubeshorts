@@ -13,7 +13,7 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 try:
-    from googleapiclient.discovery import build
+    # from googleapiclient.discovery import build
     from src.utils.youtube_auth import get_authenticated_service
 
     YOUTUBE_API_AVAILABLE = True

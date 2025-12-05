@@ -86,10 +86,10 @@ class AnalyticsManager:
                 vid = video["id"]
                 if vid in stats_map:
                     stats = stats_map[vid]["statistics"]
-                    content_details = stats_map[vid]["contentDetails"]
+                    # content_details = stats_map[vid]["contentDetails"]
 
                     # Shorts 여부 확인 (duration이 60초 이하)
-                    duration_iso = content_details["duration"]
+                    # duration_iso = content_details["duration"]
                     # 간단한 체크 (정확한 파싱은 isodate 라이브러리 필요하지만 여기선 생략)
                     # PT1M, PT59S 등으로 표시됨
 

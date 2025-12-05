@@ -188,12 +188,8 @@ class TTSEngineBase(ABC):
             try:
                 num = int(float(num_str)) * multiplier
                 return number_to_words(num) + " dollars"
-            except:
+            except Exception:
                 return match.group(0)  # 변환 실패 시 원본 유지
-
-        # 콤마를 포함한 달러 금액 매칭 ($100,000, $100K, $5M 등)
-        # 숫자로 시작해야 함 ($,000 같은 잘못된 형식 방지)
-        text = re.sub(r"\$(\d+(?:,\d{3})*(?:\.\d+)?[KMBkmb]?)", convert_dollar, text)
 
         # 퍼센트 변환 (30% → thirty percent)
         def convert_percent(match):
@@ -204,8 +200,10 @@ class TTSEngineBase(ABC):
                     return number_to_words(num) + " percent"
                 else:
                     return number_to_words(num) + " percent"
-            except:
+            except Exception:
                 return match.group(0)
+
+        text = re.sub(r"\$(\d+(?:,\d{3})*(?:\.\d+)?[KMBkmb]?)", convert_dollar, text)
 
         text = re.sub(r"([\d,]+(?:\.\d+)?)%", convert_percent, text)
 
@@ -213,12 +211,11 @@ class TTSEngineBase(ABC):
         def convert_small_numbers(match):
             num_str = match.group(0)
             try:
-                num = int(num_str)
-                if 0 <= num <= 99:
-                    return number_to_words(num)
-                else:
+                if len(num_str) == 4 and 1900 <= int(num_str) <= 2100:
                     return num_str
-            except:
+                else:
+                    return number_to_words(int(num_str))
+            except Exception:
                 return num_str
 
         text = re.sub(r"\b(\d{1,2})\b", convert_small_numbers, text)

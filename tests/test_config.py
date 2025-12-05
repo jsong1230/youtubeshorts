@@ -3,20 +3,13 @@ Unit tests for src.core.config.Settings class
 """
 
 import os
-from pathlib import Path
 from unittest.mock import patch
-import sys
-
-# Add project root to path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
 
 from src.core.config import Settings
 
-
 class TestSettings:
     """Test Settings class"""
-
+    
     def test_settings_initialization(self, monkeypatch):
         """Test Settings class initializes correctly with env vars"""
         monkeypatch.setenv("OPENAI_API_KEY", "test_openai_key")
@@ -54,7 +47,7 @@ class TestSettings:
         monkeypatch.setenv("THUMBNAIL_OUTPUT_DIR", str(thumb_dir))
         monkeypatch.setenv("TEMP_DIR", str(temp_dir))
 
-        settings = Settings()
+        _ = Settings()
 
         assert video_dir.exists()
         assert thumb_dir.exists()

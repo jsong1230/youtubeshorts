@@ -6,15 +6,10 @@ import sys
 import random
 import signal
 import time
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from functools import wraps
 
-# 프로젝트 루트를 경로에 추가
-project_root = Path(__file__).parent
-sys.path.insert(0, str(project_root))
-
-import config
+from src.core.config import settings
 from src.generators.script_generator import ScriptGenerator
 from src.generators.content_type import ContentType
 
@@ -68,25 +63,25 @@ def collect_topics(language="en"):
     )
 
     # OpenAI 클라이언트가 있으면 초기화
-    if config.OPENAI_API_KEY:
+    if settings.OPENAI_API_KEY:
         try:
             from openai import OpenAI
 
             script_generator.openai_client = OpenAI(
-                api_key=config.OPENAI_API_KEY, timeout=30.0
+                api_key=settings.OPENAI_API_KEY, timeout=30.0
             )
-        except:
+        except Exception:
             pass
 
     # Claude 클라이언트가 있으면 초기화
-    if config.CLAUDE_API_KEY:
+    if settings.CLAUDE_API_KEY:
         try:
             from anthropic import Anthropic
 
             script_generator.claude_client = Anthropic(
-                api_key=config.CLAUDE_API_KEY, timeout=30.0
+                api_key=settings.CLAUDE_API_KEY, timeout=30.0
             )
-        except:
+        except Exception:
             pass
 
     all_topics = []

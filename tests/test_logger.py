@@ -201,7 +201,7 @@ class TestLoggerIntegration:
 
     def test_multiple_loggers_no_conflict(self, tmp_path):
         """Test that multiple loggers don't interfere with each other"""
-        log_dir = str(tmp_path / "logs")
+        # log_dir = str(tmp_path / "logs")
 
         logger1 = get_logger("logger1")
         logger2 = get_logger("logger2")

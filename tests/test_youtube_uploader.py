@@ -29,7 +29,7 @@ class TestYouTubeUploaderInit:
 
         # Should raise exception during initialization
         with pytest.raises(Exception, match="Auth failed"):
-            uploader = YouTubeUploader()
+            YouTubeUploader()
 
 
 class TestYouTubeUploaderUpload:

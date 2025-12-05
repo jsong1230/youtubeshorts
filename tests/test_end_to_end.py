@@ -1,11 +1,5 @@
 import unittest
 from unittest.mock import MagicMock, patch
-import sys
-from pathlib import Path
-
-# Add project root to path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
 
 from src.pipeline.bot import ShortsBot
 from src.generators.content_type import ContentType

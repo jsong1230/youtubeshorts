@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Static type checking with `mypy`
   - Code linting and formatting detailed with `ruff` and `black`
   - Code coverage measurement
+- 전체 코드 베이스 린트 에러 해결 (`F841`, `E402`, `E722` 등)
 - **Code Quality Tools**
   - Added `black` and `ruff` to project dependencies
   - Applied consistent formatting across the entire codebase

@@ -162,9 +162,9 @@ class SubtitleRenderer:
             line_widths.append(bbox[2] - bbox[0])
 
         total_height = sum(line_heights) + (len(lines) - 1) * line_spacing
-        max_line_width = max(line_widths) if line_widths else 0
+        # max_line_width = max(line_widths) if line_widths else 0
 
-        x = (VideoConstants.VIDEO_WIDTH - max_line_width) // 2
+        # x = (VideoConstants.VIDEO_WIDTH - max_line_width) // 2
         y = (
             VideoConstants.VIDEO_HEIGHT
             - total_height
@@ -283,15 +283,15 @@ class SubtitleRenderer:
                 align="center",
             )
             txt_clip = txt_clip.set_start(0)
-            txt_clip = txt_clip.set_duration(duration)
-
-            try:
-                frame = txt_clip.get_frame(0)
-                clip_height = frame.shape[0]
-                raised_y = 250  # 1920px 기준 상단 1/8 지점
-                txt_clip = txt_clip.set_position(("center", raised_y))
-            except:
-                txt_clip = txt_clip.set_position(("center", 250))
+            if self.use_moviepy and txt_clip and isinstance(txt_clip, TextClip):
+                # MoviePy TextClip 위치 설정
+                try:
+                    # frame = txt_clip.get_frame(0)
+                    # clip_height = frame.shape[0]
+                    raised_y = 250  # 1920px 기준 상단 1/8 지점
+                    txt_clip = txt_clip.set_position(("center", raised_y))
+                except Exception:
+                    txt_clip = txt_clip.set_position(("center", 250))
 
             txt_clip = txt_clip.set_start(0)
             if abs(txt_clip.duration - duration) > 0.01:

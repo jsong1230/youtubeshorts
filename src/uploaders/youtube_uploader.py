@@ -178,8 +178,8 @@ class YouTubeUploader:
 
             # 오늘 날짜
             today = datetime.now().date()
-            today_start = datetime.combine(today, datetime.min.time())
-            today_start_iso = today_start.isoformat() + "Z"
+            # today_start = datetime.combine(today, datetime.min.time())
+            # today_start_iso = today_start.isoformat() + "Z"
 
             # 채널의 최근 업로드 영상 조회
             request = self.youtube.search().list(

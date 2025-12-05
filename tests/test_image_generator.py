@@ -4,13 +4,7 @@ Unit tests for image_generator.py
 
 import pytest
 from unittest.mock import Mock, patch, MagicMock
-from pathlib import Path
-import sys
 from PIL import Image
-
-# Add project root to path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
 
 from src.generators.image_generator import ImageGenerator
 
@@ -58,7 +52,7 @@ class TestImageGenerator:
         """Test thumbnail generation using DALL-E"""
         video_path = str(tmp_path / "test_video.mp4")
         title = "Test Video Title"
-        output_path = str(tmp_path / "thumbnail.jpg")
+        # output_path = str(tmp_path / "thumbnail.jpg")
 
         # Mock DALL-E response
         mock_response = Mock()
@@ -77,7 +71,7 @@ class TestImageGenerator:
                 mock_img.crop.return_value = mock_img
                 mock_open.return_value = mock_img
 
-                result = image_generator.generate_thumbnail(
+                image_generator.generate_thumbnail(
                     video_path=video_path, title=title
                 )
 
@@ -88,7 +82,7 @@ class TestImageGenerator:
         """Test thumbnail generation falls back to video frame extraction"""
         video_path = str(tmp_path / "test_video.mp4")
         title = "Test Video"
-        output_path = str(tmp_path / "thumbnail.jpg")
+        # output_path = str(tmp_path / "thumbnail.jpg")
 
         # Mock DALL-E failure
         image_generator.openai_client = None
@@ -109,7 +103,7 @@ class TestImageGenerator:
                 mock_img.crop.return_value = mock_img
                 mock_fromarray.return_value = mock_img
 
-                result = image_generator.generate_thumbnail(
+                image_generator.generate_thumbnail(
                     video_path=video_path, title=title
                 )
 

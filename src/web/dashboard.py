@@ -50,7 +50,7 @@ def get_overview_stats():
     """전체 통계 개요"""
     try:
         # 최근 30일 데이터
-        cutoff_date = (datetime.now() - timedelta(days=30)).isoformat()
+        # cutoff_date = (datetime.now() - timedelta(days=30)).isoformat()
 
         # 영상 통계 (모든 영상 조회)
         videos = video_db.get_all_videos(limit=None, days=None, order_by="upload_date")
@@ -122,7 +122,7 @@ def get_video_stats():
 def get_topic_stats():
     """주제별 통계"""
     try:
-        days = int(request.args.get("days", 30))
+        # days = int(request.args.get("days", 30))
 
         # 주제별 성과 데이터
         topics = topic_db.get_topics(status="active", limit=50)

@@ -118,7 +118,7 @@ def test_uniqueness_check():
     generator = ScriptGenerator()
 
     # 동일한 스크립트
-    script1 = ["This is a test", "Another sentence", "Final thought"]
+    # script1 = ["This is a test", "Another sentence", "Final thought"]
     script2 = ["This is a test", "Another sentence", "Final thought"]
 
     # 다른 스크립트
