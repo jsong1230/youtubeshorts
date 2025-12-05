@@ -124,11 +124,15 @@ def main():
 
                     # 다음날 0시에 공개되도록 예약 업로드
                     from src.core.config import settings
-                    from src.uploaders.youtube_uploader import calculate_hours_until_midnight
+                    from src.uploaders.youtube_uploader import (
+                        calculate_hours_until_midnight,
+                    )
 
                     # 다음날 0시까지의 시간 계산
-                    hours_until_midnight = calculate_hours_until_midnight(settings.UPLOAD_TIMEZONE)
-                    
+                    hours_until_midnight = calculate_hours_until_midnight(
+                        settings.UPLOAD_TIMEZONE
+                    )
+
                     video_id = bot.uploader.upload_video(
                         video_path=video_path,
                         title=title,
@@ -158,10 +162,14 @@ def main():
                                 bot.sync_manager.update_last_upload(video_id, title)
                         except Exception as e:
                             logger.debug(f"Sync manager 업데이트 생략: {e}")
-                        logger.info(f"\n✅ 업로드 완료! 영상 ID: {video_id} (예약 업로드)")
+                        logger.info(
+                            f"\n✅ 업로드 완료! 영상 ID: {video_id} (예약 업로드)"
+                        )
                         logger.info(f"🔗 https://www.youtube.com/watch?v={video_id}\n")
                         logger.info(f"📁 원본 영상 파일: {video_path}")
-                        logger.info(f"📄 메타데이터 파일: {video_path.replace('.mp4', '_metadata.json')}")
+                        logger.info(
+                            f"📄 메타데이터 파일: {video_path.replace('.mp4', '_metadata.json')}"
+                        )
                 else:
                     logger.error(
                         "❌ 메타데이터 파일을 찾을 수 없습니다. 영상을 다시 생성하거나 주제를 직접 입력하세요."

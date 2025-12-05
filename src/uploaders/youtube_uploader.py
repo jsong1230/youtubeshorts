@@ -16,26 +16,30 @@ logger = get_logger(__name__)
 def calculate_hours_until_midnight(timezone_str: str = "Asia/Seoul") -> float:
     """
     현재 시간부터 다음날 0시(자정)까지의 시간을 계산
-    
+
     Args:
         timezone_str: 타임존 문자열 (기본값: "Asia/Seoul")
-    
+
     Returns:
         다음날 0시까지의 시간 (시간 단위)
     """
     try:
         tz = pytz.timezone(timezone_str)
         now = datetime.now(tz)
-        
+
         # 다음날 0시 계산
-        next_midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-        
+        next_midnight = (now + timedelta(days=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+
         # 시간 차이 계산
         time_diff = next_midnight - now
         hours_until_midnight = time_diff.total_seconds() / 3600.0
-        
-        logger.info(f"📅 다음날 0시까지: {hours_until_midnight:.2f}시간 (예약 시간: {next_midnight.strftime('%Y-%m-%d %H:%M:%S %Z')})")
-        
+
+        logger.info(
+            f"📅 다음날 0시까지: {hours_until_midnight:.2f}시간 (예약 시간: {next_midnight.strftime('%Y-%m-%d %H:%M:%S %Z')})"
+        )
+
         return hours_until_midnight
     except Exception as e:
         logger.warning(f"⚠️ 다음날 0시 계산 실패: {e}, 기본값 0 사용")
