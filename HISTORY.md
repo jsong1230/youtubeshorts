@@ -1,5 +1,24 @@
 ## Recent Updates
 
+- **2025-12-05 - CI/CD 파이프라인 구축 및 테스트 수정 완료**
+  - **테스트 수정**:
+    - `test_image_generator.py`: Mock 객체 설정 수정으로 썸네일 테스트 2건 해결
+    - `test_trend_collector.py`: 설정 파일(`settings`) 패치 방식 수정으로 1건 해결
+    - **결과**: 전체 133개 테스트 중 133개 통과 (100%)
+  - **CI/CD 구축**:
+    - `.github/workflows/ci.yml` 추가
+    - GitHub Actions를 통한 자동화 파이프라인 설정 (Push/PR 시 실행)
+    - **포함된 작업**:
+      - Python 3.11 환경 설정
+      - 의존성 설치 (`ffmpeg` 포함)
+      - Code Formatting Check (`black`)
+      - Linting (`ruff`)
+      - Type Checking (`mypy`)
+      - Test Execution (`pytest`)
+  - **코드 포맷팅**:
+    - 전체 프로젝트에 `black` 및 `ruff` 적용하여 포맷팅 일관성 확보
+    - `requirements.txt`에 `ruff`, `black` 추가
+
 - **2025-12-04 - Video Uploaded**
   - **Title**: Test Topic #Shorts
   - **Topic**: Test Topic

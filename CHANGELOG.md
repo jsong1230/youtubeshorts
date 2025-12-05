@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **CI/CD Pipeline** (`.github/workflows/ci.yml`)
+  - Automated testing with `pytest` on every push/PR
+  - Static type checking with `mypy`
+  - Code linting and formatting detailed with `ruff` and `black`
+  - Code coverage measurement
+- **Code Quality Tools**
+  - Added `black` and `ruff` to project dependencies
+  - Applied consistent formatting across the entire codebase
+
+### Fixed
+- **Test Suite Complete Success**
+  - Fixed `test_image_generator.py` mocking issues
+  - Fixed `test_trend_collector.py` configuration patching
+  - Achieved 100% test pass rate (133/133 tests)
+
+### Added
 - **Type Hinting System** (15+ files)
   - Comprehensive Python type hints (PEP 484) across all major modules
   - `mypy>=1.0.0` for static type checking

@@ -1,6 +1,7 @@
 """
 client_secrets.json 파일 생성 스크립트
 """
+
 import json
 from src.core.config import settings
 from src.utils.logger import get_logger
@@ -18,13 +19,12 @@ client_secrets = {
         "redirect_uris": [
             "http://localhost:8080/",
             "http://127.0.0.1:8080/",
-            "http://localhost/"
-        ]
+            "http://localhost/",
+        ],
     }
 }
 
-with open('client_secrets.json', 'w') as f:
+with open("client_secrets.json", "w") as f:
     json.dump(client_secrets, f, indent=2)
 
 logger.info("✅ client_secrets.json 파일이 생성되었습니다!")
-

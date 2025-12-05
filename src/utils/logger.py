@@ -2,136 +2,130 @@
 Centralized logging configuration for YouTube Shorts automation.
 Provides structured logging with file rotation and color-coded console output.
 """
+
 import logging
 import os
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
-from datetime import datetime
 import sys
 from typing import Optional, Dict, Any, Callable, TypeVar, cast
 
+
 # ANSI color codes for console output
 class LogColors:
-    RESET = '\033[0m'
-    DEBUG = '\033[36m'  # Cyan
-    INFO = '\033[32m'   # Green
-    WARNING = '\033[33m'  # Yellow
-    ERROR = '\033[31m'  # Red
-    CRITICAL = '\033[35m'  # Magenta
+    RESET = "\033[0m"
+    DEBUG = "\033[36m"  # Cyan
+    INFO = "\033[32m"  # Green
+    WARNING = "\033[33m"  # Yellow
+    ERROR = "\033[31m"  # Red
+    CRITICAL = "\033[35m"  # Magenta
 
 
 class ColoredFormatter(logging.Formatter):
     """Custom formatter with color-coded output for console."""
-    
+
     COLORS: Dict[str, str] = {
-        'DEBUG': LogColors.DEBUG,
-        'INFO': LogColors.INFO,
-        'WARNING': LogColors.WARNING,
-        'ERROR': LogColors.ERROR,
-        'CRITICAL': LogColors.CRITICAL,
+        "DEBUG": LogColors.DEBUG,
+        "INFO": LogColors.INFO,
+        "WARNING": LogColors.WARNING,
+        "ERROR": LogColors.ERROR,
+        "CRITICAL": LogColors.CRITICAL,
     }
-    
+
     def format(self, record: logging.LogRecord) -> str:
         # Add color to levelname
         levelname = record.levelname
         if levelname in self.COLORS:
             record.levelname = f"{self.COLORS[levelname]}{levelname}{LogColors.RESET}"
-        
+
         return super().format(record)
 
 
 def setup_logger(
-    name: str = 'youtubeshorts',
-    level: str = 'INFO',
-    log_dir: Optional[str] = None
+    name: str = "youtubeshorts", level: str = "INFO", log_dir: Optional[str] = None
 ) -> logging.Logger:
     """
     Setup structured logger with file and console output.
-    
+
     Args:
         name: Logger name (default: 'youtubeshorts')
         level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         log_dir: Directory for log files (default: ./logs)
-    
+
     Returns:
         Configured logger instance
     """
     # Create logger
     logger = logging.getLogger(name)
-    
+
     # Avoid duplicate handlers
     if logger.handlers:
         return logger
-    
+
     # Set log level
     log_level = getattr(logging, level.upper(), logging.INFO)
     logger.setLevel(log_level)
-    
+
     # Create log directory
     if log_dir is None:
-        log_dir = os.path.join(os.getcwd(), 'logs')
+        log_dir = os.path.join(os.getcwd(), "logs")
     os.makedirs(log_dir, exist_ok=True)
-    
+
     # File handler with rotation (10MB max, keep 5 backups)
-    log_file = os.path.join(log_dir, f'{name}.log')
+    log_file = os.path.join(log_dir, f"{name}.log")
     file_handler = RotatingFileHandler(
-        log_file,
-        maxBytes=10 * 1024 * 1024,  # 10MB
-        backupCount=5,
-        encoding='utf-8'
+        log_file, maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"  # 10MB
     )
     file_handler.setLevel(log_level)
-    
+
     # File formatter (detailed)
     file_formatter = logging.Formatter(
-        '%(asctime)s | %(name)s | %(levelname)s | %(filename)s:%(lineno)d | %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        "%(asctime)s | %(name)s | %(levelname)s | %(filename)s:%(lineno)d | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
     file_handler.setFormatter(file_formatter)
-    
+
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(log_level)
-    
+
     # Console formatter (colored, concise)
-    console_formatter = ColoredFormatter(
-        '%(levelname)s | %(message)s'
-    )
+    console_formatter = ColoredFormatter("%(levelname)s | %(message)s")
     console_handler.setFormatter(console_formatter)
-    
+
     # Add handlers
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
-    
+
     return logger
 
 
-def get_logger(name: str = 'youtubeshorts') -> logging.Logger:
+def get_logger(name: str = "youtubeshorts") -> logging.Logger:
     """
     Get or create a logger instance.
-    
+
     Args:
         name: Logger name
-    
+
     Returns:
         Logger instance
     """
     logger = logging.getLogger(name)
-    
+
     # If logger doesn't have handlers, set it up
     if not logger.handlers:
         return setup_logger(name)
-    
+
     return logger
 
 
-F = TypeVar('F', bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[..., Any])
+
 
 # Performance tracking decorator
 def log_performance(logger: Optional[logging.Logger] = None) -> Callable[[F], F]:
     """
     Decorator to log function execution time.
-    
+
     Usage:
         @log_performance()
         def my_function():
@@ -139,13 +133,13 @@ def log_performance(logger: Optional[logging.Logger] = None) -> Callable[[F], F]
     """
     import time
     import functools
-    
+
     final_logger: logging.Logger
     if logger is None:
         final_logger = get_logger()
     else:
         final_logger = logger
-    
+
     def decorator(func: F) -> F:
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -157,9 +151,13 @@ def log_performance(logger: Optional[logging.Logger] = None) -> Callable[[F], F]
                 return result
             except Exception as e:
                 elapsed = time.time() - start_time
-                final_logger.error(f"❌ {func.__name__} failed after {elapsed:.2f}s: {e}")
+                final_logger.error(
+                    f"❌ {func.__name__} failed after {elapsed:.2f}s: {e}"
+                )
                 raise
+
         return cast(F, wrapper)
+
     return decorator
 
 

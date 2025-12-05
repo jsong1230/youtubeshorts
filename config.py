@@ -2,12 +2,17 @@
 설정 관리 모듈 (Facade for src.core.config)
 Deprecated: Use src.core.config.settings instead.
 """
+
 import warnings
 import os
 from src.core.config import settings
 
 # Deprecation Warning
-warnings.warn("config.py is deprecated. Use src.core.config.settings instead.", DeprecationWarning, stacklevel=2)
+warnings.warn(
+    "config.py is deprecated. Use src.core.config.settings instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 # Expose settings as module-level variables
 YOUTUBE_CLIENT_ID = settings.YOUTUBE_CLIENT_ID
@@ -81,22 +86,24 @@ PRIVACY_STATUS = settings.PRIVACY_STATUS
 VIDEO_LANGUAGE = settings.VIDEO_LANGUAGE
 CATEGORY_ID = settings.CATEGORY_ID
 
+
 # For backward compatibility with `from config import Settings`
 class Settings:
     def __init__(self):
         # Create a FRESH instance of src.core.config.Settings to pick up current env vars
         from src.core.config import Settings as CoreSettings
+
         core_settings = CoreSettings()
-        
+
         # Map UPPERCASE keys to lowercase attributes to match old behavior
         for key, value in core_settings.model_dump().items():
             setattr(self, key.lower(), value)
-            
+
     def _get_bool(self, key: str, default: bool) -> bool:
         """환경 변수를 bool로 변환"""
         value = os.getenv(key, str(default)).lower()
-        return value in ('true', '1', 'yes', 'on')
-    
+        return value in ("true", "1", "yes", "on")
+
     def _get_int(self, key: str, default: int) -> int:
         """환경 변수를 int로 변환"""
         try:
@@ -104,7 +111,7 @@ class Settings:
         except ValueError:
             print(f"⚠️ {key} 값이 올바르지 않습니다. 기본값 {default}를 사용합니다.")
             return default
-    
+
     def _get_float(self, key: str, default: float) -> float:
         """환경 변수를 float로 변환"""
         try:
@@ -113,11 +120,12 @@ class Settings:
         except ValueError:
             print(f"⚠️ {key} 값이 올바르지 않습니다. 기본값 {default}를 사용합니다.")
             return default
-    
+
     def _get_list(self, key: str, default: str) -> list:
         """환경 변수를 리스트로 변환"""
         value = os.getenv(key, default)
-        return [item.strip() for item in value.split(',') if item.strip()]
+        return [item.strip() for item in value.split(",") if item.strip()]
+
 
 # Singleton instance
 _settings = Settings()
