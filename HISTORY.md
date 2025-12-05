@@ -1,11 +1,13 @@
 ## Recent Updates
 
-- **2025-12-05 - Mypy 타입 에러 수정**
+- **2025-12-05 - Mypy 타입 에러 수정 및 버전 제약 조건 개선**
   - **SubtitleRenderer 클래스 수정**:
     - `use_moviepy` 속성 추가: `__init__` 메서드에 `self.use_moviepy = True` 추가
     - 286번 줄에서 사용하던 속성이 정의되지 않았던 문제 해결
-  - **타입 스텁 추가**:
-    - `requirements.txt`에 `types-pytz>=2023.3` 추가
+  - **타입 스텁 추가 및 버전 제약 조건 개선**:
+    - `requirements.txt`에 `types-pytz>=2023.3,<2024` 추가
+    - `pytz==2023.3`과 호환되도록 버전 제약 조건을 2023.x로 제한
+    - 미래 버전의 호환되지 않는 타입 정의 설치 방지
     - `pytz` 라이브러리의 타입 스텁으로 mypy 타입 체크 에러 해결
   - **결과**: CI/CD에서 mypy 타입 체크 통과
 
