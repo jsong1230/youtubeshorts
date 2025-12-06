@@ -441,7 +441,7 @@ class BackgroundVideoManager:
                             quality_score = self._calculate_video_quality_score(
                                 best_file, duration_sec, english_keyword, video
                             )
-                            
+
                             available_videos.append(
                                 {
                                     "id": video_id,
@@ -494,18 +494,18 @@ class BackgroundVideoManager:
         self, video_file: dict, duration: float, keyword: str, video_data: dict
     ) -> float:
         """배경 영상 품질 점수 계산
-        
+
         Args:
             video_file: 비디오 파일 정보
             duration: 영상 길이 (초)
             keyword: 검색 키워드
             video_data: 전체 비디오 데이터
-            
+
         Returns:
             품질 점수 (0.0 ~ 1.0)
         """
         score = 0.0
-        
+
         # 1. 해상도 점수 (40% 가중치)
         height = video_file.get("height", 0)
         if height >= 1920:
@@ -517,7 +517,7 @@ class BackgroundVideoManager:
         else:
             resolution_score = 0.4
         score += resolution_score * 0.4
-        
+
         # 2. 길이 적합성 점수 (20% 가중치)
         # 이상적인 길이: 15-30초 (충분한 컨텐츠, 반복 가능)
         if 15 <= duration <= 30:
@@ -529,13 +529,13 @@ class BackgroundVideoManager:
         else:
             duration_score = 0.4
         score += duration_score * 0.2
-        
+
         # 3. 키워드 매칭 점수 (30% 가중치)
         # 비디오 태그나 설명에 키워드가 포함되어 있는지 확인
         tags = video_data.get("tags", [])
         video_url = video_data.get("url", "")
         keyword_lower = keyword.lower()
-        
+
         keyword_match_score = 0.0
         if tags:
             for tag in tags:
@@ -548,17 +548,17 @@ class BackgroundVideoManager:
                 if any(kw in tag_words for kw in keyword_words):
                     keyword_match_score = 0.7
                     break
-        
+
         # URL이나 설명에서도 확인
         if keyword_lower in video_url.lower():
             keyword_match_score = max(keyword_match_score, 0.5)
-        
+
         # 키워드 매칭이 없으면 기본 점수
         if keyword_match_score == 0.0:
             keyword_match_score = 0.3
-        
+
         score += keyword_match_score * 0.3
-        
+
         # 4. 비디오 품질 점수 (10% 가중치)
         # HD 품질이면 높은 점수
         quality = video_file.get("quality", "")
@@ -569,5 +569,5 @@ class BackgroundVideoManager:
         else:
             quality_score = 0.5
         score += quality_score * 0.1
-        
+
         return min(score, 1.0)  # 최대 1.0으로 제한

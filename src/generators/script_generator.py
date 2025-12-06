@@ -266,7 +266,7 @@ class ScriptGenerator:
                     if settings.PREFER_SHORT_VIDEOS
                     else settings.SHORTS_TARGET_DURATION
                 )
-            
+
             models_to_try = ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"]
             response = None
             last_error = None

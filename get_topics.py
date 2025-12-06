@@ -57,26 +57,26 @@ def with_timeout(timeout_seconds=30):
 def get_existing_topics_from_history(language="en"):
     """
     HISTORY.md에서 기존 주제 추출
-    
+
     Args:
         language: 'ko' 또는 'en'
-        
+
     Returns:
         기존 주제 Set (중복 체크용)
     """
     history_file = Path(__file__).parent / "HISTORY.md"
     if not history_file.exists():
         return set()
-    
+
     try:
         history_content = history_file.read_text(encoding="utf-8")
         topics = set()
-        
+
         # 주제 패턴 찾기
         # 패턴 1: "**한국어 영상 N**: 주제" 또는 "**영어 영상 N**: 주제"
         # 패턴 2: "주제: ..." 형식
         # 패턴 3: "- **한국어 영상 N**: 주제"
-        
+
         if language == "ko":
             # 한국어 주제 패턴
             patterns = [
@@ -89,7 +89,7 @@ def get_existing_topics_from_history(language="en"):
                 r"-\s+\*\*영어 영상\s+\d+\*\*:\s*(.+?)(?:\n|$)",
                 r"Topic[:\s]*[:：]?\s*(.+?)(?:\n|Video ID|URL|Length|Status)",
             ]
-        
+
         for pattern in patterns:
             matches = re.findall(pattern, history_content, re.IGNORECASE | re.MULTILINE)
             for match in matches:
@@ -98,7 +98,7 @@ def get_existing_topics_from_history(language="en"):
                 topic = topic.replace(" #Shorts", "").replace("#Shorts", "").strip()
                 if topic and len(topic) > 5:  # 너무 짧은 것은 제외
                     topics.add(topic.lower())
-        
+
         print(f"📚 HISTORY.md에서 {len(topics)}개 기존 주제 발견 ({language})")
         return topics
     except Exception as e:
@@ -109,82 +109,88 @@ def get_existing_topics_from_history(language="en"):
 def filter_existing_topics(topics, existing_topics):
     """
     기존 주제와 유사한 주제 필터링
-    
+
     Args:
         topics: 새 주제 리스트
         existing_topics: 기존 주제 Set
-        
+
     Returns:
         필터링된 주제 리스트
     """
     if not existing_topics:
         return topics
-    
+
     filtered = []
     for topic in topics:
         topic_lower = topic.lower().strip()
-        
+
         # 정확히 일치하는 경우 제외
         if topic_lower in existing_topics:
             continue
-        
+
         # 부분 일치 체크 (너무 유사한 주제 제외)
         is_similar = False
         for existing in existing_topics:
             # 한쪽이 다른 쪽에 포함되어 있고, 길이가 비슷하면 유사한 것으로 간주
-            if (topic_lower in existing or existing in topic_lower) and abs(len(topic_lower) - len(existing)) < 20:
+            if (topic_lower in existing or existing in topic_lower) and abs(
+                len(topic_lower) - len(existing)
+            ) < 20:
                 is_similar = True
                 break
-        
+
         if not is_similar:
             filtered.append(topic)
-    
+
     return filtered
 
 
 def filter_by_language(topics, language="en"):
     """
     주제를 언어별로 필터링 (한글과 영어만 허용)
-    
+
     Args:
         topics: 주제 리스트
         language: 'ko' 또는 'en'
-        
+
     Returns:
         해당 언어로만 작성된 주제 리스트
     """
     if not topics:
         return []
-    
+
     filtered = []
     excluded_count = 0
     excluded_reasons = {}
-    
+
     for topic in topics:
         # 한글 문자 개수
         korean_chars = len(re.findall(r"[가-힣]", topic))
         # 영어 문자 개수 (ASCII 영문자만)
         english_chars = len(re.findall(r"[a-zA-Z]", topic))
-        
+
         # 특수 문자, 숫자, 이모지 제거 후 실제 문자만 계산
         clean_topic = re.sub(r"[^\w\s가-힣]", "", topic)
         clean_korean = len(re.findall(r"[가-힣]", clean_topic))
         clean_english = len(re.findall(r"[a-zA-Z]", clean_topic))
         clean_total = clean_korean + clean_english
-        
+
         if clean_total == 0:
             continue  # 한글/영어 문자가 없으면 제외
-        
+
         # 다른 언어 문자 체크 (ASCII 영문자와 한글만 허용)
         # 1. 라틴어 확장 문자 (스페인어, 독일어, 프랑스어 등)
-        latin_extended = len(re.findall(r"[àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ]", topic, re.IGNORECASE))
+        latin_extended = len(
+            re.findall(r"[àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ]", topic, re.IGNORECASE)
+        )
         # 2. 키릴 문자 (러시아어 등)
         cyrillic = len(re.findall(r"[А-Яа-яЁё]", topic))
         # 3. 아랍어 문자
         arabic = len(re.findall(r"[\u0600-\u06FF]", topic))
         # 4. 힌디어/텔루구어 등 인도 언어 (데바나가리, 텔루구 문자 등)
         # 텔루구: \u0C00-\u0C7F, 데바나가리: \u0900-\u097F, 타밀어: \u0B80-\u0BFF
-        indic_scripts = len(re.findall(r"[\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF\u0980-\u09FF]", topic))
+        indic_scripts = len(
+            re.findall(r"[\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF\u0980-\u09FF]", topic)
+        )
         # 5. 중국어/일본어 문자
         cjk = len(re.findall(r"[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]", topic))
         # 6. 태국어
@@ -193,55 +199,65 @@ def filter_by_language(topics, language="en"):
         greek = len(re.findall(r"[\u0370-\u03FF]", topic))
         # 8. 히브리어
         hebrew = len(re.findall(r"[\u0590-\u05FF]", topic))
-        
+
         # 다른 언어 문자가 하나라도 있으면 제외
         if latin_extended > 0:
             excluded_count += 1
-            excluded_reasons['latin_extended'] = excluded_reasons.get('latin_extended', 0) + 1
+            excluded_reasons["latin_extended"] = (
+                excluded_reasons.get("latin_extended", 0) + 1
+            )
             continue
         if cyrillic > 0:
             excluded_count += 1
-            excluded_reasons['cyrillic'] = excluded_reasons.get('cyrillic', 0) + 1
+            excluded_reasons["cyrillic"] = excluded_reasons.get("cyrillic", 0) + 1
             continue
         if arabic > 0:
             excluded_count += 1
-            excluded_reasons['arabic'] = excluded_reasons.get('arabic', 0) + 1
+            excluded_reasons["arabic"] = excluded_reasons.get("arabic", 0) + 1
             continue
         if indic_scripts > 0:
             excluded_count += 1
-            excluded_reasons['indic_scripts'] = excluded_reasons.get('indic_scripts', 0) + 1
+            excluded_reasons["indic_scripts"] = (
+                excluded_reasons.get("indic_scripts", 0) + 1
+            )
             # 디버깅: 텔루구어 등 인도 언어 발견 시 로그
             if indic_scripts > 0:
-                print(f"  ⚠️ 인도 언어 문자 발견 (제외): {topic[:50]}... (인도 언어 문자 {indic_scripts}개)")
+                print(
+                    f"  ⚠️ 인도 언어 문자 발견 (제외): {topic[:50]}... (인도 언어 문자 {indic_scripts}개)"
+                )
             continue
         if cjk > 0:
             excluded_count += 1
-            excluded_reasons['cjk'] = excluded_reasons.get('cjk', 0) + 1
+            excluded_reasons["cjk"] = excluded_reasons.get("cjk", 0) + 1
             continue
         if thai > 0:
             excluded_count += 1
-            excluded_reasons['thai'] = excluded_reasons.get('thai', 0) + 1
+            excluded_reasons["thai"] = excluded_reasons.get("thai", 0) + 1
             continue
         if greek > 0:
             excluded_count += 1
-            excluded_reasons['greek'] = excluded_reasons.get('greek', 0) + 1
+            excluded_reasons["greek"] = excluded_reasons.get("greek", 0) + 1
             continue
         if hebrew > 0:
             excluded_count += 1
-            excluded_reasons['hebrew'] = excluded_reasons.get('hebrew', 0) + 1
+            excluded_reasons["hebrew"] = excluded_reasons.get("hebrew", 0) + 1
             continue
-        
+
         # 추가 체크: ASCII 영문자와 한글 외의 유니코드 문자 확인
         # 허용 문자: ASCII 영문자(a-zA-Z), 한글(가-힣), 공백, 숫자, 기본 구두점
         allowed_chars = re.findall(r"[a-zA-Z가-힣\s0-9.,!?;:'\"()\-]", topic)
-        allowed_ratio = len("".join(allowed_chars)) / len(topic) if len(topic) > 0 else 0
-        
+        allowed_ratio = (
+            len("".join(allowed_chars)) / len(topic) if len(topic) > 0 else 0
+        )
+
         # 허용된 문자 비율이 80% 미만이면 제외 (너무 많은 특수문자나 다른 문자)
         if allowed_ratio < 0.8:
             excluded_count += 1
-            excluded_reasons['low_allowed_ratio'] = excluded_reasons.get('low_allowed_ratio', 0) + 1
+            excluded_reasons["low_allowed_ratio"] = (
+                excluded_reasons.get("low_allowed_ratio", 0) + 1
+            )
             continue
-        
+
         if language == "ko":
             # 한국어 주제: 한글이 70% 이상이어야 함 (엄격하게)
             korean_ratio = clean_korean / clean_total if clean_total > 0 else 0
@@ -259,13 +275,15 @@ def filter_by_language(topics, language="en"):
                 filtered.append(topic)
             else:
                 excluded_count += 1
-                excluded_reasons['english_ratio'] = excluded_reasons.get('english_ratio', 0) + 1
-    
+                excluded_reasons["english_ratio"] = (
+                    excluded_reasons.get("english_ratio", 0) + 1
+                )
+
     # 디버깅 정보 출력
     if excluded_count > 0 and excluded_reasons:
         reason_str = ", ".join([f"{k}: {v}" for k, v in excluded_reasons.items()])
         print(f"  📊 언어 필터링 상세: 총 {excluded_count}개 제외 ({reason_str})")
-    
+
     return filtered
 
 
@@ -511,7 +529,9 @@ def collect_topics(language="en"):
             print(f"🚫 HISTORY.md 중복 주제 {filtered_count}개 제외됨")
 
     print("=" * 60)
-    print(f"📊 총 {len(all_topics)}개 주제 수집 완료 (언어 필터링 + HISTORY.md 필터링 후)")
+    print(
+        f"📊 총 {len(all_topics)}개 주제 수집 완료 (언어 필터링 + HISTORY.md 필터링 후)"
+    )
 
     return all_topics
 

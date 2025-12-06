@@ -12,7 +12,8 @@ class PromptBuilder:
         # target_duration에 맞게 동적으로 문장 수 계산
         is_short = target_duration <= 30
         max_sentences = (
-            max(4, min(8, target_duration // 3)) if is_short
+            max(4, min(8, target_duration // 3))
+            if is_short
             else max(10, min(16, target_duration // 3))
         )
 
@@ -38,7 +39,7 @@ class PromptBuilder:
             if is_short
             else ""
         )
-        
+
         if language == "en":
             return f"Write a YouTube Shorts script for '{topic}'. Each sentence should be 3-4 seconds long, write {max_sentences} sentences total to make it about {target_duration} seconds (maximum 60 seconds). **Important: Write all sentences in English only. Do not include any Korean sentences or words.** Important: Write only pure dialogue or explanations, never include production instructions like 'background music', 'subtitles', 'start', etc. The first sentence must be a powerful Hook that stops the scroll, and develop the content with maximum engagement.{short_video_guidance}"
         else:
@@ -56,7 +57,7 @@ class PromptBuilder:
         """Returns a dictionary of English prompts."""
         # 짧은 영상(15-30초) vs 긴 영상(45-60초) 구분
         is_short_video = target_duration <= 30
-        
+
         if is_short_video:
             # 짧은 영상: 완주율 최적화를 위한 타이트한 구조
             sentence_count = max(4, min(8, target_duration // 3))  # 3-4초당 1문장
@@ -311,14 +312,18 @@ class PromptBuilder:
         # 짧은 영상(15-30초) vs 긴 영상(45-60초) 구분
         is_short_video = target_duration <= 30
         sentence_count = max(4, min(16, target_duration // 3))
-        
-        short_video_guidance = """
+
+        short_video_guidance = (
+            """
 - **짧은 영상 핵심 전략**: 완주율이 조회수보다 중요합니다!
 - 매 초가 중요합니다 - 불필요한 내용 제거, 핵심만 전달
 - 반복 재생을 유도하는 구조로 작성 (완주율 100% 이상 = 알고리즘 부스트)
 - 스크롤을 멈추게 하는 강력한 훅 → 핵심 전달 → 강한 마무리
-""" if is_short_video else ""
-        
+"""
+            if is_short_video
+            else ""
+        )
+
         prompts = {
             ContentType.HOOK: (
                 f"""당신은 YouTube Shorts용 Hook 영상 스크립트 작성 전문가입니다.

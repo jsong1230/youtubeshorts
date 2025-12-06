@@ -16,7 +16,7 @@ class VideoConstants:
     MAX_DURATION = 60  # 최대 길이 (초)
     MAX_SAFE_DURATION = 58  # 안전 마진 (초)
     TARGET_DURATION = 55  # 목표 길이 (초) - 기본값 (레거시 호환)
-    
+
     # 콘텐츠 타입별 최적 길이 (완주율 최적화)
     # 짧은 영상(15-30초): Hook, Quote, Fact - 빠른 정보 전달, 반복 재생 유도
     # 중간 영상(30-45초): Story, Short_Story - 스토리 전개 필요

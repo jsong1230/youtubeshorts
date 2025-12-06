@@ -157,12 +157,14 @@ class GoogleTrendsCollector:
             )
             return trending_keywords
         except Exception as e:
-            # 400 에러는 Google Trends API 엔드포인트 변경으로 인한 것으로, 
+            # 400 에러는 Google Trends API 엔드포인트 변경으로 인한 것으로,
             # pytrends 라이브러리가 더 이상 유지보수되지 않아 발생하는 문제입니다.
             # 조용히 실패 처리 (로그 스팸 방지)
             error_msg = str(e)
             if "400" in error_msg or "Bad Request" in error_msg:
-                logger.debug(f"⚠️ Google Trends API 400 에러 (pytrends 라이브러리 이슈): {error_msg[:100]}")
+                logger.debug(
+                    f"⚠️ Google Trends API 400 에러 (pytrends 라이브러리 이슈): {error_msg[:100]}"
+                )
             else:
                 logger.warning(f"⚠️ Google Trends 키워드 수집 실패: {error_msg[:100]}")
             return []
@@ -200,7 +202,7 @@ class GoogleTrendsCollector:
         all_trending = []
         consecutive_errors = 0  # 연속 에러 카운트
         max_consecutive_errors = 2  # 최대 연속 에러 허용 (2번 실패하면 중단)
-        
+
         for i in range(0, len(keywords), 5):
             batch = keywords[i : i + 5]
             try:
@@ -358,7 +360,9 @@ Return only the topics, one per line."""
                     all_keywords.extend(keywords)
             except Exception as e:
                 # Google Trends 실패 시 조용히 넘어감 (다른 소스로 주제 수집 가능)
-                logger.debug(f"⚠️ Google Trends 카테고리 '{category}' 수집 실패: {str(e)[:100]}")
+                logger.debug(
+                    f"⚠️ Google Trends 카테고리 '{category}' 수집 실패: {str(e)[:100]}"
+                )
                 continue
 
         # 트렌드 점수 순으로 정렬
@@ -366,7 +370,9 @@ Return only the topics, one per line."""
             all_keywords.sort(key=lambda x: x["max_score"], reverse=True)
 
         if not all_keywords:
-            logger.debug("⚠️ Google Trends에서 키워드를 수집하지 못했습니다 (pytrends 라이브러리 이슈로 인한 400 에러)")
+            logger.debug(
+                "⚠️ Google Trends에서 키워드를 수집하지 못했습니다 (pytrends 라이브러리 이슈로 인한 400 에러)"
+            )
             return []
 
         # 주제로 변환

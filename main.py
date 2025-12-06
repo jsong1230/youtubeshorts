@@ -46,53 +46,66 @@ def main():
 
         if command == "topics" or command == "get-topics":
             # 주제 선정 명령어
-            from get_topics import collect_topics, get_existing_topics_from_history, filter_existing_topics
+            from get_topics import (
+                collect_topics,
+                get_existing_topics_from_history,
+                filter_existing_topics,
+            )
             import random
 
             # 한국어 4개, 영어 4개 선정
             logger.info("🎯 주제 선정 중... (한국어 4개, 영어 4개)")
             logger.info("📚 HISTORY.md에서 기존 주제 확인 중...")
-            
+
             # 한국어 주제 수집
             logger.info("")
             logger.info("=" * 60)
             logger.info("🇰🇷 한국어 주제 수집 중...")
             logger.info("=" * 60)
             korean_topics = collect_topics(language="ko")
-            
+
             if not korean_topics:
                 logger.warning("⚠️ 한국어 주제 수집 실패")
                 korean_topics = []
-            
+
             # 영어 주제 수집
             logger.info("")
             logger.info("=" * 60)
             logger.info("🇺🇸 영어 주제 수집 중...")
             logger.info("=" * 60)
             english_topics = collect_topics(language="en")
-            
+
             if not english_topics:
                 logger.warning("⚠️ 영어 주제 수집 실패")
                 english_topics = []
-            
+
             # 최종 언어 필터링 재검증 (안전장치)
             from get_topics import filter_by_language
+
             korean_topics = filter_by_language(korean_topics, language="ko")
             english_topics = filter_by_language(english_topics, language="en")
-            
+
             # 각각 4개씩 선택
-            korean_selected = random.sample(korean_topics, min(4, len(korean_topics))) if korean_topics else []
-            english_selected = random.sample(english_topics, min(4, len(english_topics))) if english_topics else []
-            
+            korean_selected = (
+                random.sample(korean_topics, min(4, len(korean_topics)))
+                if korean_topics
+                else []
+            )
+            english_selected = (
+                random.sample(english_topics, min(4, len(english_topics)))
+                if english_topics
+                else []
+            )
+
             # 선택된 주제 최종 검증
             korean_selected = filter_by_language(korean_selected, language="ko")
             english_selected = filter_by_language(english_selected, language="en")
-            
+
             logger.info("")
             logger.info("=" * 80)
             logger.info("📋 최종 선정된 주제")
             logger.info("=" * 80)
-            
+
             if korean_selected:
                 logger.info("")
                 logger.info("🇰🇷 한국어 주제 (4개):")
@@ -101,7 +114,7 @@ def main():
                     logger.info(f"  {i}. {topic}")
             else:
                 logger.warning("⚠️ 한국어 주제가 없습니다.")
-            
+
             if english_selected:
                 logger.info("")
                 logger.info("🇺🇸 영어 주제 (4개):")
@@ -110,10 +123,12 @@ def main():
                     logger.info(f"  {i}. {topic}")
             else:
                 logger.warning("⚠️ 영어 주제가 없습니다.")
-            
+
             logger.info("")
             logger.info("=" * 80)
-            logger.info(f"✅ 총 {len(korean_selected) + len(english_selected)}개 주제 선정 완료")
+            logger.info(
+                f"✅ 총 {len(korean_selected) + len(english_selected)}개 주제 선정 완료"
+            )
             logger.info("=" * 80)
             return
 
@@ -125,7 +140,11 @@ def main():
         elif command == "upload":
             # 즉시 업로드
             # --force, -f, --public 플래그 제외하고 주제 추출
-            args = [arg for arg in sys.argv[2:] if arg not in ["--force", "-f", "--public", "--private"]]
+            args = [
+                arg
+                for arg in sys.argv[2:]
+                if arg not in ["--force", "-f", "--public", "--private"]
+            ]
             force = "--force" in sys.argv or "-f" in sys.argv
             # 기본값: 비공개 (--public 플래그가 있으면 예약 업로드)
             is_private = "--public" not in sys.argv  # --public이 없으면 비공개가 기본값
@@ -176,7 +195,7 @@ def main():
                         privacy_status = "unlisted"  # 예약 업로드는 unlisted로 설정
                         schedule_delay_hours = hours_until_midnight  # 다음날 0시에 공개
                         logger.info("📅 예약 업로드 모드로 설정합니다.")
-                    
+
                     video_id = bot.uploader.upload_video(
                         video_path=video_path,
                         title=title,
@@ -330,65 +349,73 @@ def main():
             from collections import defaultdict
 
             logger.info("📊 채널 영상 목록과 HISTORY.md 비교 및 동기화 중...")
-            
+
             # 1. 채널에서 영상 목록 가져오기
             collector = ChannelHistoryCollector()
             channel_videos = collector.get_channel_videos(max_results=200, days=None)
-            
+
             if not channel_videos:
                 logger.error("❌ 채널에서 영상 목록을 가져올 수 없습니다.")
                 return
-            
+
             logger.info(f"✅ 채널에서 {len(channel_videos)}개 영상 수집 완료")
-            
+
             # 2. HISTORY.md에서 영상 정보 추출
             history_file = Path(__file__).parent / "HISTORY.md"
             if not history_file.exists():
                 logger.error("❌ HISTORY.md 파일을 찾을 수 없습니다.")
                 return
-            
+
             history_content = history_file.read_text(encoding="utf-8")
             original_history_content = history_content  # 백업용 원본 저장
-            
+
             # Video ID 패턴 찾기
             # 주석 처리된 Video ID는 제외하기 위해 두 단계로 처리
             video_id_pattern = r"Video ID[:\s]*`([A-Za-z0-9_-]+)`"
             all_video_ids = re.findall(video_id_pattern, history_content, re.IGNORECASE)
-            
+
             # 주석 처리된 Video ID 찾기
             commented_video_id_pattern = r"<!--\s*Video ID[:\s]*`([A-Za-z0-9_-]+)`"
-            commented_video_ids = set(re.findall(commented_video_id_pattern, history_content, re.IGNORECASE))
-            
+            commented_video_ids = set(
+                re.findall(commented_video_id_pattern, history_content, re.IGNORECASE)
+            )
+
             # 주석 처리되지 않은 Video ID만 사용
             history_video_ids = set(all_video_ids) - commented_video_ids
-            
-            logger.info(f"✅ HISTORY.md에서 {len(history_video_ids)}개 Video ID 추출 완료")
-            
+
+            logger.info(
+                f"✅ HISTORY.md에서 {len(history_video_ids)}개 Video ID 추출 완료"
+            )
+
             # 3. 비교 분석
             channel_video_ids = {v["video_id"] for v in channel_videos}
             channel_video_map = {v["video_id"]: v for v in channel_videos}
-            
+
             # 채널에는 있지만 HISTORY에 없는 영상
             missing_in_history = channel_video_ids - history_video_ids
-            
+
             # HISTORY에는 있지만 채널에 없는 영상 (삭제되었거나 잘못 기록된 경우)
             missing_in_channel = history_video_ids - channel_video_ids
-            
+
             # 4. 결과 출력
             logger.info("")
             logger.info("=" * 80)
             logger.info("📊 비교 결과")
             logger.info("=" * 80)
             logger.info(f"채널 영상 수: {len(channel_videos)}개")
-            logger.info(f"HISTORY.md 기록 수: {len(history_video_ids)}개 (Video ID 기준)")
+            logger.info(
+                f"HISTORY.md 기록 수: {len(history_video_ids)}개 (Video ID 기준)"
+            )
             logger.info("")
-            
+
             updated = False
-            
+
             # 5. 누락된 영상들을 HISTORY.md에 추가
             if missing_in_history:
-                logger.info(f"📝 HISTORY.md에 누락된 영상 {len(missing_in_history)}개 추가 중...")
-                
+                logger.info(
+                    f"📝 HISTORY.md에 누락된 영상 {len(missing_in_history)}개 추가 중..."
+                )
+
                 # 날짜별로 그룹화
                 videos_by_date = defaultdict(list)
                 for video_id in missing_in_history:
@@ -400,39 +427,48 @@ def main():
                         else:
                             date_key = datetime.now().strftime("%Y-%m-%d")
                         videos_by_date[date_key].append(video)
-                
+
                 # 날짜순으로 정렬 (최신순)
                 sorted_dates = sorted(videos_by_date.keys(), reverse=True)
-                
+
                 # HISTORY.md에 추가할 내용 생성
                 new_entries = []
                 for date in sorted_dates:
                     videos = videos_by_date[date]
                     # 날짜별로 그룹화하여 추가
-                    entry_lines = [f"- **{date} - Video Upload (채널 동기화로 추가됨) - {len(videos)}개 영상**"]
-                    
+                    entry_lines = [
+                        f"- **{date} - Video Upload (채널 동기화로 추가됨) - {len(videos)}개 영상**"
+                    ]
+
                     for i, video in enumerate(videos, 1):
                         title = video.get("title", "").replace(" #Shorts", "").strip()
                         topic = video.get("topic", title)
                         video_id = video.get("video_id", "")
                         published_at = video.get("published_at", "")
-                        
+
                         # 언어 판단 (제목에 한글이 있으면 한국어)
-                        is_korean = any(ord(char) >= 0xAC00 and ord(char) <= 0xD7A3 for char in title)
+                        is_korean = any(
+                            ord(char) >= 0xAC00 and ord(char) <= 0xD7A3
+                            for char in title
+                        )
                         lang_label = "한국어" if is_korean else "영어"
-                        
+
                         entry_lines.append(f"  - **{lang_label} 영상 {i}**: {topic}")
                         entry_lines.append(f"    - Video ID: `{video_id}`")
-                        entry_lines.append(f"    - URL: <https://www.youtube.com/watch?v={video_id}>")
+                        entry_lines.append(
+                            f"    - URL: <https://www.youtube.com/watch?v={video_id}>"
+                        )
                         if published_at:
                             if isinstance(published_at, datetime):
-                                entry_lines.append(f"    - 업로드일: {published_at.strftime('%Y-%m-%d %H:%M:%S')}")
+                                entry_lines.append(
+                                    f"    - 업로드일: {published_at.strftime('%Y-%m-%d %H:%M:%S')}"
+                                )
                             else:
                                 entry_lines.append(f"    - 업로드일: {published_at}")
                         entry_lines.append("")
-                    
+
                     new_entries.extend(entry_lines)
-                
+
                 # Recent Updates 섹션 바로 아래에 추가
                 # "## Recent Updates" 다음 줄에 삽입 (빈 줄 제거)
                 insert_pattern = r"(## Recent Updates\n)"
@@ -440,119 +476,146 @@ def main():
                     # 기존 Recent Updates 다음에 빈 줄이 있으면 그대로, 없으면 추가
                     insert_text = "\n".join(new_entries) + "\n"
                     history_content = re.sub(
-                        insert_pattern,
-                        r"\1\n" + insert_text,
-                        history_content,
-                        count=1
+                        insert_pattern, r"\1\n" + insert_text, history_content, count=1
                     )
                     updated = True
-                    logger.info(f"✅ {len(missing_in_history)}개 영상을 HISTORY.md에 추가했습니다.")
+                    logger.info(
+                        f"✅ {len(missing_in_history)}개 영상을 HISTORY.md에 추가했습니다."
+                    )
                 else:
-                    logger.warning("⚠️  '## Recent Updates' 섹션을 찾을 수 없습니다. 파일 끝에 추가합니다.")
+                    logger.warning(
+                        "⚠️  '## Recent Updates' 섹션을 찾을 수 없습니다. 파일 끝에 추가합니다."
+                    )
                     # 파일 끝에 추가
-                    history_content = history_content.rstrip() + "\n\n" + "\n".join(new_entries) + "\n"
+                    history_content = (
+                        history_content.rstrip()
+                        + "\n\n"
+                        + "\n".join(new_entries)
+                        + "\n"
+                    )
                     updated = True
-                    logger.info(f"✅ {len(missing_in_history)}개 영상을 HISTORY.md 끝에 추가했습니다.")
+                    logger.info(
+                        f"✅ {len(missing_in_history)}개 영상을 HISTORY.md 끝에 추가했습니다."
+                    )
             else:
                 logger.info("✅ HISTORY.md에 모든 채널 영상이 기록되어 있습니다.")
-            
+
             # 6. 채널에 없는 영상들을 HISTORY.md에서 주석 처리
             if missing_in_channel:
-                logger.info(f"🗑️  채널에 없는 영상 {len(missing_in_channel)}개 주석 처리 중...")
-                
+                logger.info(
+                    f"🗑️  채널에 없는 영상 {len(missing_in_channel)}개 주석 처리 중..."
+                )
+
                 for video_id in missing_in_channel:
                     # Video ID가 포함된 영상 블록 전체 찾기
                     # 패턴: "영상 N:" 부터 다음 "영상" 또는 "Video Upload" 항목까지
                     # 또는 Video ID부터 다음 항목(- **로 시작하는 항목)까지
                     pattern = rf"(\s+-\s+\*\*[^\*]+\*\*[^\n]*\n(?:(?!\s+-\s+\*\*)[^\n]*\n)*\s+Video ID[:\s]*`{re.escape(video_id)}`[^\n]*\n(?:(?!\s+-\s+\*\*)[^\n]*\n)*)"
-                    
+
                     def replace_missing(match):
                         # 주석 처리 (<!-- -->)
                         block = match.group(1)
-                        lines = block.split('\n')
+                        lines = block.split("\n")
                         commented_lines = []
                         for line in lines:
                             if line.strip():
                                 # 이미 주석 처리되어 있지 않으면 주석 처리
-                                if not line.strip().startswith('<!--'):
+                                if not line.strip().startswith("<!--"):
                                     commented_lines.append(f"<!-- {line} -->")
                                 else:
                                     commented_lines.append(line)
                             else:
                                 commented_lines.append(line)
-                        return '\n'.join(commented_lines)
-                    
-                    new_content = re.sub(pattern, replace_missing, history_content, flags=re.MULTILINE)
+                        return "\n".join(commented_lines)
+
+                    new_content = re.sub(
+                        pattern, replace_missing, history_content, flags=re.MULTILINE
+                    )
                     if new_content != history_content:
                         history_content = new_content
                         updated = True
                         logger.info(f"  - Video ID {video_id} 주석 처리됨")
-                
+
                 if updated:
-                    logger.info(f"✅ {len(missing_in_channel)}개 영상을 HISTORY.md에서 주석 처리했습니다.")
+                    logger.info(
+                        f"✅ {len(missing_in_channel)}개 영상을 HISTORY.md에서 주석 처리했습니다."
+                    )
             else:
                 logger.info("✅ 채널에 모든 HISTORY.md 기록이 존재합니다.")
-            
+
             # 6-1. 주석 처리된 영상 중 채널에 다시 나타난 영상 주석 해제
             uncomment_video_ids = set()
             commented_video_pattern = r"<!--\s*Video ID[:\s]*`([A-Za-z0-9_-]+)`"
-            commented_video_ids = set(re.findall(commented_video_pattern, history_content, re.IGNORECASE))
-            
+            commented_video_ids = set(
+                re.findall(commented_video_pattern, history_content, re.IGNORECASE)
+            )
+
             if commented_video_ids:
                 # 주석 처리된 영상 중 채널에 있는 영상 찾기
                 uncomment_video_ids = commented_video_ids & channel_video_ids
-                
+
                 if uncomment_video_ids:
-                    logger.info(f"🔄 주석 처리된 영상 중 {len(uncomment_video_ids)}개가 채널에 다시 나타나 주석 해제 중...")
-                    
+                    logger.info(
+                        f"🔄 주석 처리된 영상 중 {len(uncomment_video_ids)}개가 채널에 다시 나타나 주석 해제 중..."
+                    )
+
                     for video_id in uncomment_video_ids:
                         # 주석 처리된 블록 찾기 및 해제
                         # Video ID가 포함된 주석 처리된 블록 전체 찾기
                         # 각 줄에서 <!-- 와 --> 제거
                         pattern = rf"((?:<!--\s+[^\n]*\n)*<!--\s+-\s+\*\*[^\*]+\*\*[^\n]*\n(?:(?:<!--\s+[^\n]*\n)*)*<!--\s+Video ID[:\s]*`{re.escape(video_id)}`[^\n]*\n(?:(?:<!--\s+[^\n]*\n)*)*)"
-                        
+
                         def uncomment_block(match):
                             block = match.group(1)
                             # 각 줄에서 <!-- 와 --> 제거
-                            lines = block.split('\n')
+                            lines = block.split("\n")
                             uncommented_lines = []
                             for line in lines:
                                 stripped = line.strip()
-                                if stripped.startswith('<!--') and stripped.endswith('-->'):
+                                if stripped.startswith("<!--") and stripped.endswith(
+                                    "-->"
+                                ):
                                     # <!-- 내용 --> 형식
                                     content = stripped[4:-3].strip()
                                     indent = len(line) - len(line.lstrip())
-                                    uncommented_lines.append(' ' * indent + content)
-                                elif stripped.startswith('<!--'):
+                                    uncommented_lines.append(" " * indent + content)
+                                elif stripped.startswith("<!--"):
                                     # <!-- 내용 (다음 줄에 -->)
                                     content = stripped[4:].strip()
                                     indent = len(line) - len(line.lstrip())
-                                    uncommented_lines.append(' ' * indent + content)
-                                elif stripped == '-->':
+                                    uncommented_lines.append(" " * indent + content)
+                                elif stripped == "-->":
                                     # --> 만 있는 줄은 건너뛰기
                                     continue
                                 else:
                                     uncommented_lines.append(line)
-                            return '\n'.join(uncommented_lines)
-                        
-                        new_content = re.sub(pattern, uncomment_block, history_content, flags=re.MULTILINE)
+                            return "\n".join(uncommented_lines)
+
+                        new_content = re.sub(
+                            pattern,
+                            uncomment_block,
+                            history_content,
+                            flags=re.MULTILINE,
+                        )
                         if new_content != history_content:
                             history_content = new_content
                             updated = True
                             logger.info(f"  - Video ID {video_id} 주석 해제됨")
-                    
+
                     if updated:
-                        logger.info(f"✅ {len(uncomment_video_ids)}개 영상의 주석을 해제했습니다.")
-            
+                        logger.info(
+                            f"✅ {len(uncomment_video_ids)}개 영상의 주석을 해제했습니다."
+                        )
+
             logger.info("=" * 80)
-            
+
             # 7. HISTORY.md 파일 업데이트
             if updated:
                 # 백업 생성 (원본 내용 사용)
-                backup_file = history_file.with_suffix('.md.bak')
+                backup_file = history_file.with_suffix(".md.bak")
                 backup_file.write_text(original_history_content, encoding="utf-8")
                 logger.info(f"📄 백업 파일 생성: {backup_file}")
-                
+
                 # 업데이트된 내용 저장
                 history_file.write_text(history_content, encoding="utf-8")
                 logger.info(f"✅ HISTORY.md 파일이 업데이트되었습니다.")
@@ -574,12 +637,8 @@ def main():
             logger.info(
                 "  python main.py upload [주제/파일] [--force] [--public]  - 즉시 영상 생성 및 업로드"
             )
-            logger.info(
-                "    --force: 중복 체크 건너뛰기"
-            )
-            logger.info(
-                "    --public: 예약 업로드 모드 (기본값: 비공개 즉시 업로드)"
-            )
+            logger.info("    --force: 중복 체크 건너뛰기")
+            logger.info("    --public: 예약 업로드 모드 (기본값: 비공개 즉시 업로드)")
             logger.info(
                 "  python main.py batch [개수] [--upload] - 여러 영상 순차 생성 (2개 이상)"
             )
@@ -597,7 +656,9 @@ def main():
                 "  python main.py analyze        - YouTube Shorts 성과 분석 리포트 출력"
             )
             logger.info("  python main.py quota-status   - API 할당량 사용 현황 확인")
-            logger.info("  python main.py compare-history - 채널 영상과 HISTORY.md 비교")
+            logger.info(
+                "  python main.py compare-history - 채널 영상과 HISTORY.md 비교"
+            )
     else:
         # 기본: 영상 생성 후 업로드 전 확인 요청
         bot.create_and_upload(auto_upload=False)
