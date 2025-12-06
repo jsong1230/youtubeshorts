@@ -160,7 +160,7 @@ def filter_by_language(topics, language="en"):
 
     filtered = []
     excluded_count = 0
-    excluded_reasons = {}
+    excluded_reasons: dict[str, int] = {}
 
     for topic in topics:
         # 특수 문자, 숫자, 이모지 제거 후 실제 문자만 계산

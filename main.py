@@ -183,9 +183,10 @@ def main():
                     )
 
                     # 기본값: 비공개 즉시 업로드 (--public 플래그가 있으면 예약 업로드)
+                    schedule_delay_hours: float
                     if is_private:
                         privacy_status = "private"
-                        schedule_delay_hours = 0  # 즉시 업로드
+                        schedule_delay_hours = 0.0  # 즉시 업로드
                         logger.info("🔒 비공개 모드로 업로드합니다.")
                     else:
                         privacy_status = "unlisted"  # 예약 업로드는 unlisted로 설정
