@@ -15,7 +15,23 @@ class VideoConstants:
     MIN_DURATION = 15  # 최소 길이 (초)
     MAX_DURATION = 60  # 최대 길이 (초)
     MAX_SAFE_DURATION = 58  # 안전 마진 (초)
-    TARGET_DURATION = 55  # 목표 길이 (초)
+    TARGET_DURATION = 55  # 목표 길이 (초) - 기본값 (레거시 호환)
+    
+    # 콘텐츠 타입별 최적 길이 (완주율 최적화)
+    # 짧은 영상(15-30초): Hook, Quote, Fact - 빠른 정보 전달, 반복 재생 유도
+    # 중간 영상(30-45초): Story, Short_Story - 스토리 전개 필요
+    # 긴 영상(45-60초): Book_Review, Meditation, Breathing - 상세 설명 필요
+    CONTENT_TYPE_DURATIONS = {
+        "hook": 20,  # 15-25초 범위, 빠른 훅 + 핵심 전달
+        "quote": 22,  # 18-28초 범위, 명언 + 간단한 설명
+        "fact": 25,  # 20-30초 범위, 팩트 + 핵심 설명
+        "story": 40,  # 35-45초 범위, 스토리 전개 필요
+        "short_story": 35,  # 30-40초 범위, 짧은 스토리
+        "meditation": 50,  # 45-60초 범위, 명상 가이드
+        "breathing": 45,  # 40-55초 범위, 호흡 가이드
+        "book_review": 50,  # 45-60초 범위, 여러 책 소개
+        "auto": 22,  # 기본값: 짧은 영상 선호
+    }
 
     # 페이드 효과
     DEFAULT_FADE_DURATION = 0.5  # 기본 페이드 길이 (초)

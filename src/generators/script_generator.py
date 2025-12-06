@@ -29,6 +29,7 @@ from src.utils.logger import get_logger
 from src.generators.script.prompt_builder import PromptBuilder
 from src.generators.script.script_parser import ScriptParser
 from src.generators.script.script_validator import ScriptValidator
+from src.generators.video_constants import VideoConstants
 
 logger = get_logger(__name__)
 
@@ -249,7 +250,23 @@ class ScriptGenerator:
                 except ValueError:
                     content_type = ContentType.AUTO
 
-            target_duration = settings.SHORTS_TARGET_DURATION  # 55초
+            # 콘텐츠 타입별 최적 길이 자동 설정 (완주율 최적화)
+            if content_type and content_type != ContentType.AUTO:
+                content_type_key = content_type.value.lower()
+                target_duration = VideoConstants.CONTENT_TYPE_DURATIONS.get(
+                    content_type_key, settings.SHORTS_TARGET_DURATION
+                )
+                logger.info(
+                    f"📏 콘텐츠 타입 '{content_type_key}' 최적 길이: {target_duration}초 (완주율 최적화)"
+                )
+            else:
+                # AUTO 또는 타입 미지정 시 기본값 (짧은 영상 선호)
+                target_duration = (
+                    VideoConstants.CONTENT_TYPE_DURATIONS.get("auto")
+                    if settings.PREFER_SHORT_VIDEOS
+                    else settings.SHORTS_TARGET_DURATION
+                )
+            
             models_to_try = ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"]
             response = None
             last_error = None

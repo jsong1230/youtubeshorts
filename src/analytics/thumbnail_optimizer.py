@@ -342,6 +342,138 @@ class ThumbnailOptimizer:
             logger.warning(f"⚠️ 썸네일 성과 조회 실패: {e}")
             return []
 
+    def get_ab_test_variants(self) -> List[str]:
+        """
+        A/B 테스트용 썸네일 변형 목록 반환
+        
+        Returns:
+            썸네일 변형 목록 (예: ['default', 'bold', 'minimal', 'text_heavy'])
+        """
+        return ["default", "bold", "minimal", "text_heavy", "emotion_focused"]
+
+    def should_run_ab_test(self, video_id: str) -> bool:
+        """
+        A/B 테스트를 실행할지 결정
+        
+        Args:
+            video_id: 영상 ID
+            
+        Returns:
+            A/B 테스트 실행 여부
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # 해당 영상에 대한 기존 썸네일 수 확인
+            cursor.execute(
+                "SELECT COUNT(*) FROM thumbnails WHERE video_id = ?",
+                (video_id,),
+            )
+            count = cursor.fetchone()[0]
+            conn.close()
+            
+            # 이미 2개 이상의 변형이 있으면 테스트 완료로 간주
+            return count < 2
+        except Exception as e:
+            logger.warning(f"⚠️ A/B 테스트 결정 실패: {e}")
+            return False
+
+    def get_recommended_variant(
+        self, content_type: str = None, days: int = 30
+    ) -> str:
+        """
+        콘텐츠 타입별 추천 썸네일 변형 조회
+        
+        Args:
+            content_type: 콘텐츠 타입 (hook, quote, story, fact 등)
+            days: 최근 며칠간의 데이터만 사용
+            
+        Returns:
+            추천 썸네일 변형
+        """
+        try:
+            # 콘텐츠 타입별 최적 변형이 있으면 사용
+            best_variant = self.get_best_thumbnail_variant(days=days)
+            if best_variant:
+                return best_variant
+            
+            # 기본값: default
+            return "default"
+        except Exception as e:
+            logger.warning(f"⚠️ 추천 변형 조회 실패: {e}")
+            return "default"
+
+    def compare_thumbnail_performance(
+        self, video_id: str, min_impressions: int = 50
+    ) -> Optional[Dict]:
+        """
+        동일 영상의 여러 썸네일 변형 성과 비교
+        
+        Args:
+            video_id: 영상 ID
+            min_impressions: 최소 노출 수
+            
+        Returns:
+            성과 비교 결과 딕셔너리 또는 None
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute(
+                """
+                SELECT 
+                    thumbnail_variant,
+                    thumbnail_style,
+                    AVG(ctr) as avg_ctr,
+                    AVG(views) as avg_views,
+                    SUM(impressions) as total_impressions,
+                    COUNT(*) as test_count
+                FROM thumbnails
+                WHERE video_id = ? AND impressions >= ?
+                GROUP BY thumbnail_variant, thumbnail_style
+                ORDER BY avg_ctr DESC
+            """,
+                (video_id, min_impressions),
+            )
+            
+            results = []
+            for row in cursor.fetchall():
+                results.append(
+                    {
+                        "variant": row[0],
+                        "style": row[1],
+                        "avg_ctr": row[2],
+                        "avg_views": row[3],
+                        "total_impressions": row[4],
+                        "test_count": row[5],
+                    }
+                )
+            
+            conn.close()
+            
+            if results:
+                # 최고 성과 변형 찾기
+                best = max(results, key=lambda x: x["avg_ctr"])
+                return {
+                    "variants": results,
+                    "best_variant": best["variant"],
+                    "best_style": best["style"],
+                    "improvement": (
+                        (best["avg_ctr"] - results[0]["avg_ctr"])
+                        / results[0]["avg_ctr"]
+                        * 100
+                        if len(results) > 1 and results[0]["avg_ctr"] > 0
+                        else 0
+                    ),
+                }
+            
+            return None
+        except Exception as e:
+            logger.warning(f"⚠️ 썸네일 성과 비교 실패: {e}")
+            return None
+
     def optimize_for_platform(self, platform: str = "youtube_shorts") -> Dict:
         """
         플랫폼별 썸네일 최적화 설정 조회

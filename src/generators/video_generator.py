@@ -162,9 +162,23 @@ class AIVideoGenerator:
         for i, line in enumerate(script):
             logger.debug(f"   {i+1}. {line}")
 
-        # 3. 영상 길이 설정
+        # 3. 영상 길이 설정 (콘텐츠 타입별 최적 길이 자동 적용)
         if not duration:
-            duration = VideoConstants.TARGET_DURATION
+            if content_type and content_type != ContentType.AUTO:
+                content_type_key = content_type.value.lower()
+                duration = VideoConstants.CONTENT_TYPE_DURATIONS.get(
+                    content_type_key, VideoConstants.TARGET_DURATION
+                )
+                logger.info(
+                    f"📏 콘텐츠 타입 '{content_type_key}' 최적 길이 적용: {duration}초"
+                )
+            else:
+                # AUTO 또는 타입 미지정 시 기본값
+                duration = (
+                    VideoConstants.CONTENT_TYPE_DURATIONS.get("auto")
+                    if settings.PREFER_SHORT_VIDEOS
+                    else VideoConstants.TARGET_DURATION
+                )
 
         # 4. 영상 합성 (VideoCompositor 위임)
         logger.info("🎥 영상 합성 시작...")
