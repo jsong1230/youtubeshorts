@@ -157,10 +157,14 @@ class GoogleTrendsCollector:
             )
             return trending_keywords
         except Exception as e:
-            logger.warning(f"⚠️ Google Trends 키워드 수집 실패: {e}")
-            import traceback
-
-            traceback.print_exc()
+            # 400 에러는 Google Trends API 엔드포인트 변경으로 인한 것으로, 
+            # pytrends 라이브러리가 더 이상 유지보수되지 않아 발생하는 문제입니다.
+            # 조용히 실패 처리 (로그 스팸 방지)
+            error_msg = str(e)
+            if "400" in error_msg or "Bad Request" in error_msg:
+                logger.debug(f"⚠️ Google Trends API 400 에러 (pytrends 라이브러리 이슈): {error_msg[:100]}")
+            else:
+                logger.warning(f"⚠️ Google Trends 키워드 수집 실패: {error_msg[:100]}")
             return []
 
     def get_trending_keywords_by_category(
@@ -194,15 +198,29 @@ class GoogleTrendsCollector:
         # 5개씩 나눠서 처리 (Google Trends 제한)
         # 각 배치 사이에 추가 지연 시간 (rate limiting 방지)
         all_trending = []
+        consecutive_errors = 0  # 연속 에러 카운트
+        max_consecutive_errors = 2  # 최대 연속 에러 허용 (2번 실패하면 중단)
+        
         for i in range(0, len(keywords), 5):
             batch = keywords[i : i + 5]
-            trending = self.get_trending_keywords(
-                keywords=batch, timeframe=timeframe, geo=geo
-            )
-            all_trending.extend(trending)
+            try:
+                trending = self.get_trending_keywords(
+                    keywords=batch, timeframe=timeframe, geo=geo
+                )
+                if trending:
+                    all_trending.extend(trending)
+                    consecutive_errors = 0  # 성공 시 에러 카운트 리셋
+                else:
+                    consecutive_errors += 1
+            except Exception as e:
+                consecutive_errors += 1
+                # 연속 에러가 너무 많으면 조용히 중단 (로그 스팸 방지)
+                if consecutive_errors >= max_consecutive_errors:
+                    logger.debug(f"⚠️ Google Trends 연속 실패로 중단: {e}")
+                    break
 
             # 마지막 배치가 아니면 추가 지연 (Google rate limiting 방지)
-            if i + 5 < len(keywords):
+            if i + 5 < len(keywords) and consecutive_errors < max_consecutive_errors:
                 time.sleep(1.0)  # 배치 사이 1초 추가 지연
 
         # 트렌드 점수 순으로 정렬
@@ -332,15 +350,23 @@ Return only the topics, one per line."""
         # 각 카테고리에서 트렌드 키워드 수집
         all_keywords = []
         for category in categories:
-            keywords = self.get_trending_keywords_by_category(
-                category=category, timeframe="today 7-d", geo="US"
-            )
-            all_keywords.extend(keywords)
+            try:
+                keywords = self.get_trending_keywords_by_category(
+                    category=category, timeframe="today 7-d", geo="US"
+                )
+                if keywords:
+                    all_keywords.extend(keywords)
+            except Exception as e:
+                # Google Trends 실패 시 조용히 넘어감 (다른 소스로 주제 수집 가능)
+                logger.debug(f"⚠️ Google Trends 카테고리 '{category}' 수집 실패: {str(e)[:100]}")
+                continue
 
         # 트렌드 점수 순으로 정렬
-        all_keywords.sort(key=lambda x: x["max_score"], reverse=True)
+        if all_keywords:
+            all_keywords.sort(key=lambda x: x["max_score"], reverse=True)
 
         if not all_keywords:
+            logger.debug("⚠️ Google Trends에서 키워드를 수집하지 못했습니다 (pytrends 라이브러리 이슈로 인한 400 에러)")
             return []
 
         # 주제로 변환

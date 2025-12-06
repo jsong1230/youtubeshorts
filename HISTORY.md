@@ -1,5 +1,787 @@
 ## Recent Updates
 
+- **2025-12-06 - 언어 필터링 강화 및 비공개 업로드 기본값 변경**
+  - **언어 필터링 강화**: 주제 선정 시 한글/영어만 허용하도록 엄격한 필터링 추가
+    - 한국어 주제: 한글 70% 이상, 영어 30% 이하
+    - 영어 주제: 영어 95% 이상, 한글 5% 미만
+    - 다른 언어 문자(텔루구어, 스페인어, 인도네시아어 등) 자동 제외
+    - 인도 언어, 라틴 확장 문자, 키릴 문자, 아랍어, CJK, 태국어, 그리스어, 히브리어 등 체크
+    - 다단계 필터링: collect_topics → main.py 최종 검증 → 선택 후 재검증
+  - **비공개 업로드 기본값 변경**: `upload` 명령어 기본값을 비공개 즉시 업로드로 변경
+    - 기본값: 비공개(private) 즉시 업로드
+    - `--public` 플래그: 예약 업로드 모드 (다음날 0시에 공개)
+    - `VideoPipeline`도 `settings.PRIVACY_STATUS` 기본값("private") 사용
+  - **테스트 영상 생성 및 업로드**:
+    - 한국어 영상: "겨울철 난방비 절약을 위한 스마트한 팁으로 경제적 부담 덜기!" (22.76초)
+      - Video ID: `wxyk8hLQLgs`
+      - URL: <https://www.youtube.com/watch?v=wxyk8hLQLgs>
+      - 비공개 업로드 완료
+    - 영어 영상: "DIY Winter Stationery: Crafting Your Way to an Organized New Year" (24.77초)
+      - Video ID: `o4UqdDMQ6uU`
+      - URL: <https://www.youtube.com/watch?v=o4UqdDMQ6uU>
+      - 비공개 업로드 완료
+
+- **2025-12-05 - Video Upload (채널 동기화로 추가됨) - 9개 영상**
+  - **한국어 영상 1**: [English] Co-Intelligence Book Review | [영어] 듀얼 브레인 책 리뷰
+    - Video ID: `qPKNcEYxX6o`
+    - URL: <https://www.youtube.com/watch?v=qPKNcEYxX6o>
+    - 업로드일: 2025-12-05 12:49:36
+
+  - **한국어 영상 2**: Sleep Night BGM (6h) |수면의 밤 BGM
+    - Video ID: `8xth9Ui0zk0`
+    - URL: <https://www.youtube.com/watch?v=8xth9Ui0zk0>
+    - 업로드일: 2025-12-05 23:22:38
+
+  - **한국어 영상 3**: [한국어] 아토믹 해빗 책 리뷰 | [Korean] Atomic Habits Book Review
+    - Video ID: `OtsPh0vu9bI`
+    - URL: <https://www.youtube.com/watch?v=OtsPh0vu9bI>
+    - 업로드일: 2025-12-05 15:26:42
+
+  - **한국어 영상 4**: [한국어] 연금술사 책 리뷰 | [Korean] The Alchemist Book Review
+    - Video ID: `noOCT0HY1bE`
+    - URL: <https://www.youtube.com/watch?v=noOCT0HY1bE>
+    - 업로드일: 2025-12-05 13:35:11
+
+  - **한국어 영상 5**: [English] Man's Search for Meaning Book Review | [영어] 죽음의 수용소에서 책 리뷰
+    - Video ID: `M-REus9onxA`
+    - URL: <https://www.youtube.com/watch?v=M-REus9onxA>
+    - 업로드일: 2025-12-05 09:13:58
+
+  - **한국어 영상 6**: [한국어] 듀얼 브레인 책 리뷰 | [Korean] Co-Intelligence Book Review
+    - Video ID: `5eeuyeYs7-c`
+    - URL: <https://www.youtube.com/watch?v=5eeuyeYs7-c>
+    - 업로드일: 2025-12-05 12:50:02
+
+  - **한국어 영상 7**: [English] Atomic Habits Book Review | [영어] 아토믹 해빗 책 리뷰
+    - Video ID: `EHh8AY3MlGk`
+    - URL: <https://www.youtube.com/watch?v=EHh8AY3MlGk>
+    - 업로드일: 2025-12-05 15:26:10
+
+  - **한국어 영상 8**: [한국어] 죽음의 수용소에서 책 리뷰 | [Korean] Man's Search for Meaning Book Review
+    - Video ID: `Sz8MDOH15SI`
+    - URL: <https://www.youtube.com/watch?v=Sz8MDOH15SI>
+    - 업로드일: 2025-12-05 09:14:25
+
+  - **한국어 영상 9**: [English] The Alchemist Book Review | [영어] 연금술사 책 리뷰
+    - Video ID: `_5oNaO4f_tQ`
+    - URL: <https://www.youtube.com/watch?v=_5oNaO4f_tQ>
+    - 업로드일: 2025-12-05 13:34:50
+
+- **2025-12-04 - Video Upload (채널 동기화로 추가됨) - 2개 영상**
+  - **한국어 영상 1**: [English] Sátántangó Book Review | [영어] 사탄탱고 책 리뷰
+    - Video ID: `jOSE-rVyZI0`
+    - URL: <https://www.youtube.com/watch?v=jOSE-rVyZI0>
+    - 업로드일: 2025-12-04 01:59:05
+
+  - **한국어 영상 2**: [한국어] 사탄탱고 책 리뷰 | [Korean] Sátántangó Book Review
+    - Video ID: `pH7vLSLrSnw`
+    - URL: <https://www.youtube.com/watch?v=pH7vLSLrSnw>
+    - 업로드일: 2025-12-04 01:59:20
+
+- **2025-12-03 - Video Upload (채널 동기화로 추가됨) - 4개 영상**
+  - **한국어 영상 1**: [English] A Christmas Carol Book Review | [영어] 크리스마스 캐럴 책 리뷰
+    - Video ID: `NmhhK8ZIjG4`
+    - URL: <https://www.youtube.com/watch?v=NmhhK8ZIjG4>
+    - 업로드일: 2025-12-03 05:06:46
+
+  - **한국어 영상 2**: [English] The Polar Express Book Review | [영어] 폴라 익스프레스 책 리뷰
+    - Video ID: `RIgWEWUKMv0`
+    - URL: <https://www.youtube.com/watch?v=RIgWEWUKMv0>
+    - 업로드일: 2025-12-03 14:23:51
+
+  - **한국어 영상 3**: [한국어] 폴라 익스프레스 책 리뷰 | [Korean] The Polar Express Book Review
+    - Video ID: `CSzIegUu-e8`
+    - URL: <https://www.youtube.com/watch?v=CSzIegUu-e8>
+    - 업로드일: 2025-12-03 14:24:05
+
+  - **한국어 영상 4**: [한국어] 크리스마스 캐럴 책 리뷰 | [Korean] A Christmas Carol Book Review
+    - Video ID: `ynHSTn_ZLJs`
+    - URL: <https://www.youtube.com/watch?v=ynHSTn_ZLJs>
+    - 업로드일: 2025-12-03 05:07:01
+
+- **2025-12-02 - Video Upload (채널 동기화로 추가됨) - 9개 영상**
+  - **영어 영상 1**: The  December Mistake That Kills Your January Budget
+    - Video ID: `nXFG9QRHWhM`
+    - URL: <https://www.youtube.com/watch?v=nXFG9QRHWhM>
+    - 업로드일: 2025-12-02 14:26:59
+
+  - **한국어 영상 2**: [한국어] 소니아와 써니의 고독 책 리뷰 | [Korean] The Loneliness of Sonia and Sunny Book Review
+    - Video ID: `9ZAI9ZibZ_0`
+    - URL: <https://www.youtube.com/watch?v=9ZAI9ZibZ_0>
+    - 업로드일: 2025-12-02 04:24:34
+
+  - **영어 영상 3**: Why Smart People Max Out Their 401k in December (Not January)
+    - Video ID: `0x6WPchQ96c`
+    - URL: <https://www.youtube.com/watch?v=0x6WPchQ96c>
+    - 업로드일: 2025-12-02 14:27:16
+
+  - **한국어 영상 4**: 연말정산 세금 절감: 12월 31일 전에 꼭 해야 할 3가지
+    - Video ID: `ROHc7zf0h4Y`
+    - URL: <https://www.youtube.com/watch?v=ROHc7zf0h4Y>
+    - 업로드일: 2025-12-02 12:43:53
+
+  - **한국어 영상 5**: [한국어] 총, 균, 쇠 책 리뷰 | [Korean] Guns, Germs, and Steel Book Review
+    - Video ID: `XhcYsMr4NuU`
+    - URL: <https://www.youtube.com/watch?v=XhcYsMr4NuU>
+    - 업로드일: 2025-12-02 15:50:46
+
+  - **한국어 영상 6**: 새해를 위한 비상금 만들기: 3개월 안에 100만원 모으는 실전 방법
+    - Video ID: `gkJSlhFaCCY`
+    - URL: <https://www.youtube.com/watch?v=gkJSlhFaCCY>
+    - 업로드일: 2025-12-02 12:44:10
+
+  - **한국어 영상 7**: Good Bye 2025 / Happy New Year 2026 BGM (3h) | 안녕 2025
+    - Video ID: `OahsLshWAlM`
+    - URL: <https://www.youtube.com/watch?v=OahsLshWAlM>
+    - 업로드일: 2025-12-02 06:48:26
+
+  - **한국어 영상 8**: [English] Guns, Germs, and Steel Book Review | [영어] 총, 균, 쇠 책 리뷰
+    - Video ID: `-YbD5f_e8SA`
+    - URL: <https://www.youtube.com/watch?v=-YbD5f_e8SA>
+    - 업로드일: 2025-12-02 15:50:35
+
+  - **한국어 영상 9**: [English] The Loneliness of Sonia and Sunny Book Review | [영어] 소니아와 써니의 고독 책 리뷰
+    - Video ID: `ysghav2OokY`
+    - URL: <https://www.youtube.com/watch?v=ysghav2OokY>
+    - 업로드일: 2025-12-02 04:24:22
+
+- **2025-12-01 - Video Upload (채널 동기화로 추가됨) - 9개 영상**
+  - **영어 영상 1**: Consistency outruns talent every single time.
+    - Video ID: `fO26Q-6Eb_8`
+    - URL: <https://www.youtube.com/watch?v=fO26Q-6Eb_8>
+    - 업로드일: 2025-12-01 09:29:33
+
+  - **영어 영상 2**: Time is Money: The Secret to Maximizing Your Daily Productivity
+    - Video ID: `seLGHtHg750`
+    - URL: <https://www.youtube.com/watch?v=seLGHtHg750>
+    - 업로드일: 2025-12-01 09:35:41
+
+  - **한국어 영상 3**: [English] The Anxious Generation Book Review | [영어] 불안 세대 책 리뷰 | Auto-Generated
+    - Video ID: `YxzRHyImr_Y`
+    - URL: <https://www.youtube.com/watch?v=YxzRHyImr_Y>
+    - 업로드일: 2025-12-01 05:09:34
+
+  - **한국어 영상 4**: [한국어] 불안 세대 책 리뷰 | [Korean] The Anxious Generation Book Review | 일당백 스타일
+    - Video ID: `XU92ENg3eiI`
+    - URL: <https://www.youtube.com/watch?v=XU92ENg3eiI>
+    - 업로드일: 2025-12-01 05:09:40
+
+  - **한국어 영상 5**: [한국어] 선라이즈 온 더 리핑 책 리뷰 | [Korean] Sunrise on the Reaping Book Review
+    - Video ID: `vsqgSAgIdC4`
+    - URL: <https://www.youtube.com/watch?v=vsqgSAgIdC4>
+    - 업로드일: 2025-12-01 14:45:47
+
+  - **영어 영상 6**: Create a Cozy Winter Workspace: Boost Productivity with Seasonal Decor
+    - Video ID: `rL__NbB3a8k`
+    - URL: <https://www.youtube.com/watch?v=rL__NbB3a8k>
+    - 업로드일: 2025-12-01 09:32:29
+
+  - **한국어 영상 7**: [English] Sunrise on the Reaping Book Review | [영어] 선라이즈 온 더 리핑 책 리뷰
+    - Video ID: `fqhQF3uheEg`
+    - URL: <https://www.youtube.com/watch?v=fqhQF3uheEg>
+    - 업로드일: 2025-12-01 14:45:36
+
+  - **한국어 영상 8**: 크리스마스 선물 아이디어: 예산 안에서 특별함 더하기
+    - Video ID: `eC5EAXss-7w`
+    - URL: <https://www.youtube.com/watch?v=eC5EAXss-7w>
+    - 업로드일: 2025-12-01 15:29:31
+
+  - **한국어 영상 9**: Christmas Carols BGM (3h) | 크리스마스 캐롤송 BGM
+    - Video ID: `9L7e2Y2_iH8`
+    - URL: <https://www.youtube.com/watch?v=9L7e2Y2_iH8>
+    - 업로드일: 2025-12-01 12:35:29
+
+- **2025-11-30 - Video Upload (채널 동기화로 추가됨) - 6개 영상**
+  - **영어 영상 1**: Morning routine tips
+    - Video ID: `bqJkrhcdNzs`
+    - URL: <https://www.youtube.com/watch?v=bqJkrhcdNzs>
+    - 업로드일: 2025-11-30 02:59:57
+
+  - **한국어 영상 2**: [English] Buckeye Book Review | [영어] 벅아이 책 리뷰 | Auto-Generated
+    - Video ID: `YTkz7T-r7OU`
+    - URL: <https://www.youtube.com/watch?v=YTkz7T-r7OU>
+    - 업로드일: 2025-11-30 01:18:41
+
+  - **한국어 영상 3**: Celtic Background Music (3h) | 켈틱 BGM
+    - Video ID: `1c5mgsL0sig`
+    - URL: <https://www.youtube.com/watch?v=1c5mgsL0sig>
+    - 업로드일: 2025-11-30 03:25:10
+
+  - **영어 영상 4**: The $100 you save today becomes $1,000 in 10 years.
+    - Video ID: `l8cB8AK-9z8`
+    - URL: <https://www.youtube.com/watch?v=l8cB8AK-9z8>
+    - 업로드일: 2025-11-30 02:56:01
+
+  - **한국어 영상 5**: [한국어] 벅아이 책 리뷰 | [Korean] Buckeye Book Review | 일당백 스타일
+    - Video ID: `0t_VwtyyDN8`
+    - URL: <https://www.youtube.com/watch?v=0t_VwtyyDN8>
+    - 업로드일: 2025-11-30 01:18:51
+
+  - **영어 영상 6**: A messy closet is a money leak in disguise.
+    - Video ID: `_MtYtTPwpx0`
+    - URL: <https://www.youtube.com/watch?v=_MtYtTPwpx0>
+    - 업로드일: 2025-11-30 03:04:08
+
+- **2025-11-29 - Video Upload (채널 동기화로 추가됨) - 8개 영상**
+  - **한국어 영상 1**: [한국어] 햄릿 책 리뷰 | [Korean] Hamlet Book Review | 일당백 스타일
+    - Video ID: `pe4LYzG_2ts`
+    - URL: <https://www.youtube.com/watch?v=pe4LYzG_2ts>
+    - 업로드일: 2025-11-29 23:06:54
+
+  - **영어 영상 2**: Why Smart Investors Buy Index Funds in December
+    - Video ID: `cLvEiaE0H8U`
+    - URL: <https://www.youtube.com/watch?v=cLvEiaE0H8U>
+    - 업로드일: 2025-11-29 13:03:22
+
+  - **한국어 영상 3**: [한국어] 동물농장 책 리뷰 | [Korean] Animal Farm Book Review | 일당백 스타일
+    - Video ID: `v3HWKy3I384`
+    - URL: <https://www.youtube.com/watch?v=v3HWKy3I384>
+    - 업로드일: 2025-11-29 21:03:14
+
+  - **한국어 영상 4**: [English] Animal Farm Book Review | [영어] 동물농장 책 리뷰 | Auto-Generated
+    - Video ID: `VJevqE1i5eY`
+    - URL: <https://www.youtube.com/watch?v=VJevqE1i5eY>
+    - 업로드일: 2025-11-29 14:17:39
+
+  - **영어 영상 5**: The Hidden Tax Deduction That Could Save You $500 This Year
+    - Video ID: `jCJ5DGge5l0`
+    - URL: <https://www.youtube.com/watch?v=jCJ5DGge5l0>
+    - 업로드일: 2025-11-29 13:00:50
+
+  - **영어 영상 6**: 401k vs Roth IRA: The One Choice That Determines Your Retirement
+    - Video ID: `j223jh6mrog`
+    - URL: <https://www.youtube.com/watch?v=j223jh6mrog>
+    - 업로드일: 2025-11-29 13:08:39
+
+  - **한국어 영상 7**: [English] Hamlet Book Review | [영어] 햄릿 책 리뷰 | Auto-Generated
+    - Video ID: `BcNpf_bYNNI`
+    - URL: <https://www.youtube.com/watch?v=BcNpf_bYNNI>
+    - 업로드일: 2025-11-29 23:06:44
+
+  - **영어 영상 8**: The 30-Day No-Spend Challenge That Changed My Relationship With Money
+    - Video ID: `TTLLyJoX2jw`
+    - URL: <https://www.youtube.com/watch?v=TTLLyJoX2jw>
+    - 업로드일: 2025-11-29 13:11:20
+
+- **2025-11-27 - Video Upload (채널 동기화로 추가됨) - 10개 영상**
+  - **영어 영상 1**: I lost $10,000 in one year because of this single mistake #finance #motivation #facts
+    - Video ID: `oshdynFnc0o`
+    - URL: <https://www.youtube.com/watch?v=oshdynFnc0o>
+    - 업로드일: 2025-11-27 15:03:22
+
+  - **한국어 영상 2**: [한국어] 삼국지연의 책 리뷰 | [Korean] Romance of the Three Kingdoms Book Review | 일당백 스타일
+    - Video ID: `uWuCrxwgT08`
+    - URL: <https://www.youtube.com/watch?v=uWuCrxwgT08>
+    - 업로드일: 2025-11-27 10:57:02
+
+  - **한국어 영상 3**: [English] Farewell Book Review | [영어] 작별인사 책 리뷰 | Auto-Generated
+    - Video ID: `lhQj9R-L4Ms`
+    - URL: <https://www.youtube.com/watch?v=lhQj9R-L4Ms>
+    - 업로드일: 2025-11-27 14:23:21
+
+  - **한국어 영상 4**: [한국어] 작별인사 책 리뷰 | [Korean] Farewell Book Review | 일당백 스타일
+    - Video ID: `iQIWKNlInfw`
+    - URL: <https://www.youtube.com/watch?v=iQIWKNlInfw>
+    - 업로드일: 2025-11-27 13:41:19
+
+  - **영어 영상 5**: The morning routine that made me a millionaire
+    - Video ID: `9IHclxN9LCs`
+    - URL: <https://www.youtube.com/watch?v=9IHclxN9LCs>
+    - 업로드일: 2025-11-27 15:02:03
+
+  - **한국어 영상 6**: [English] Romance of the Three Kingdoms Book Review | [영어] 삼국지연의 책 리뷰 | Auto-Generated
+    - Video ID: `Le2xzYkkcFU`
+    - URL: <https://www.youtube.com/watch?v=Le2xzYkkcFU>
+    - 업로드일: 2025-11-27 11:03:03
+
+  - **영어 영상 7**: I failed 100 times, then this one change made me successful
+    - Video ID: `60eCUtP-26w`
+    - URL: <https://www.youtube.com/watch?v=60eCUtP-26w>
+    - 업로드일: 2025-11-27 15:02:19
+
+  - **영어 영상 8**: I lost $100,000 in Bitcoin because I made this one mistake
+    - Video ID: `pSbpYa19HqA`
+    - URL: <https://www.youtube.com/watch?v=pSbpYa19HqA>
+    - 업로드일: 2025-11-27 15:02:37
+
+  - **영어 영상 9**: It's Not That You're Lazy—It's Brain Fatigue
+    - Video ID: `GTRn7Z9G2SU`
+    - URL: <https://www.youtube.com/watch?v=GTRn7Z9G2SU>
+    - 업로드일: 2025-11-27 15:03:35
+
+  - **영어 영상 10**: Why 99% of people fail at their goals (and the 1% who don't)
+    - Video ID: `IUhqj5_yxyQ`
+    - URL: <https://www.youtube.com/watch?v=IUhqj5_yxyQ>
+    - 업로드일: 2025-11-27 15:01:49
+
+- **2025-11-26 - Video Upload (채널 동기화로 추가됨) - 9개 영상**
+  - **한국어 영상 1**: [English] Zorba the Greek Book Review | [영어] 그리스인 조르바 책 리뷰 | Auto-Generated
+    - Video ID: `zprHPsTcEH8`
+    - URL: <https://www.youtube.com/watch?v=zprHPsTcEH8>
+    - 업로드일: 2025-11-26 09:24:57
+
+  - **영어 영상 2**: He was rejected 100 times, then became a millionaire with one idea.
+    - Video ID: `EWQ_CHSkFMg`
+    - URL: <https://www.youtube.com/watch?v=EWQ_CHSkFMg>
+    - 업로드일: 2025-11-26 16:15:54
+
+  - **한국어 영상 3**: [한국어] 그리스인 조르바 책 리뷰 | [Korean] Zorba the Greek Book Review | 일당백 스타일
+    - Video ID: `3eDHhJPObwE`
+    - URL: <https://www.youtube.com/watch?v=3eDHhJPObwE>
+    - 업로드일: 2025-11-26 09:23:26
+
+  - **영어 영상 4**: I went from minimum wage to millionaire in 5 years—here's how.
+    - Video ID: `fzRECnj0zMo`
+    - URL: <https://www.youtube.com/watch?v=fzRECnj0zMo>
+    - 업로드일: 2025-11-26 16:15:57
+
+  - **영어 영상 5**: The morning routine that made me a millionaire
+    - Video ID: `LBT8k3Vx1fg`
+    - URL: <https://www.youtube.com/watch?v=LBT8k3Vx1fg>
+    - 업로드일: 2025-11-26 16:15:53
+
+  - **영어 영상 6**: He went from minimum wage to millionaire in 5 years with one strategy.
+    - Video ID: `tRQsnQlfR1Y`
+    - URL: <https://www.youtube.com/watch?v=tRQsnQlfR1Y>
+    - 업로드일: 2025-11-26 16:15:55
+
+  - **한국어 영상 7**: [English] Human Acts Book Review | [영어] 소년이 온다 책 리뷰 | Auto-Generated
+    - Video ID: `8KWGWs1uyuw`
+    - URL: <https://www.youtube.com/watch?v=8KWGWs1uyuw>
+    - 업로드일: 2025-11-26 16:18:46
+
+  - **영어 영상 8**: Why 99% of people fail at their goals (and the 1% who don't)
+    - Video ID: `VLH3q4iDboU`
+    - URL: <https://www.youtube.com/watch?v=VLH3q4iDboU>
+    - 업로드일: 2025-11-26 16:15:38
+
+  - **한국어 영상 9**: [한국어] 소년이 온다 책 리뷰 | [Korean] Human Acts Book Review | 일당백 스타일
+    - Video ID: `ZuM_wCbLu0E`
+    - URL: <https://www.youtube.com/watch?v=ZuM_wCbLu0E>
+    - 업로드일: 2025-11-26 09:20:09
+
+- **2025-11-25 - Video Upload (채널 동기화로 추가됨) - 6개 영상**
+  - **한국어 영상 1**: [한국어] 죄와 벌 책 리뷰 | [Korean] Crime and Punishment Book Review | 일당백 스타일
+    - Video ID: `IhCZ47v_RgI`
+    - URL: <https://www.youtube.com/watch?v=IhCZ47v_RgI>
+    - 업로드일: 2025-11-25 23:49:31
+
+  - **한국어 영상 2**: [English] Sapiens Book Review | [영어] 사피엔스 책 리뷰 | Auto-Generated
+    - Video ID: `UlOxyoHgZK8`
+    - URL: <https://www.youtube.com/watch?v=UlOxyoHgZK8>
+    - 업로드일: 2025-11-25 16:41:52
+
+  - **한국어 영상 3**: [English] Demian Book Review | [영어] 데미안: 에밀 싱클레어의 청년 시절 이야기 책 리뷰 | Auto-Generated
+    - Video ID: `8zPzJxFdi5k`
+    - URL: <https://www.youtube.com/watch?v=8zPzJxFdi5k>
+    - 업로드일: 2025-11-25 16:35:03
+
+  - **한국어 영상 4**: [한국어] 데미안 책 리뷰 | [Korean] Demian Book Review | 일당백 스타일"
+    - Video ID: `MO-GtMpxIck`
+    - URL: <https://www.youtube.com/watch?v=MO-GtMpxIck>
+    - 업로드일: 2025-11-25 16:29:57
+
+  - **한국어 영상 5**: [English] Crime and Punishment Book Review | [영어] 죄와 벌 책 리뷰 | Auto-Generated
+    - Video ID: `SQfx0tb9yeI`
+    - URL: <https://www.youtube.com/watch?v=SQfx0tb9yeI>
+    - 업로드일: 2025-11-25 23:53:19
+
+  - **한국어 영상 6**: [한국어] 사피엔스 책 리뷰 | [Korean] Sapiens Book Review | 일당백 스타일
+    - Video ID: `Lab_ypTwVM0`
+    - URL: <https://www.youtube.com/watch?v=Lab_ypTwVM0>
+    - 업로드일: 2025-11-25 16:39:46
+
+- **2025-11-24 - Video Upload (채널 동기화로 추가됨) - 10개 영상**
+  - **영어 영상 1**: New Year Financial Reset: The 3 Numbers That Changed My Money Game
+    - Video ID: `e-oqjbCya1A`
+    - URL: <https://www.youtube.com/watch?v=e-oqjbCya1A>
+    - 업로드일: 2025-11-24 15:36:58
+
+  - **영어 영상 2**: Black Friday Regret: The $500 Mistake I Made Last Year and How to Avoid It
+    - Video ID: `8R8g-e-b-80`
+    - URL: <https://www.youtube.com/watch?v=8R8g-e-b-80>
+    - 업로드일: 2025-11-24 15:36:44
+
+  - **영어 영상 3**: The January Budget Reset: 5 Moves That Saved Me ,000 Last Year
+    - Video ID: `WeoC6EB92Qc`
+    - URL: <https://www.youtube.com/watch?v=WeoC6EB92Qc>
+    - 업로드일: 2025-11-24 15:38:25
+
+  - **한국어 영상 4**: [한국어] 1984 책 리뷰 | [Korean] 1984 Book Review | 일당백 스타일
+    - Video ID: `_dhn1O7BWNs`
+    - URL: <https://www.youtube.com/watch?v=_dhn1O7BWNs>
+    - 업로드일: 2025-11-24 15:08:05
+
+  - **영어 영상 5**: January Investment Strategy: Why Smart People Buy Stocks in the First Week
+    - Video ID: `_pkdQrpFuwI`
+    - URL: <https://www.youtube.com/watch?v=_pkdQrpFuwI>
+    - 업로드일: 2025-11-24 15:37:30
+
+  - **한국어 영상 6**: 치매 예방을 위한 두뇌 훈련 - 쉽고 재미있는 34문제
+    - Video ID: `wTMPI2_EdwI`
+    - URL: <https://www.youtube.com/watch?v=wTMPI2_EdwI>
+    - 업로드일: 2025-11-24 09:34:09
+
+  - **영어 영상 7**: Brain Training for Seniors: Fun Activities to Prevent Dementia
+    - Video ID: `2XA6Y8c0PM4`
+    - URL: <https://www.youtube.com/watch?v=2XA6Y8c0PM4>
+    - 업로드일: 2025-11-24 09:34:28
+
+  - **영어 영상 8**: Year-End Expense Audit: The Hidden Subscription That Cost Me $1,200
+    - Video ID: `Pteq_ItjEHQ`
+    - URL: <https://www.youtube.com/watch?v=Pteq_ItjEHQ>
+    - 업로드일: 2025-11-24 15:37:44
+
+  - **영어 영상 9**: Holiday Gift Budget Hack: How I Saved $300 Without Looking Cheap
+    - Video ID: `oISKpLCxjZA`
+    - URL: <https://www.youtube.com/watch?v=oISKpLCxjZA>
+    - 업로드일: 2025-11-24 15:37:17
+
+  - **한국어 영상 10**: [English] 1984 Book Review | [영어] 1984 책 리뷰 | Auto-Generated
+    - Video ID: `cRd7BWQV4S8`
+    - URL: <https://www.youtube.com/watch?v=cRd7BWQV4S8>
+    - 업로드일: 2025-11-24 15:07:52
+
+- **2025-11-23 - Video Upload (채널 동기화로 추가됨) - 8개 영상**
+  - **영어 영상 1**: Decluttered desks raise focus by 25%.
+    - Video ID: `7uiXBX449t0`
+    - URL: <https://www.youtube.com/watch?v=7uiXBX449t0>
+    - 업로드일: 2025-11-23 14:59:56
+
+  - **영어 영상 2**: I automated emails with AI and finally slept.
+    - Video ID: `xfinnIPll8s`
+    - URL: <https://www.youtube.com/watch?v=xfinnIPll8s>
+    - 업로드일: 2025-11-23 15:00:32
+
+  - **영어 영상 3**: Preparing for winter is really about removing future discomfort.
+    - Video ID: `eU9YwDbnyOI`
+    - URL: <https://www.youtube.com/watch?v=eU9YwDbnyOI>
+    - 업로드일: 2025-11-23 14:59:35
+
+  - **영어 영상 4**: Declutter one room and watch your stress plummet
+    - Video ID: `LD-_METRnQ0`
+    - URL: <https://www.youtube.com/watch?v=LD-_METRnQ0>
+    - 업로드일: 2025-11-23 14:59:18
+
+  - **한국어 영상 5**: [한국어] 노르웨이의 숲 (상실의 시대) 책 리뷰 | [Korean] Norwegian Wood Book Review | 일당백 스타일
+    - Video ID: `w4D-PVE3Aa0`
+    - URL: <https://www.youtube.com/watch?v=w4D-PVE3Aa0>
+    - 업로드일: 2025-11-23 10:08:41
+
+  - **한국어 영상 6**: [English] Norwegian Wood (The Age of Loss) Book Review | [영어] 노르웨이의 숲 (상실의 시대) 책 리뷰 | Auto-Generated
+    - Video ID: `6L2zcTHfMXg`
+    - URL: <https://www.youtube.com/watch?v=6L2zcTHfMXg>
+    - 업로드일: 2025-11-23 10:08:29
+
+  - **영어 영상 7**: A five-minute evening review saved a burned-out manager.
+    - Video ID: `crHDt--ftZk`
+    - URL: <https://www.youtube.com/watch?v=crHDt--ftZk>
+    - 업로드일: 2025-11-23 14:59:45
+
+  - **영어 영상 8**: Skipping a winter oil check can cost an engine replacement.
+    - Video ID: `sXeekCuUT6E`
+    - URL: <https://www.youtube.com/watch?v=sXeekCuUT6E>
+    - 업로드일: 2025-11-23 15:00:08
+
+- **2025-11-22 - Video Upload (채널 동기화로 추가됨) - 9개 영상**
+  - **한국어 영상 1**: Piano Background Music (3h) | 피아노 BGM
+    - Video ID: `RY8UcgC6JOM`
+    - URL: <https://www.youtube.com/watch?v=RY8UcgC6JOM>
+    - 업로드일: 2025-11-22 13:54:32
+
+  - **영어 영상 2**: The Hidden Cost of Free Shipping That's Costing You  a Year
+    - Video ID: `t18QLHi_GgI`
+    - URL: <https://www.youtube.com/watch?v=t18QLHi_GgI>
+    - 업로드일: 2025-11-22 15:02:00
+
+  - **한국어 영상 3**: Rock Background Music (3h) | 록 BGM
+    - Video ID: `oTRXcazJYiU`
+    - URL: <https://www.youtube.com/watch?v=oTRXcazJYiU>
+    - 업로드일: 2025-11-22 14:45:24
+
+  - **영어 영상 4**: How I Cut My Monthly Bills by 40% in 30 Days
+    - Video ID: `AHoVY5_0oIg`
+    - URL: <https://www.youtube.com/watch?v=AHoVY5_0oIg>
+    - 업로드일: 2025-11-22 15:01:30
+
+  - **영어 영상 5**: The Side Hustle That Made Me $500 in January Alone
+    - Video ID: `TIRNqdikhbU`
+    - URL: <https://www.youtube.com/watch?v=TIRNqdikhbU>
+    - 업로드일: 2025-11-22 15:01:14
+
+  - **한국어 영상 6**: World Music Background Music (3h) | 월드 뮤직 BGM
+    - Video ID: `uFiWFg5Zsiw`
+    - URL: <https://www.youtube.com/watch?v=uFiWFg5Zsiw>
+    - 업로드일: 2025-11-22 15:26:22
+
+  - **영어 영상 7**: Why I Stopped Saving Money and Started Investing Instead
+    - Video ID: `O7CbNnLi3O0`
+    - URL: <https://www.youtube.com/watch?v=O7CbNnLi3O0>
+    - 업로드일: 2025-11-22 15:01:50
+
+  - **영어 영상 8**: Why Your December Credit Card Statement Is Lying to You
+    - Video ID: `j9lULl6fUyI`
+    - URL: <https://www.youtube.com/watch?v=j9lULl6fUyI>
+    - 업로드일: 2025-11-22 15:00:59
+
+  - **영어 영상 9**: The 5-Minute Morning Routine That Doubled My Income
+    - Video ID: `CUmhC0l1eIE`
+    - URL: <https://www.youtube.com/watch?v=CUmhC0l1eIE>
+    - 업로드일: 2025-11-22 15:01:39
+
+- **2025-11-21 - Video Upload (채널 동기화로 추가됨) - 2개 영상**
+  - **영어 영상 1**: Holiday Spending Trap: Why Americans Waste $1,500 Every December and How to Stop It
+    - Video ID: `0DDhBYBuqaw`
+    - URL: <https://www.youtube.com/watch?v=0DDhBYBuqaw>
+    - 업로드일: 2025-11-21 15:17:39
+
+  - **영어 영상 2**: December Tax Hack: How to Save ,000 Before Year-End With These 3 Moves
+    - Video ID: `Q0qk_EGmOxU`
+    - URL: <https://www.youtube.com/watch?v=Q0qk_EGmOxU>
+    - 업로드일: 2025-11-21 15:08:58
+
+- **2025-11-20 - Video Upload (채널 동기화로 추가됨) - 9개 영상**
+  - **영어 영상 1**: AI-Powered Savings Jar: Automate Spare Change Into Index Funds
+    - Video ID: `hzXFwoh9oBs`
+    - URL: <https://www.youtube.com/watch?v=hzXFwoh9oBs>
+    - 업로드일: 2025-11-20 15:48:34
+
+  - **영어 영상 2**: November Budget Reset: 3 Micro Habits To Kill Impulse Spending
+    - Video ID: `yyTVlenTrj4`
+    - URL: <https://www.youtube.com/watch?v=yyTVlenTrj4>
+    - 업로드일: 2025-11-20 15:37:00
+
+  - **영어 영상 3**: Micro-Morning Routine for High-Energy Productivity
+    - Video ID: `neKDpoaoWoQ`
+    - URL: <https://www.youtube.com/watch?v=neKDpoaoWoQ>
+    - 업로드일: 2025-11-20 15:55:53
+
+  - **한국어 영상 4**: Lofi Background Music (3h) | 로파이 BGM
+    - Video ID: `25wizh1ngvk`
+    - URL: <https://www.youtube.com/watch?v=25wizh1ngvk>
+    - 업로드일: 2025-11-20 02:47:06
+
+  - **영어 영상 5**: Recession-Proof Skill Stack: Combine Storytelling + Data
+    - Video ID: `LEoAEnnYpGw`
+    - URL: <https://www.youtube.com/watch?v=LEoAEnnYpGw>
+    - 업로드일: 2025-11-20 15:59:49
+
+  - **한국어 영상 6**: Folk Background Music (3h) | 포크 BGM
+    - Video ID: `bnzdnCVmdZ0`
+    - URL: <https://www.youtube.com/watch?v=bnzdnCVmdZ0>
+    - 업로드일: 2025-11-20 02:45:21
+
+  - **영어 영상 7**: Side Hustle Sprint: Flip Black Friday Deals for Extra
+    - Video ID: `9-nuUzhT5IM`
+    - URL: <https://www.youtube.com/watch?v=9-nuUzhT5IM>
+    - 업로드일: 2025-11-20 15:45:03
+
+  - **한국어 영상 8**: Blues Background Music (3h) | 블루스 BGM
+    - Video ID: `3bgt1ONfxgQ`
+    - URL: <https://www.youtube.com/watch?v=3bgt1ONfxgQ>
+    - 업로드일: 2025-11-20 02:44:22
+
+  - **영어 영상 9**: Credit Score Glow-Up: 30-Day Plan for Millennials
+    - Video ID: `q3uI1v923X8`
+    - URL: <https://www.youtube.com/watch?v=q3uI1v923X8>
+    - 업로드일: 2025-11-20 15:52:12
+
+- **2025-11-19 - Video Upload (채널 동기화로 추가됨) - 9개 영상**
+  - **영어 영상 1**: Mindset Quote Boost | Quote
+    - Video ID: `OgUBCWgDQpE`
+    - URL: <https://www.youtube.com/watch?v=OgUBCWgDQpE>
+    - 업로드일: 2025-11-19 15:01:11
+
+  - **한국어 영상 2**: Classical Background Music (3h) | 클래식 BGM
+    - Video ID: `QhgPX_2m3Fo`
+    - URL: <https://www.youtube.com/watch?v=QhgPX_2m3Fo>
+    - 업로드일: 2025-11-19 04:06:20
+
+  - **한국어 영상 3**: Ambient Background Music (3h) | 앰비언트 BGM
+    - Video ID: `GDoAlLF3wvE`
+    - URL: <https://www.youtube.com/watch?v=GDoAlLF3wvE>
+    - 업로드일: 2025-11-19 04:05:38
+
+  - **영어 영상 4**: Routine Micro Story | Short Story
+    - Video ID: `oHHjFBFcZY0`
+    - URL: <https://www.youtube.com/watch?v=oHHjFBFcZY0>
+    - 업로드일: 2025-11-19 15:01:20
+
+  - **영어 영상 5**: Rebuilt Finances Story | Story
+    - Video ID: `2Kp-2c65iyw`
+    - URL: <https://www.youtube.com/watch?v=2Kp-2c65iyw>
+    - 업로드일: 2025-11-19 15:01:14
+
+  - **영어 영상 6**: Black Friday Sales Tip | Auto
+    - Video ID: `T892L_SCKns`
+    - URL: <https://www.youtube.com/watch?v=T892L_SCKns>
+    - 업로드일: 2025-11-19 15:01:22
+
+  - **한국어 영상 7**: Electronic Background Music (3h) | 일렉트로닉 BGM
+    - Video ID: `hOhbr8yeRLw`
+    - URL: <https://www.youtube.com/watch?v=hOhbr8yeRLw>
+    - 업로드일: 2025-11-19 04:09:52
+
+  - **영어 영상 8**: Autumn Routine Reset | Hook
+    - Video ID: `OaqGCXeROeo`
+    - URL: <https://www.youtube.com/watch?v=OaqGCXeROeo>
+    - 업로드일: 2025-11-19 15:01:08
+
+  - **영어 영상 9**: Surprising Money Fact | Fact
+    - Video ID: `Vu8xrbP7Fqs`
+    - URL: <https://www.youtube.com/watch?v=Vu8xrbP7Fqs>
+    - 업로드일: 2025-11-19 15:01:17
+
+- **2025-11-18 - Video Upload (채널 동기화로 추가됨) - 7개 영상**
+  - **한국어 영상 1**: 겨울 난방비를 절반으로 줄이는 3단계 준비 체크리스트
+    - Video ID: `ocJwmNoEEHM`
+    - URL: <https://www.youtube.com/watch?v=ocJwmNoEEHM>
+    - 업로드일: 2025-11-18 13:54:41
+
+  - **한국어 영상 2**: 난방비 폭탄 대비, 전기요금 누진 구간 안 넘는 24시간 난방 루틴
+    - Video ID: `F6STtPHt7uw`
+    - URL: <https://www.youtube.com/watch?v=F6STtPHt7uw>
+    - 업로드일: 2025-11-18 15:06:53
+
+  - **한국어 영상 3**: 퇴근 후 20분, 한국 직장인을 위한 전기요금 누진 방지 야간 라이트 관리 루틴
+    - Video ID: `YOuBbhH7bmM`
+    - URL: <https://www.youtube.com/watch?v=YOuBbhH7bmM>
+    - 업로드일: 2025-11-18 15:35:11
+
+  - **한국어 영상 4**: 전세 보증금 안심 플랜: 만기 90일 전부터 준비하는 비상자금-대출 조합 전략
+    - Video ID: `uSS_eRmA_hE`
+    - URL: <https://www.youtube.com/watch?v=uSS_eRmA_hE>
+    - 업로드일: 2025-11-18 15:38:03
+
+  - **한국어 영상 5**: Jazz Cafe Background Music (3h) | 재즈 카페 BGM
+    - Video ID: `5nRxfR12RpE`
+    - URL: <https://www.youtube.com/watch?v=5nRxfR12RpE>
+    - 업로드일: 2025-11-18 08:31:55
+
+  - **한국어 영상 6**: 연말정산 직전, 난방비 환급 체크리스트 (에너지바우처·카드 소득공제·지자체 지원금 신청 순서)
+    - Video ID: `4tiIqSZKK08`
+    - URL: <https://www.youtube.com/watch?v=4tiIqSZKK08>
+    - 업로드일: 2025-11-18 15:47:00
+
+  - **한국어 영상 7**: 계절 가전 재활용: 구형 온풍기·전기장판 중고 재판매로 월 30만 원 만드는 겨울 벼룩장 플립
+    - Video ID: `SKTn3EX0gpg`
+    - URL: <https://www.youtube.com/watch?v=SKTn3EX0gpg>
+    - 업로드일: 2025-11-18 15:44:02
+
+- **2025-11-17 - Video Upload (채널 동기화로 추가됨) - 6개 영상**
+  - **한국어 영상 1**: 계절이 바뀌면 삶도 정리할 때다.
+    - Video ID: `3FCQ28D1QxA`
+    - URL: <https://www.youtube.com/watch?v=3FCQ28D1QxA>
+    - 업로드일: 2025-11-17 15:28:40
+
+  - **한국어 영상 2**: 옷장 정리 하나로 출근 스트레스가 줄어든 이야기
+    - Video ID: `VTt_1M4pUoc`
+    - URL: <https://www.youtube.com/watch?v=VTt_1M4pUoc>
+    - 업로드일: 2025-11-17 15:36:26
+
+  - **한국어 영상 3**: 옷장이 항상 지저분하던 사람이 계절 교체 루틴으로 변한 과정
+    - Video ID: `gpGcPT0JdxA`
+    - URL: <https://www.youtube.com/watch?v=gpGcPT0JdxA>
+    - 업로드일: 2025-11-17 15:31:34
+
+  - **한국어 영상 4**: Christmas Cafe Background Music Piano (3h) | 크리스마스 카페 BGM 피아노
+    - Video ID: `V5KG5nTIjCI`
+    - URL: <https://www.youtube.com/watch?v=V5KG5nTIjCI>
+    - 업로드일: 2025-11-17 08:45:40
+
+  - **한국어 영상 5**: 가을 환절기에 집이 가장 더러워지는 이유
+    - Video ID: `zlkLKCvDOks`
+    - URL: <https://www.youtube.com/watch?v=zlkLKCvDOks>
+    - 업로드일: 2025-11-17 15:33:55
+
+  - **한국어 영상 6**: Lofi Jazz Winter Lounge - 3시간 Long Form BGM
+    - Video ID: `B9NqW86tcDM`
+    - URL: <https://www.youtube.com/watch?v=B9NqW86tcDM>
+    - 업로드일: 2025-11-17 13:17:35
+
+- **2025-11-16 - Video Upload (채널 동기화로 추가됨) - 8개 영상**
+  - **한국어 영상 1**: 연봉보다 중요한 자산 개념
+    - Video ID: `np3BuZ5-fgM`
+    - URL: <https://www.youtube.com/watch?v=np3BuZ5-fgM>
+    - 업로드일: 2025-11-16 15:13:16
+
+  - **영어 영상 2**: Lofi Hip Hop for Deep Focus and Relaxation (4 Hours)
+    - Video ID: `tw-Dos5FGJc`
+    - URL: <https://www.youtube.com/watch?v=tw-Dos5FGJc>
+    - 업로드일: 2025-11-16 08:22:02
+
+  - **한국어 영상 3**: 절세에 대한 놀라운 사실
+    - Video ID: `1OtQEJP-hdU`
+    - URL: <https://www.youtube.com/watch?v=1OtQEJP-hdU>
+    - 업로드일: 2025-11-16 15:09:15
+
+  - **한국어 영상 4**: 부자가 되는 길은 생각보다 단순하다
+    - Video ID: `4kl-AfZDfsI`
+    - URL: <https://www.youtube.com/watch?v=4kl-AfZDfsI>
+    - 업로드일: 2025-11-16 15:02:22
+
+  - **한국어 영상 5**: 돈을 버는 사람과 못 버는 사람의 차이
+    - Video ID: `-1g1pmuZYio`
+    - URL: <https://www.youtube.com/watch?v=-1g1pmuZYio>
+    - 업로드일: 2025-11-16 15:07:09
+
+  - **한국어 영상 6**: 가난으로 가는 습관 하나
+    - Video ID: `fzBRQijxNDI`
+    - URL: <https://www.youtube.com/watch?v=fzBRQijxNDI>
+    - 업로드일: 2025-11-16 15:04:58
+
+  - **한국어 영상 7**: Christmas Cafe Background Music (3h) | 크리스마스 카페 BGM
+    - Video ID: `8Q99UdhWqCA`
+    - URL: <https://www.youtube.com/watch?v=8Q99UdhWqCA>
+    - 업로드일: 2025-11-16 15:28:54
+
+  - **한국어 영상 8**: 리스크 관리의 핵심 원리
+    - Video ID: `jnJZjVlbo5k`
+    - URL: <https://www.youtube.com/watch?v=jnJZjVlbo5k>
+    - 업로드일: 2025-11-16 15:11:31
+
+- **2025-11-15 - Video Upload (채널 동기화로 추가됨) - 8개 영상**
+  - **영어 영상 1**: Pink Noise for Deep Sleep (4 Hours)
+    - Video ID: `RfjRr8Fissc`
+    - URL: <https://www.youtube.com/watch?v=RfjRr8Fissc>
+    - 업로드일: 2025-11-15 15:50:19
+
+  - **한국어 영상 2**: 리치들이 절대 하지 않는 행동
+    - Video ID: `QllpZtl1mr8`
+    - URL: <https://www.youtube.com/watch?v=QllpZtl1mr8>
+    - 업로드일: 2025-11-15 16:08:20
+
+  - **한국어 영상 3**: 평범한 사람이 부자가 되는 3단계
+    - Video ID: `-2LtbtOP0i8`
+    - URL: <https://www.youtube.com/watch?v=-2LtbtOP0i8>
+    - 업로드일: 2025-11-15 16:18:05
+
+  - **한국어 영상 4**: 절약이 아니라 투자를 해야 하는 이유
+    - Video ID: `46XATy0FW_A`
+    - URL: <https://www.youtube.com/watch?v=46XATy0FW_A>
+    - 업로드일: 2025-11-15 16:31:13
+
+  - **한국어 영상 5**: 성공한 사람들의 명언
+    - Video ID: `YwWoyZwkUUY`
+    - URL: <https://www.youtube.com/watch?v=YwWoyZwkUUY>
+    - 업로드일: 2025-11-15 15:54:27
+
+  - **한국어 영상 6**: 투자 지혜 한 줄
+    - Video ID: `_wNxHp-ed_A`
+    - URL: <https://www.youtube.com/watch?v=_wNxHp-ed_A>
+    - 업로드일: 2025-11-15 16:00:32
+
+  - **영어 영상 7**: Pink Noise for Deep Sleep (0.25 Hours)
+    - Video ID: `2l0o6ZoVSUI`
+    - URL: <https://www.youtube.com/watch?v=2l0o6ZoVSUI>
+    - 업로드일: 2025-11-15 15:49:20
+
+  - **한국어 영상 8**: 성공한 사람들의 비밀
+    - Video ID: `a0G-4_rks-M`
+    - URL: <https://www.youtube.com/watch?v=a0G-4_rks-M>
+    - 업로드일: 2025-11-15 15:50:01
+
+
 - **2025-12-06 - 콘텐츠 타입별 최적 길이 설정 및 완주율 최적화**
   - **완주율 최적화 전략 구현**:
     - `VideoConstants.CONTENT_TYPE_DURATIONS` 추가: 콘텐츠 타입별 최적 길이 설정
