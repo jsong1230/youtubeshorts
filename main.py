@@ -46,11 +46,7 @@ def main():
 
         if command == "topics" or command == "get-topics":
             # 주제 선정 명령어
-            from get_topics import (
-                collect_topics,
-                get_existing_topics_from_history,
-                filter_existing_topics,
-            )
+            from get_topics import collect_topics
             import random
 
             # 한국어 4개, 영어 4개 선정
@@ -618,7 +614,7 @@ def main():
 
                 # 업데이트된 내용 저장
                 history_file.write_text(history_content, encoding="utf-8")
-                logger.info(f"✅ HISTORY.md 파일이 업데이트되었습니다.")
+                logger.info("✅ HISTORY.md 파일이 업데이트되었습니다.")
                 logger.info("")
                 logger.info("📋 변경 사항 요약:")
                 if missing_in_history:

@@ -163,11 +163,6 @@ def filter_by_language(topics, language="en"):
     excluded_reasons = {}
 
     for topic in topics:
-        # 한글 문자 개수
-        korean_chars = len(re.findall(r"[가-힣]", topic))
-        # 영어 문자 개수 (ASCII 영문자만)
-        english_chars = len(re.findall(r"[a-zA-Z]", topic))
-
         # 특수 문자, 숫자, 이모지 제거 후 실제 문자만 계산
         clean_topic = re.sub(r"[^\w\s가-힣]", "", topic)
         clean_korean = len(re.findall(r"[가-힣]", clean_topic))
