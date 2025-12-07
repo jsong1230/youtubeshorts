@@ -14,34 +14,13 @@
 - Wavenet 모델은 매우 자연스러운 발음
 
 **설정 방법:**
+자세한 설정 가이드는 [GOOGLE_CLOUD_TTS_SETUP.md](./GOOGLE_CLOUD_TTS_SETUP.md)를 참고하세요.
 
-1. **Google Cloud 프로젝트 설정**
-   ```bash
-   # Google Cloud SDK 설치 (선택사항)
-   # 또는 Google Cloud Console에서 직접 설정
-   ```
-
-2. **Text-to-Speech API 활성화**
-   - Google Cloud Console → API 및 서비스 → 라이브러리
-   - "Cloud Text-to-Speech API" 검색 및 활성화
-
-3. **서비스 계정 키 생성**
-   - Google Cloud Console → IAM 및 관리자 → 서비스 계정
-   - 새 서비스 계정 생성 또는 기존 계정 사용
-   - 역할: "Cloud Text-to-Speech API 사용자"
-   - JSON 키 다운로드
-
-4. **환경 변수 설정**
-   ```env
-   # .env 파일에 추가
-   TTS_PROVIDER=google_cloud
-   GOOGLE_CLOUD_CREDENTIALS_PATH=/path/to/your/service-account-key.json
-   ```
-
-5. **패키지 설치**
-   ```bash
-   pip install google-cloud-texttospeech
-   ```
+**환경 변수 설정:**
+```env
+TTS_PROVIDER=google_cloud
+GOOGLE_CLOUD_CREDENTIALS_PATH=./google-cloud-tts-key.json
+```
 
 **비용:**
 - Standard 모델: 월 0~4백만자 무료, 이후 $4/100만자
@@ -125,6 +104,9 @@ TTS_PROVIDER=openai python main.py test "테스트 주제"
 - 영상당 약 1000자
 - 월 30개 영상 = 약 3만자
 - 모든 옵션이 무료 범위 내
+
+
+
 
 
 
