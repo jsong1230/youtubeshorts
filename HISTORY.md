@@ -1,5 +1,27 @@
 ## Recent Updates
 
+- **2025-12-07 - 자극적 콘텐츠 프롬프트 강화 및 문서 정리**
+  - **자극적이고 강렬한 콘텐츠 생성 프롬프트 강화**:
+    - 영어 프롬프트: "shocking", "secret", "hidden truth", "what nobody tells you" 등 강렬한 표현 추가
+    - 한국어 프롬프트: "충격적인", "숨겨진", "아무도 말하지 않는", "진실", "비밀" 등 자극적 표현 추가
+    - Power words 강화: "devastating", "game-changing", "mind-blowing" 등 추가
+    - FOMO와 긴장감 조성: "You need to know this NOW", "This changes everything" 등
+  - **커밋 전 필수 확인 규칙 추가**: `.cursorrules`에 커밋 전 반드시 사용자 확인 받도록 명시
+  - **30초 이내 영상 관련 내용만 유지**: 긴 영상(30-45초, 45-60초) 관련 내용 삭제
+    - `.cursorrules`: 긴 영상 길이 설명 삭제
+    - `README.md`: Story, Book_Review 등 긴 영상 길이 설명 삭제
+    - `docs/3month_roadmap.md`: "15-30초 권장 길이" 삭제
+    - `docs/CONTENT_OPTIMIZATION.md`: "55초 완주율 최적화" 삭제
+  - **테스트 영상 생성 및 업로드**:
+    - 한국어 영상: "라이프스타일이 지루하다고? 매일을 특별하게 만드는 작은 팁!" (25.07초)
+      - Video ID: `KL1dnjE1gWE`
+      - URL: <https://www.youtube.com/watch?v=KL1dnjE1gWE>
+      - 비공개 업로드 완료
+    - 영어 영상: "Unlocking success: The one simple change that tripled my daily output." (25.15초)
+      - Video ID: `3WOmAacuABI`
+      - URL: <https://www.youtube.com/watch?v=3WOmAacuABI>
+      - 비공개 업로드 완료
+
 - **2025-12-06 - 언어 필터링 강화 및 비공개 업로드 기본값 변경**
   - **언어 필터링 강화**: 주제 선정 시 한글/영어만 허용하도록 엄격한 필터링 추가
     - 한국어 주제: 한글 70% 이상, 영어 30% 이하
