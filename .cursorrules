@@ -116,8 +116,6 @@ youtubeshorts/
 2. AI 스크립트 생성 (OpenAI 또는 Claude)
    - **콘텐츠 타입별 최적 길이 자동 적용**: 완주율 최적화를 위해 타입별 목표 길이 설정
      - 짧은 영상(15-30초): Hook(20초), Quote(22초), Fact(25초) - 반복 재생 유도
-     - 중간 영상(30-45초): Story(40초), Short_Story(35초) - 스토리 전개
-     - 긴 영상(45-60초): Book_Review(50초), Meditation(50초), Breathing(45초) - 상세 설명
    - **완주율 최적화 프롬프트**: 짧은 영상은 타이트한 구조, 반복 재생 유도 강조
 3. TTS 음성 생성 (OpenAI TTS 또는 Google TTS)
 4. 배경 영상/이미지 다운로드 (Pexels/Unsplash/Pixabay)
@@ -142,9 +140,7 @@ youtubeshorts/
 - `SHORTS_MAX_DURATION`: 60초 (최대)
 - `PREFER_SHORT_VIDEOS`: `true` (기본값, 완주율 최적화를 위해 짧은 영상 선호)
 - **콘텐츠 타입별 최적 길이**: `VideoConstants.CONTENT_TYPE_DURATIONS`에서 자동 설정
-  - Hook: 20초, Quote: 22초, Fact: 25초 (완주율 최적화)
-  - Story: 40초, Short_Story: 35초 (스토리 전개)
-  - Book_Review: 50초, Meditation: 50초, Breathing: 45초 (상세 설명)
+  - Hook: 20초, Quote: 22초, Fact: 25초 (완주율 최적화, 30초 이내)
 - `AI_API_PROVIDER`: `openai` 또는 `claude` (기본값: `openai`)
 - `TREND_MODE`: `true` 시 2025 트렌드 가중치 시스템 활성 (글로벌 40% / 계절 25% / 성과 20% / 탐색 15%)
 - `ENABLE_TIKTOK_UPLOAD`: `false` (기본값, YouTube만 사용)

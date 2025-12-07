@@ -34,7 +34,8 @@ class PromptBuilder:
         is_short = target_duration <= 30
         short_video_guidance = (
             " **CRITICAL FOR SHORT VIDEOS**: Make every second count! "
-            "Focus on ONE core message, deliver it powerfully, and end with a strong hook or question that encourages rewatch. "
+            "Focus on ONE core message, deliver it POWERFULLY and PROVOCATIVELY, and end with a strong hook or question that encourages rewatch. "
+            "Use PROVOCATIVE language, create SHOCKING revelations, and build INTENSE engagement. "
             "Completion rate is key - viewers should watch to 100%+ (loop effect)."
             if is_short
             else ""
@@ -44,7 +45,8 @@ class PromptBuilder:
             return f"Write a YouTube Shorts script for '{topic}'. Each sentence should be 3-4 seconds long, write {max_sentences} sentences total to make it about {target_duration} seconds (maximum 60 seconds). **Important: Write all sentences in English only. Do not include any Korean sentences or words.** Important: Write only pure dialogue or explanations, never include production instructions like 'background music', 'subtitles', 'start', etc. The first sentence must be a powerful Hook that stops the scroll, and develop the content with maximum engagement.{short_video_guidance}"
         else:
             short_guidance_ko = (
-                " **짧은 영상 핵심**: 매 초가 중요합니다! 하나의 핵심 메시지에 집중하고, 강력하게 전달하며, 반복 재생을 유도하는 강한 마무리로 끝내세요. "
+                " **짧은 영상 핵심**: 매 초가 중요합니다! 하나의 핵심 메시지에 집중하고, 자극적이고 강력하게 전달하며, 반복 재생을 유도하는 강한 마무리로 끝내세요. "
+                "충격적이고 자극적인 표현을 사용하여 시청자의 관심을 최대한 끌어내세요. "
                 "완주율이 핵심입니다 - 시청자가 100% 이상 시청하도록 (반복 재생 효과)."
                 if is_short
                 else ""
@@ -85,16 +87,17 @@ class PromptBuilder:
                 f"""You are an expert YouTube Shorts script writer for Hook videos specializing in finance, productivity, and self-improvement content.
 
 **HOOK CREATION (First 3 seconds - CRITICAL):**
-- Create a powerful, attention-grabbing Hook that triggers curiosity, fear of missing out, or emotional connection
-- Use one of these proven Hook patterns:
-  1. "Mindset Flip": State a common negative belief, then immediately reframe it positively
-  2. "Shocking Number": Lead with a surprising statistic (e.g., "90% of people lose $500 every December")
-  3. "Contrarian Statement": Challenge conventional wisdom (e.g., "The best time to invest isn't January")
-  4. "Personal Revelation": Share a transformative realization (e.g., "I discovered this mistake cost me $2,000")
-  5. "Question Hook": Pose a thought-provoking question that creates immediate curiosity
-- The Hook must be specific, relatable, and create an immediate "I need to know more" feeling
+- Create a POWERFUL, PROVOCATIVE Hook that triggers intense curiosity, fear of missing out, shock, or strong emotional reaction
+- Use one of these proven Hook patterns (prioritize the most provocative):
+  1. "Shocking Number": Lead with a jaw-dropping statistic that challenges beliefs (e.g., "90% of people lose $500 every December without realizing it")
+  2. "Contrarian Statement": Challenge conventional wisdom aggressively (e.g., "Everything you know about investing is wrong")
+  3. "Mindset Flip": State a common negative belief, then immediately reframe it with a bold claim
+  4. "Personal Revelation": Share a transformative, shocking realization (e.g., "This one mistake cost me $2,000 - and you're probably making it too")
+  5. "Question Hook": Pose a provocative, thought-provoking question that creates immediate curiosity and urgency
+- The Hook must be SPECIFIC, RELATABLE, and create an immediate "I MUST know more NOW" feeling
+- Use STRONG, PROVOCATIVE language: "shocking", "secret", "hidden", "nobody tells you", "the truth about", "what they don't want you to know"
 - Include concrete numbers, timeframes, or specific outcomes in the Hook when possible
-- Make the Hook emotionally resonant by connecting to common pain points or desires
+- Make the Hook emotionally resonant by connecting to common pain points, fears, or desires with INTENSITY
 
 {base_structure}
 - **Opening (0-3 seconds)**: POWERFUL Hook that stops the scroll
@@ -113,21 +116,25 @@ class PromptBuilder:
 
 **WRITING STYLE:**
 - Use active voice and short, punchy sentences (aim for 8-12 words per sentence)
-- Create emotional resonance through relatable scenarios and vivid descriptions
-- Use power words: "transform", "reveal", "discover", "unlock", "master", "eliminate", "multiply"
-- Avoid generic phrases - be specific and concrete (e.g., "save $500" not "save money")
+- Create INTENSE emotional resonance through relatable scenarios and vivid, provocative descriptions
+- Use POWER WORDS with intensity: "shocking", "secret", "hidden", "reveal", "expose", "transform", "discover", "unlock", "master", "eliminate", "multiply", "devastating", "game-changing", "mind-blowing"
+- Use PROVOCATIVE language: "what nobody tells you", "the truth they hide", "this will shock you", "you've been lied to"
+- Avoid generic phrases - be specific, concrete, and PROVOCATIVE (e.g., "This hidden trick saves $500" not "save money")
 - Create a "loop" structure where the ending connects back to the opening Hook naturally
-- Build momentum: each sentence should add value and maintain engagement
-- Use rhetorical devices: repetition for emphasis, parallel structure for impact
-- Include sensory details when relevant to make the content more vivid and memorable""",
+- Build momentum: each sentence should add value, maintain engagement, and create TENSION
+- Use rhetorical devices: repetition for emphasis, parallel structure for impact, provocative questions
+- Include sensory details when relevant to make the content more vivid, memorable, and EMOTIONALLY CHARGED
+- Create URGENCY and FOMO: "You need to know this NOW", "This changes everything", "Don't miss this"
+- Be BOLD and CONTROVERSIAL when appropriate - challenge norms, expose hidden truths, reveal secrets""",
                 sentence_count,
             ),
             ContentType.QUOTE: (
                 f"""You are an expert YouTube Shorts script writer for quote/knowledge videos specializing in finance, productivity, and self-improvement.
 
 **QUOTE PRESENTATION (First 3 seconds - CRITICAL):**
-- Lead with a powerful, memorable quote or insight that resonates emotionally
-- Choose quotes that are actionable, counter-intuitive, or thought-provoking
+- Lead with a POWERFUL, PROVOCATIVE quote or insight that creates strong emotional reaction
+- Choose quotes that are actionable, counter-intuitive, thought-provoking, or CHALLENGING
+- Use quotes that expose hidden truths, challenge conventional wisdom, or reveal secrets
 
 {base_structure}
 - **Opening (0-3 seconds)**: Present the quote with emphasis (POWERFUL Hook)
@@ -145,11 +152,13 @@ class PromptBuilder:
   * **Make it loop-worthy**: End in a way that makes viewers want to rewatch
 
 **WRITING STYLE:**
-- Make abstract concepts concrete through examples
-- Use analogies to explain complex ideas
-- Connect the quote to daily life situations
-- Show the transformation or outcome of applying the quote
-- Create a "loop" structure where the ending connects back to the opening quote""",
+- Make abstract concepts concrete through PROVOCATIVE examples
+- Use analogies to explain complex ideas with INTENSITY
+- Connect the quote to daily life situations with EMOTIONAL IMPACT
+- Show the transformation or outcome of applying the quote with VIVID, SHOCKING details
+- Use PROVOCATIVE language: "This changes everything", "You've been doing it wrong", "The secret nobody tells you"
+- Create a "loop" structure where the ending connects back to the opening quote
+- Be BOLD: Challenge norms, expose hidden truths, reveal what people don't want to hear""",
                 sentence_count,
             ),
             ContentType.STORY: (
@@ -194,7 +203,7 @@ class PromptBuilder:
 - Make it relatable and immediately relevant to viewers' lives
 
 {base_structure}
-- **Opening (0-3 seconds)**: Present the shocking fact with emphasis (POWERFUL Hook)
+- **Opening (0-3 seconds)**: Present the SHOCKING, PROVOCATIVE fact with maximum emphasis (ULTRA-POWERFUL Hook)
 - **Body (3-{target_duration-3} seconds)**:
   * Explain why this fact matters (the "so what" factor) with emotional impact
   * Break down the numbers or statistics in relatable terms (use analogies)
@@ -210,11 +219,13 @@ class PromptBuilder:
   * **Make it loop-worthy**: End in a way that makes viewers want to rewatch
 
 **WRITING STYLE:**
-- Use specific numbers, percentages, and timeframes
-- Make abstract statistics concrete through comparisons
-- Create "wow" moments through surprising revelations
-- Connect facts to actionable insights
-- Create a "loop" structure where the ending connects back to the opening fact""",
+- Use specific numbers, percentages, and timeframes with PROVOCATIVE framing
+- Make abstract statistics concrete through SHOCKING comparisons
+- Create "WOW" moments through SURPRISING, MIND-BLOWING revelations
+- Connect facts to actionable insights with INTENSITY
+- Use PROVOCATIVE language: "This will shock you", "Nobody talks about this", "The hidden truth"
+- Create a "loop" structure where the ending connects back to the opening fact
+- Be BOLD: Present facts that challenge beliefs, expose hidden truths, reveal secrets""",
                 sentence_count,
             ),
             ContentType.SHORT_STORY: (
@@ -318,7 +329,8 @@ class PromptBuilder:
 - **짧은 영상 핵심 전략**: 완주율이 조회수보다 중요합니다!
 - 매 초가 중요합니다 - 불필요한 내용 제거, 핵심만 전달
 - 반복 재생을 유도하는 구조로 작성 (완주율 100% 이상 = 알고리즘 부스트)
-- 스크롤을 멈추게 하는 강력한 훅 → 핵심 전달 → 강한 마무리
+- 스크롤을 멈추게 하는 강력하고 자극적인 훅 → 충격적인 핵심 전달 → 강한 마무리
+- 자극적이고 충격적인 표현을 사용하여 시청자의 관심을 최대한 끌어내세요
 """
             if is_short_video
             else ""
@@ -327,17 +339,19 @@ class PromptBuilder:
         prompts = {
             ContentType.HOOK: (
                 f"""당신은 YouTube Shorts용 Hook 영상 스크립트 작성 전문가입니다.
-- 첫 3초 안에 강력한 Hook 문장으로 시청자의 관심을 끌어야 합니다
-- 한국어 속담, 관용어, 명언 등에 집중하세요
+- 첫 3초 안에 강력하고 자극적인 Hook 문장으로 시청자의 관심을 최대한 끌어야 합니다
+- 한국어 속담, 관용어, 명언 등에 집중하되, 자극적이고 충격적인 표현을 사용하세요
 - **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
 - **핵심: 독창적이고 유니크한 스크립트를 작성하세요. 이전 스크립트와 중복되는 표현이나 구조를 피하세요**
+- **자극적 표현 사용**: "충격적인", "숨겨진", "아무도 말하지 않는", "진실", "비밀", "이것이 모든 것을 바꾼다" 등의 강렬한 표현 활용
 {short_video_guidance}
 - 목표는 약 {target_duration}초 분량입니다
 - 각 문장은 3-4초 분량이며, 총 {sentence_count}개 문장으로 작성하세요
 - **전략: '마인드셋 플립(Mindset Flip)' 기법을 사용하세요. 첫 문장에서 흔한 부정적인 생각을 제시하고 즉시 긍정적으로 재해석하세요.**
 - **구조: 마지막 문장이 첫 문장과 자연스럽게 이어지도록 '루프(Loop)' 구조로 작성하세요.**
 - **엔딩: 구체적인 질문으로 끝맺어 댓글을 유도하고, 자연스럽게 구독을 유도하세요. 강요하지 않고 자연스럽게.**
-- **짧은 영상 핵심**: Hook 문장을 강조하고, 핵심만 간결하게 전달하세요. 반복 재생을 유도하는 마무리로 끝내세요.""",
+- **짧은 영상 핵심**: Hook 문장을 강조하고, 자극적이고 충격적인 핵심만 간결하게 전달하세요. 반복 재생을 유도하는 강렬한 마무리로 끝내세요.
+- **자극적 표현**: "충격적인 사실", "숨겨진 진실", "아무도 말하지 않는 비밀", "이것이 모든 것을 바꾼다" 등의 강렬한 표현을 적극 활용하세요.""",
                 sentence_count,
             ),
             ContentType.QUOTE: (
