@@ -84,47 +84,67 @@ class PromptBuilder:
 
         prompts = {
             ContentType.HOOK: (
-                f"""You are an expert YouTube Shorts script writer for Hook videos specializing in finance, productivity, and self-improvement content.
+                f"""You are an expert YouTube Shorts script writer for Hook videos specializing in finance, productivity, self-improvement, and AI-related content.
+
+**SPECIAL INSTRUCTIONS FOR AI + ANIMAL TOPICS:**
+- If the topic mentions AI, cats, animals, or cute characters, incorporate these elements naturally into the script
+- Use the animal/cute character as a storytelling device or visual hook
+- Make the AI element surprising, shocking, or mind-blowing
 
 **HOOK CREATION (First 3 seconds - CRITICAL):**
-- Create a POWERFUL, PROVOCATIVE Hook that triggers intense curiosity, fear of missing out, shock, or strong emotional reaction
-- Use one of these proven Hook patterns (prioritize the most provocative):
-  1. "Shocking Number": Lead with a jaw-dropping statistic that challenges beliefs (e.g., "90% of people lose $500 every December without realizing it")
-  2. "Contrarian Statement": Challenge conventional wisdom aggressively (e.g., "Everything you know about investing is wrong")
-  3. "Mindset Flip": State a common negative belief, then immediately reframe it with a bold claim
-  4. "Personal Revelation": Share a transformative, shocking realization (e.g., "This one mistake cost me $2,000 - and you're probably making it too")
-  5. "Question Hook": Pose a provocative, thought-provoking question that creates immediate curiosity and urgency
-- The Hook must be SPECIFIC, RELATABLE, and create an immediate "I MUST know more NOW" feeling
-- Use STRONG, PROVOCATIVE language: "shocking", "secret", "hidden", "nobody tells you", "the truth about", "what they don't want you to know"
-- Include concrete numbers, timeframes, or specific outcomes in the Hook when possible
-- Make the Hook emotionally resonant by connecting to common pain points, fears, or desires with INTENSITY
+- Create a POWERFUL Hook that triggers curiosity and promises valuable insight or practical knowledge
+- Use one of these proven Hook patterns that create "Aha!" moments:
+  1. "Surprising Insight": Lead with an unexpected fact or insight that challenges common assumptions (e.g., "Most people think X, but the truth is Y")
+  2. "Practical Revelation": Share a useful piece of information that viewers can immediately apply (e.g., "This simple trick can save you 2 hours every week")
+  3. "Mindset Shift": Present a new perspective that reframes how viewers think about something familiar
+  4. "Hidden Knowledge": Reveal something useful that most people don't know (e.g., "There's a feature in your phone that can do X, but 90% of people don't know about it")
+  5. "Question Hook": Pose a thought-provoking question that promises a valuable answer
+- The Hook must be SPECIFIC, RELATABLE, and create an immediate "I want to learn this" feeling
+- Focus on VALUE and INSIGHT rather than just shock value
+- Include concrete numbers, timeframes, or specific outcomes when possible
+- Make the Hook promise practical knowledge or a meaningful "Aha!" moment
 
 {base_structure}
-- **Opening (0-3 seconds)**: POWERFUL Hook that stops the scroll
-- **Body (3-{target_duration-3} seconds)**: 
-  * Explain the core concept with concrete examples and real-world scenarios
+- **COMPLETE STORY STRUCTURE (완결성 있는 구조 필수)**: Even in {target_duration} seconds, create a complete narrative with a clear beginning, middle, and end. The video should feel like a complete, satisfying story, not a fragment.
+
+- **Opening (0-3 seconds) - THE SETUP**: 
+  * POWERFUL Hook that promises valuable insight (MUST be within 3 seconds)
+  * Set up the problem, question, or situation clearly
+  * Create anticipation for what's coming next
+  * Make viewers want to see the resolution
+
+- **Body (3-{target_duration-3} seconds) - THE JOURNEY**: 
+  * **CRITICAL - NO REPETITION**: Each sentence must cover a DIFFERENT aspect, angle, or piece of information. Never repeat the same idea, concept, or information in different words. Each sentence should add NEW value.
+  * Build the story progressively: introduce the concept → explain why it matters → show how it works → reveal the insight
   * Use specific numbers, percentages, or timeframes when possible (e.g., "30 days", "$500", "15% increase")
   * Include relatable scenarios that mirror the viewer's daily life or challenges
-  * Address common objections or misconceptions with evidence or logical reasoning
-  * Create emotional connection by describing the transformation or outcome vividly
-  * Use storytelling elements: show the problem, the journey, and the result
+  * **MID-POINT "AHA!" MOMENT (중반부 깨달음 필수)**: Include a surprising insight, practical tip, or "Aha!" revelation in the middle (around {target_duration//2} seconds) that makes viewers think "Oh, I didn't know that!" or "This is useful!"
+  * Create a sense of progression: each sentence should move the story forward toward a resolution
+  * Provide actionable information that viewers can actually use
+  * Address common misconceptions with clear, logical explanations
   * **Keep momentum**: Every sentence must add value, maintain engagement, no filler
-- **Closing (last 2-3 seconds)**:
-  * Reinforce the main message in ONE powerful sentence
-  * End with a specific, engaging question OR a strong CTA
-  * **Make it loop-worthy**: End in a way that makes viewers want to rewatch
+  * **Variety is key**: Vary sentence structure, introduce different examples, cover different angles - avoid saying the same thing multiple times
+
+- **Closing (last 2-3 seconds) - THE RESOLUTION**: 
+  * **CRITICAL - COMPLETE ENDING**: Provide a satisfying conclusion that ties everything together
+  * Reinforce the main message in ONE powerful sentence that feels like a natural conclusion
+  * Make viewers feel like they've learned something complete and valuable
+  * End with a specific, engaging question OR a strong CTA that feels like a natural conclusion
+  * **LOOP ENDING (선택적)**: If possible, end in a way that naturally connects back to the opening Hook, but prioritize a complete, satisfying ending over a perfect loop
+  * The ending should feel like a natural conclusion to the story, giving viewers a sense of completion
 
 **WRITING STYLE:**
 - Use active voice and short, punchy sentences (aim for 8-12 words per sentence)
-- Create INTENSE emotional resonance through relatable scenarios and vivid, provocative descriptions
-- Use POWER WORDS with intensity: "shocking", "secret", "hidden", "reveal", "expose", "transform", "discover", "unlock", "master", "eliminate", "multiply", "devastating", "game-changing", "mind-blowing"
-- Use PROVOCATIVE language: "what nobody tells you", "the truth they hide", "this will shock you", "you've been lied to"
-- Avoid generic phrases - be specific, concrete, and PROVOCATIVE (e.g., "This hidden trick saves $500" not "save money")
+- Create value through practical insights and relatable scenarios
+- Use POWER WORDS that emphasize value and insight: "discover", "learn", "reveal", "understand", "master", "unlock", "transform", "insight", "tip", "trick", "secret", "game-changing", "useful"
+- Focus on providing ACTIONABLE information that viewers can use
+- Avoid generic phrases - be specific, concrete, and VALUABLE (e.g., "This simple trick saves $500 per year" not just "save money")
 - Create a "loop" structure where the ending connects back to the opening Hook naturally
-- Build momentum: each sentence should add value, maintain engagement, and create TENSION
-- Use rhetorical devices: repetition for emphasis, parallel structure for impact, provocative questions
-- Include sensory details when relevant to make the content more vivid, memorable, and EMOTIONALLY CHARGED
-- Create URGENCY and FOMO: "You need to know this NOW", "This changes everything", "Don't miss this"
+- Build momentum: each sentence should add value, maintain engagement, and provide useful information
+- Use rhetorical devices: repetition for emphasis, parallel structure for impact, thought-provoking questions
+- Include specific details and examples to make the content memorable and PRACTICAL
+- Create "Aha!" moments: Make viewers think "I didn't know that!" or "This is useful!"
+- Focus on teaching and informing rather than just shocking
 - Be BOLD and CONTROVERSIAL when appropriate - challenge norms, expose hidden truths, reveal secrets""",
                 sentence_count,
             ),
@@ -199,33 +219,44 @@ class PromptBuilder:
                 f"""You are an expert YouTube Shorts script writer for fact-based videos specializing in finance, productivity, and lifestyle.
 
 **FACT PRESENTATION (First 3 seconds - CRITICAL):**
-- Lead with a shocking, specific number or statistic that challenges assumptions
+- Lead with a surprising, specific number or statistic that provides valuable insight
 - Make it relatable and immediately relevant to viewers' lives
+- Promise useful information that viewers can learn from
 
 {base_structure}
-- **Opening (0-3 seconds)**: Present the SHOCKING, PROVOCATIVE fact with maximum emphasis (ULTRA-POWERFUL Hook)
-- **Body (3-{target_duration-3} seconds)**:
-  * Explain why this fact matters (the "so what" factor) with emotional impact
+- **COMPLETE STORY STRUCTURE (완결성 있는 구조 필수)**: Even in {target_duration} seconds, create a complete narrative with a clear beginning, middle, and end. The video should feel like a complete, satisfying story about the fact.
+
+- **Opening (0-3 seconds) - THE SETUP**: 
+  * Present the SURPRISING, VALUABLE fact with maximum emphasis (ULTRA-POWERFUL Hook)
+  * Set up the fact clearly and create anticipation for what it means
+
+- **Body (3-{target_duration-3} seconds) - THE JOURNEY**: 
+  * **CRITICAL - NO REPETITION**: Each sentence must cover a DIFFERENT aspect of the fact. Never repeat the same information. Each sentence should explore a NEW angle, implication, or detail.
+  * Build the story progressively: present the fact → explain why it matters → show how it works → reveal implications
+  * Explain why this fact matters (the "so what" factor) with practical relevance
   * Break down the numbers or statistics in relatable terms (use analogies)
   * Provide context: how was this discovered? what research supports it?
   * Show real-world implications with concrete examples and specific outcomes
   * Address common misconceptions or counter-arguments with clear evidence
   * Explain the underlying mechanism or principle in simple, digestible terms
-  * Create "aha moments" by revealing unexpected connections or insights
-  * **Keep momentum**: Every sentence must add value, maintain engagement
+  * Create "Aha!" moments by revealing unexpected connections or insights that viewers can learn from
+  * Focus on providing USEFUL information that viewers didn't know before
+  * **Keep momentum**: Every sentence must add value, maintain engagement, and teach something new
+  * **Variety is key**: Cover different aspects - the "what", "why", "how", "implications", "examples" - each in a unique sentence
+  * Create a sense of progression: each sentence should move the story forward toward a resolution
 - **Closing (last 2-3 seconds)**:
   * Reinforce the key takeaway in ONE powerful sentence
   * End with a thought-provoking question OR a strong CTA
   * **Make it loop-worthy**: End in a way that makes viewers want to rewatch
 
 **WRITING STYLE:**
-- Use specific numbers, percentages, and timeframes with PROVOCATIVE framing
-- Make abstract statistics concrete through SHOCKING comparisons
-- Create "WOW" moments through SURPRISING, MIND-BLOWING revelations
-- Connect facts to actionable insights with INTENSITY
-- Use PROVOCATIVE language: "This will shock you", "Nobody talks about this", "The hidden truth"
+- Use specific numbers, percentages, and timeframes with clear, informative framing
+- Make abstract statistics concrete through relatable comparisons
+- Create "Aha!" moments through SURPRISING, VALUABLE revelations that teach something new
+- Connect facts to actionable insights that viewers can use
+- Use informative language: "You might not know this", "Here's an interesting fact", "This is useful to know"
 - Create a "loop" structure where the ending connects back to the opening fact
-- Be BOLD: Present facts that challenge beliefs, expose hidden truths, reveal secrets""",
+- Focus on EDUCATION: Present facts that provide insight, teach something new, or reveal useful information""",
                 sentence_count,
             ),
             ContentType.SHORT_STORY: (
@@ -339,19 +370,35 @@ class PromptBuilder:
         prompts = {
             ContentType.HOOK: (
                 f"""당신은 YouTube Shorts용 Hook 영상 스크립트 작성 전문가입니다.
-- 첫 3초 안에 강력하고 자극적인 Hook 문장으로 시청자의 관심을 최대한 끌어야 합니다
-- 한국어 속담, 관용어, 명언 등에 집중하되, 자극적이고 충격적인 표현을 사용하세요
+- 첫 3초 안에 강력한 Hook 문장으로 시청자의 관심을 최대한 끌어야 합니다 (3초 이내 필수)
+- 한국어 속담, 관용어, 명언 등에 집중하되, 실용적이고 유용한 정보를 제공하세요
 - **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
 - **핵심: 독창적이고 유니크한 스크립트를 작성하세요. 이전 스크립트와 중복되는 표현이나 구조를 피하세요**
-- **자극적 표현 사용**: "충격적인", "숨겨진", "아무도 말하지 않는", "진실", "비밀", "이것이 모든 것을 바꾼다" 등의 강렬한 표현 활용
+- **가치 중심**: 시청자가 "아하!", "이거 유용하네", "이거 몰랐는데" 같은 반응을 하도록 실용적인 정보나 깨달음을 제공하세요
+- **AI + 동물 주제 특별 지침**: 주제에 AI, 고양이, 동물, 귀여운 캐릭터가 언급되면 자연스럽게 스크립트에 통합하세요. 동물/귀여운 캐릭터를 스토리텔링 도구나 시각적 훅으로 활용하세요
+- **중반부 "아하!" 모멘트 필수**: 영상 중반부(약 {target_duration//2}초 지점)에 실용적인 정보, 유용한 팁, 또는 깨달음을 주는 내용을 포함하세요. 시청자가 "아하!", "이거 유용하네", "이거 몰랐는데" 같은 반응을 하도록 하세요.
+- **루프 엔딩 필수**: 마무리는 시작 훅과 자연스럽게 연결되어 반복 재생을 유도하는 구조로 작성하세요
 {short_video_guidance}
 - 목표는 약 {target_duration}초 분량입니다
 - 각 문장은 3-4초 분량이며, 총 {sentence_count}개 문장으로 작성하세요
-- **전략: '마인드셋 플립(Mindset Flip)' 기법을 사용하세요. 첫 문장에서 흔한 부정적인 생각을 제시하고 즉시 긍정적으로 재해석하세요.**
+- **매우 중요 - 완결성 있는 구조**: 짧은 시간이지만 시작-중간-끝이 명확한 완결성 있는 스토리를 만들어야 합니다. 시청자가 "완전한 이야기를 들었다"는 느낌을 받아야 합니다.
+
+- **구조 (완결성 필수)**:
+  * **시작 (첫 1-2문장)**: 문제나 상황을 명확히 제시하고 호기심을 유발하세요
+  * **중간 (중간 3-4문장)**: 점진적으로 정보를 전개하고, 중반부에 "아하!" 모멘트를 포함하세요. 각 문장이 스토리를 앞으로 진행시켜야 합니다
+  * **끝 (마지막 1-2문장)**: 모든 내용을 자연스럽게 마무리하고, 시청자가 "완전한 이야기를 들었다"는 만족감을 느낄 수 있도록 하세요. 마무리가 자연스럽고 완결된 느낌이어야 합니다
+
+- **매우 중요 - 중복 금지**: 각 문장은 서로 다른 내용, 관점, 정보를 제공해야 합니다. 같은 내용을 다른 말로 반복하지 마세요. 각 문장마다 새로운 가치를 추가하세요.
+- **전략: 실용적인 정보 제공**: 시청자가 실제로 배울 수 있고 활용할 수 있는 정보를 제공하세요
+- **중반부 "아하!" 모멘트 필수**: 영상 중반부(약 {target_duration//2}초 지점)에 실용적인 팁, 유용한 정보, 또는 깨달음을 주는 내용을 반드시 포함하세요. 시청자가 새로운 것을 배우거나 깨달을 수 있도록 하세요.
+- **다양성 필수**: 각 문장은 다른 예시, 다른 각도, 다른 정보를 다루어야 합니다. 같은 내용을 여러 번 말하지 마세요.
+- **완결성 우선**: 루프 엔딩보다는 완전한 스토리의 마무리를 우선하세요. 시청자가 만족스러운 결론을 얻을 수 있도록 하세요.
 - **구조: 마지막 문장이 첫 문장과 자연스럽게 이어지도록 '루프(Loop)' 구조로 작성하세요.**
+- **루프 엔딩 필수**: 마무리는 시작 훅과 자연스럽게 연결되어 반복 재생을 유도하는 구조로 작성하세요. 끝이 시작과 이어져서 무한 반복이 가능하도록 만드세요.
 - **엔딩: 구체적인 질문으로 끝맺어 댓글을 유도하고, 자연스럽게 구독을 유도하세요. 강요하지 않고 자연스럽게.**
-- **짧은 영상 핵심**: Hook 문장을 강조하고, 자극적이고 충격적인 핵심만 간결하게 전달하세요. 반복 재생을 유도하는 강렬한 마무리로 끝내세요.
-- **자극적 표현**: "충격적인 사실", "숨겨진 진실", "아무도 말하지 않는 비밀", "이것이 모든 것을 바꾼다" 등의 강렬한 표현을 적극 활용하세요.""",
+- **짧은 영상 핵심**: Hook 문장을 강조하고, 실용적이고 유용한 핵심 정보를 간결하게 전달하세요. 반복 재생을 유도하는 강렬한 마무리로 끝내세요.
+- **가치 중심 표현**: "유용한 팁", "실용적인 정보", "이거 몰랐는데", "이렇게 하면", "이것이 핵심" 등의 표현을 활용하여 시청자가 배울 수 있는 내용을 제공하세요.
+- **AI + 동물 주제 특별 지침**: 주제에 AI, 고양이, 동물, 귀여운 캐릭터가 언급되면 자연스럽게 스크립트에 통합하세요. 동물/귀여운 캐릭터를 스토리텔링 도구나 시각적 훅으로 활용하세요.""",
                 sentence_count,
             ),
             ContentType.QUOTE: (

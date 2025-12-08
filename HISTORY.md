@@ -1,5 +1,35 @@
 ## Recent Updates
 
+- **2025-12-08 - 완결성 있는 스토리 구조 및 깨달음 중심 콘텐츠로 전환**
+  - **완결성 있는 스토리 구조 추가**: 짧은 시간에도 시작-중간-끝이 명확한 완결성 있는 스토리 구조 강조
+    - 영어 프롬프트: "COMPLETE STORY STRUCTURE" 섹션 추가, THE SETUP - THE JOURNEY - THE RESOLUTION 구조
+    - 한국어 프롬프트: 완결성 있는 구조 필수 명시, 시청자가 "완전한 이야기를 들었다"는 느낌 제공
+    - 루프 엔딩보다 완결성 우선: 완전한 스토리의 마무리를 우선하도록 변경
+  - **깨달음/실용 정보 중심으로 프롬프트 전환**: 자극적 표현보다 실용적이고 유용한 정보 제공에 집중
+    - "아하!" 모멘트 강조: 시청자가 "이거 유용하네", "이거 몰랐는데" 같은 반응을 하도록
+    - 실용적인 정보와 깨달음을 제공하는 콘텐츠로 변경
+    - "shocking", "provocative" → "useful", "insight", "learn", "discover" 등 가치 중심 표현으로 변경
+  - **중복 방지 강화**: 
+    - 프롬프트에 "CRITICAL - NO REPETITION" 섹션 추가
+    - 각 문장이 서로 다른 내용, 관점, 정보를 제공하도록 명시
+    - `frequency_penalty`: 0.5 → 1.2로 증가 (같은 단어/구절 반복 강력 억제)
+  - **귀여운 이미지 키워드 추가**: 모든 주제에 대해 "cute", "adorable", "aesthetic", "beautiful", "charming" 키워드 추가
+    - AI 관련 주제에서 동물 키워드 제거 (일반 AI 키워드로 변경)
+    - 배경 영상 검색 시 귀여운 이미지가 우선 선택되도록 개선
+  - **업로드 전 컨펌 규칙 강화**: `.cursorrules`에 업로드 전 무조건 사용자 컨펌 받도록 규칙 강화
+    - 예외 없음 명시: 어떤 상황에서도 사용자에게 직접 컨펌 필요
+    - 이중 확인: 사용자가 요청해도 실제 업로드 실행 전에 한 번 더 확인
+    - 스크립트/코드에서도 반드시 확인 필요
+  - **테스트 영상 생성 및 업로드**:
+    - 한국어 영상: "AI가 당신의 일상을 완전히 바꾸는 숨겨진 진실" (29.77초)
+      - Video ID: `LujY6tcMMBY`
+      - URL: <https://www.youtube.com/watch?v=LujY6tcMMBY>
+      - 비공개 업로드 완료
+    - 영어 영상: "The moment I discovered that saying 'no' is a powerful self-care tool." (23.84초)
+      - Video ID: `0x6FQR8tJdo`
+      - URL: <https://www.youtube.com/watch?v=0x6FQR8tJdo>
+      - 비공개 업로드 완료
+
 - **2025-12-07 - 자극적 콘텐츠 프롬프트 강화 및 문서 정리**
   - **자극적이고 강렬한 콘텐츠 생성 프롬프트 강화**:
     - 영어 프롬프트: "shocking", "secret", "hidden truth", "what nobody tells you" 등 강렬한 표현 추가

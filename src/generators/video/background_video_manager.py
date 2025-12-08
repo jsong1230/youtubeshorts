@@ -251,6 +251,10 @@ class BackgroundVideoManager:
         category_keywords = self._get_category_keywords(topic)
         retry_keywords.extend(category_keywords)
 
+        # 4차: 귀여운 이미지/영상 우선 선택을 위한 키워드 추가
+        cute_keywords = ["cute", "adorable", "aesthetic", "beautiful", "charming"]
+        retry_keywords.extend(cute_keywords)
+
         # 키워드 다양성 확보
         unique_keywords = list(dict.fromkeys(retry_keywords))
         random.shuffle(unique_keywords)
@@ -308,6 +312,27 @@ class BackgroundVideoManager:
                 "business",
             ]
 
+        # AI 관련
+        elif any(
+            word in topic_lower
+            for word in [
+                "ai",
+                "artificial intelligence",
+                "chatgpt",
+                "gpt",
+                "claude",
+                "machine learning",
+            ]
+        ):
+            return [
+                "ai",
+                "technology",
+                "artificial intelligence",
+                "robot",
+                "digital",
+                "innovation",
+            ]
+
         # 생산성 관련
         elif any(
             word in topic_lower
@@ -319,7 +344,6 @@ class BackgroundVideoManager:
                 "morning",
                 "habit",
                 "automate",
-                "ai",
             ]
         ):
             return [

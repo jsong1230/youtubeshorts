@@ -306,7 +306,7 @@ class ScriptGenerator:
                         max_tokens=800,
                         temperature=0.9,  # 0.7 → 0.9로 증가 (더 다양한 응답)
                         seed=random_seed,  # 매번 다른 시드 사용
-                        frequency_penalty=0.5,  # 같은 단어/구절 반복 억제
+                        frequency_penalty=1.2,  # 같은 단어/구절 반복 강력 억제 (증가)
                         presence_penalty=0.3,  # 새로운 주제 도입 장려
                     )
                     script_text = response.choices[0].message.content
