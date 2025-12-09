@@ -234,9 +234,26 @@ class VideoEditor:
                         f"그룹 {gs+1}-{ge}의 배경 영상을 로드할 수 없습니다: {e}"
                     )
             else:
-                raise ValueError(
-                    f"그룹 {gs+1}-{ge}에 배경 영상이 없습니다. 배경 영상 다운로드가 필요합니다."
+                # 배경 영상이 없으면 단색 배경으로 폴백
+                logger.warning(
+                    f"   ⚠️ 배경 영상 없음, 단색 배경으로 폴백 (그룹 {gs+1}-{ge})"
                 )
+                try:
+                    # 단색 배경 이미지 생성 (동기부여/힐링 콘텐츠에 맞는 차분한 색상)
+                    from moviepy.editor import ColorClip
+                    # 차분한 어두운 배경 (동기부여/힐링 콘텐츠에 적합)
+                    bg_clip = ColorClip(
+                        size=(1080, 1920),  # Shorts 해상도
+                        color=(20, 20, 30),  # 어두운 남색 계열
+                        duration=group_duration
+                    )
+                    background_clips.append(bg_clip)
+                    logger.info(f"   ✅ 단색 배경 생성 및 사용 (그룹 {gs+1}-{ge})")
+                except Exception as e:
+                    logger.error(f"   ❌ 단색 배경 생성 실패: {e}")
+                    raise ValueError(
+                        f"그룹 {gs+1}-{ge}에 배경 영상/이미지가 없습니다. 배경 미디어 생성이 필요합니다."
+                    )
 
         return background_clips
 

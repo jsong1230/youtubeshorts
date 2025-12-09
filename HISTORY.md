@@ -1,5 +1,17 @@
 ## Recent Updates
 
+- **2025-12-09 - 주제 선정 및 영상 생성/업로드**
+  - **주제 선정**: 한국어 4개, 영어 4개 주제 선정
+  - **영상 생성 및 업로드**:
+    - 한국어 영상: "작은 변화로 큰 성과를 얻는 생산성 팁 3가지!" (25.07초)
+      - Video ID: `sBr-UrSLIw0`
+      - URL: <https://www.youtube.com/watch?v=sBr-UrSLIw0>
+      - 비공개 업로드 완료
+    - 영어 영상: "The Day I Quit Social Media and Rediscovered My Passion for Life" (24.38초)
+      - Video ID: `LrBMyqRWvVg`
+      - URL: <https://www.youtube.com/watch?v=LrBMyqRWvVg>
+      - 비공개 업로드 완료
+
 - **2025-12-08 - 완결성 있는 스토리 구조 및 깨달음 중심 콘텐츠로 전환**
   - **완결성 있는 스토리 구조 추가**: 짧은 시간에도 시작-중간-끝이 명확한 완결성 있는 스토리 구조 강조
     - 영어 프롬프트: "COMPLETE STORY STRUCTURE" 섹션 추가, THE SETUP - THE JOURNEY - THE RESOLUTION 구조

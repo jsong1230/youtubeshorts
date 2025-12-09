@@ -111,9 +111,27 @@ class BackgroundVideoManager:
                     downloaded_video_ids.add(video_id)
 
             if not bg_video_path:
-                raise ValueError(
-                    f"그룹 {i+1}-{group_end}에 대한 배경 영상을 다운로드할 수 없습니다."
-                )
+                # 최종 폴백: 매우 일반적인 키워드로 재시도
+                logger.warning(f"   ⚠️ 배경 영상 다운로드 실패, 최종 폴백 키워드로 재시도...")
+                final_fallback_keywords = ["nature", "calm", "peaceful", "abstract", "minimal", "zen"]
+                for final_keyword in final_fallback_keywords:
+                    bg_video_path, video_id = self._download_with_retry_strategy(
+                        final_keyword, i, group_duration, topic, downloaded_video_ids
+                    )
+                    if bg_video_path and video_id:
+                        downloaded_video_ids.add(video_id)
+                        logger.info(f"   ✅ 최종 폴백 키워드로 배경 영상 다운로드 성공: {final_keyword}")
+                        break
+                
+                if not bg_video_path:
+                    # 최종 폴백: 이미지 사용 (배경 영상 대신)
+                    logger.warning(
+                        f"   ⚠️ 배경 영상 다운로드 실패, 이미지 폴백 사용 (그룹 {i+1}-{group_end})"
+                    )
+                    # 이미지 경로를 None으로 설정하여 이미지 생성기로 폴백
+                    bg_image_path = None  # 이미지 생성기가 처리하도록
+                    background_groups.append((i, group_end, None, bg_image_path))
+                    continue
 
             background_groups.append((i, group_end, bg_video_path, None))
             logger.debug(
@@ -275,7 +293,23 @@ class BackgroundVideoManager:
                     f"   ⚠️ 배경 영상 다운로드 실패 ({keyword}), 다음 키워드 시도..."
                 )
 
-        logger.warning("   ⚠️ 배경 영상 다운로드 최종 실패 (모든 키워드 시도 완료)")
+        # 최종 폴백: 일반적인 키워드로 재시도
+        logger.warning("   ⚠️ 배경 영상 다운로드 실패, 일반 키워드로 재시도...")
+        fallback_keywords = ["nature", "calm", "peaceful", "serene", "meditation", "zen", "abstract", "minimal"]
+        for fallback_keyword in fallback_keywords:
+            bg_video_path, video_id = self.download_video_for_sentence(
+                sentence,
+                index,
+                duration,
+                topic=topic,
+                exclude_video_ids=exclude_video_ids,
+                force_keyword=fallback_keyword,
+            )
+            if bg_video_path and video_id:
+                logger.info(f"   ✅ 폴백 키워드로 배경 영상 다운로드 성공: {fallback_keyword}")
+                return bg_video_path, video_id
+        
+        logger.error("   ❌ 배경 영상 다운로드 최종 실패 (모든 키워드 및 폴백 키워드 시도 완료)")
         return None, None
 
     def _get_category_keywords(self, topic: str) -> List[str]:

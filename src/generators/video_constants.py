@@ -22,7 +22,7 @@ class VideoConstants:
     # 중간 영상(30-45초): Story, Short_Story - 스토리 전개 필요
     # 긴 영상(45-60초): Book_Review, Meditation, Breathing - 상세 설명 필요
     CONTENT_TYPE_DURATIONS = {
-        "hook": 20,  # 15-25초 범위, 빠른 훅 + 핵심 전달
+        "hook": 50,  # 45-55초 범위, 동기부여 및 힐링 콘텐츠 (후킹-전개-핵심메시지-마무리 구조)
         "quote": 22,  # 18-28초 범위, 명언 + 간단한 설명
         "fact": 25,  # 20-30초 범위, 팩트 + 핵심 설명
         "story": 40,  # 35-45초 범위, 스토리 전개 필요
@@ -30,7 +30,7 @@ class VideoConstants:
         "meditation": 50,  # 45-60초 범위, 명상 가이드
         "breathing": 45,  # 40-55초 범위, 호흡 가이드
         "book_review": 50,  # 45-60초 범위, 여러 책 소개
-        "auto": 22,  # 기본값: 짧은 영상 선호
+        "auto": 50,  # 기본값: 동기부여 및 힐링 콘텐츠 선호
     }
 
     # 페이드 효과
