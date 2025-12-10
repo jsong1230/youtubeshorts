@@ -128,13 +128,18 @@ class TestVideoEditor:
             )
 
     def test_prepare_background_clips_no_file(self, video_editor):
-        """Test error when background file is missing"""
+        """Test fallback to solid color background when background file is missing"""
         background_groups = [(0, 1, "missing.mp4", None)]
         durations = [5.0]
 
         with patch("os.path.exists", return_value=False):
-            with pytest.raises(ValueError, match="배경 영상이 없습니다"):
-                video_editor.prepare_background_clips(background_groups, durations)
+            # 배경 영상이 없으면 단색 배경으로 폴백 (에러 발생하지 않음)
+            clips = video_editor.prepare_background_clips(background_groups, durations)
+            # 단색 배경이 생성되었는지 확인
+            assert len(clips) == 1
+            # ColorClip이 생성되었는지 확인 (타입 체크)
+            from moviepy.editor import ColorClip
+            assert isinstance(clips[0], ColorClip)
 
     def test_prepare_subtitle_clips(self, video_editor):
         """Test subtitle clip preparation"""
