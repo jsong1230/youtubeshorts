@@ -139,6 +139,7 @@ class TestVideoEditor:
             assert len(clips) == 1
             # ColorClip이 생성되었는지 확인 (타입 체크)
             from moviepy.editor import ColorClip
+
             assert isinstance(clips[0], ColorClip)
 
     def test_prepare_subtitle_clips(self, video_editor):
