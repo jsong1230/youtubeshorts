@@ -86,13 +86,14 @@ class BackgroundVideoManager:
 
     def prepare_background_clips(
         self, script: List[str], audio_durations: List[float], topic: str
-    ) -> Tuple[List, Set[int]]:
+    ) -> Tuple[List[Tuple[int, int, Optional[str], Optional[str]]], Set[int]]:
         """배경 클립 준비
 
         Returns:
             tuple: (background_groups, downloaded_video_ids)
+            background_groups: List of tuples (start_idx, end_idx, video_path, image_path)
         """
-        background_groups = []
+        background_groups: List[Tuple[int, int, Optional[str], Optional[str]]] = []
         group_size = VideoConstants.BACKGROUND_GROUP_SIZE
         use_background_video = settings.USE_BACKGROUND_VIDEO
         downloaded_video_ids: Set[int] = set()
