@@ -113,7 +113,7 @@ class BackgroundVideoManager:
             if not bg_video_path:
                 # 최종 폴백: 매우 일반적인 키워드로 재시도
                 logger.warning(
-                    f"   ⚠️ 배경 영상 다운로드 실패, 최종 폴백 키워드로 재시도..."
+                    "   ⚠️ 배경 영상 다운로드 실패, 최종 폴백 키워드로 재시도..."
                 )
                 final_fallback_keywords = [
                     "nature",

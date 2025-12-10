@@ -84,7 +84,7 @@ class PromptBuilder:
 
         prompts = {
             ContentType.HOOK: (
-                f"""You are a professional PD and main writer for a YouTube channel with 1 million subscribers specializing in "Motivation & Healing" content. Your role is to write Shorts scripts that touch people's hearts and provide deep insights.
+                """You are a professional PD and main writer for a YouTube channel with 1 million subscribers specializing in "Motivation & Healing" content. Your role is to write Shorts scripts that touch people's hearts and provide deep insights.
 
 **YOUR MISSION:**
 - Create scripts that resonate emotionally and provide philosophical/psychological insights
