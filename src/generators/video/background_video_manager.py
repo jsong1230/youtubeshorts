@@ -112,17 +112,28 @@ class BackgroundVideoManager:
 
             if not bg_video_path:
                 # 최종 폴백: 매우 일반적인 키워드로 재시도
-                logger.warning(f"   ⚠️ 배경 영상 다운로드 실패, 최종 폴백 키워드로 재시도...")
-                final_fallback_keywords = ["nature", "calm", "peaceful", "abstract", "minimal", "zen"]
+                logger.warning(
+                    f"   ⚠️ 배경 영상 다운로드 실패, 최종 폴백 키워드로 재시도..."
+                )
+                final_fallback_keywords = [
+                    "nature",
+                    "calm",
+                    "peaceful",
+                    "abstract",
+                    "minimal",
+                    "zen",
+                ]
                 for final_keyword in final_fallback_keywords:
                     bg_video_path, video_id = self._download_with_retry_strategy(
                         final_keyword, i, group_duration, topic, downloaded_video_ids
                     )
                     if bg_video_path and video_id:
                         downloaded_video_ids.add(video_id)
-                        logger.info(f"   ✅ 최종 폴백 키워드로 배경 영상 다운로드 성공: {final_keyword}")
+                        logger.info(
+                            f"   ✅ 최종 폴백 키워드로 배경 영상 다운로드 성공: {final_keyword}"
+                        )
                         break
-                
+
                 if not bg_video_path:
                     # 최종 폴백: 이미지 사용 (배경 영상 대신)
                     logger.warning(
@@ -295,7 +306,16 @@ class BackgroundVideoManager:
 
         # 최종 폴백: 일반적인 키워드로 재시도
         logger.warning("   ⚠️ 배경 영상 다운로드 실패, 일반 키워드로 재시도...")
-        fallback_keywords = ["nature", "calm", "peaceful", "serene", "meditation", "zen", "abstract", "minimal"]
+        fallback_keywords = [
+            "nature",
+            "calm",
+            "peaceful",
+            "serene",
+            "meditation",
+            "zen",
+            "abstract",
+            "minimal",
+        ]
         for fallback_keyword in fallback_keywords:
             bg_video_path, video_id = self.download_video_for_sentence(
                 sentence,
@@ -306,10 +326,14 @@ class BackgroundVideoManager:
                 force_keyword=fallback_keyword,
             )
             if bg_video_path and video_id:
-                logger.info(f"   ✅ 폴백 키워드로 배경 영상 다운로드 성공: {fallback_keyword}")
+                logger.info(
+                    f"   ✅ 폴백 키워드로 배경 영상 다운로드 성공: {fallback_keyword}"
+                )
                 return bg_video_path, video_id
-        
-        logger.error("   ❌ 배경 영상 다운로드 최종 실패 (모든 키워드 및 폴백 키워드 시도 완료)")
+
+        logger.error(
+            "   ❌ 배경 영상 다운로드 최종 실패 (모든 키워드 및 폴백 키워드 시도 완료)"
+        )
         return None, None
 
     def _get_category_keywords(self, topic: str) -> List[str]:
@@ -457,7 +481,8 @@ class BackgroundVideoManager:
     ) -> Tuple[Optional[str], Optional[int]]:
         """Pexels에서 영상 다운로드"""
         try:
-            pexels_video_url = f"https://api.pexels.com/videos/search?query={english_keyword}&per_page=80&orientation=portrait"
+            # /v1/videos/search 엔드포인트 사용 (올바른 API 경로)
+            pexels_video_url = f"https://api.pexels.com/v1/videos/search?query={english_keyword}&per_page=80&orientation=portrait"
             headers = {
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
                 "Authorization": settings.PEXELS_API_KEY,
@@ -544,7 +569,11 @@ class BackgroundVideoManager:
                             )
                             return bg_video_path, video_id
         except Exception as e:
-            logger.warning(f"   Pexels API 실패: {e}")
+            logger.warning(f"   Pexels API 실패: {e}", exc_info=True)
+            # 상세 에러 정보 로깅
+            if hasattr(e, "response") and e.response is not None:
+                logger.warning(f"   Pexels API 응답 코드: {e.response.status_code}")
+                logger.warning(f"   Pexels API 응답 내용: {e.response.text[:200]}")
 
         return None, None
 

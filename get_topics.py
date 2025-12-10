@@ -316,16 +316,8 @@ def collect_topics(language="en"):
 
     all_topics = []
 
-    # 콘텐츠 타입 랜덤 선택
-    content_type = random.choice(
-        [
-            ContentType.HOOK,
-            ContentType.QUOTE,
-            ContentType.STORY,
-            ContentType.FACT,
-            ContentType.SHORT_STORY,
-        ]
-    )
+    # 콘텐츠 타입 선택 (HOOK으로 고정 - 동기부여 및 힐링 콘텐츠)
+    content_type = ContentType.HOOK
 
     print(f"📌 콘텐츠 타입: {content_type.value}")
     print("=" * 60)

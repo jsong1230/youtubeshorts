@@ -40,6 +40,7 @@ class TTSProvider(Enum):
     GTTS = "gtts"
     OPENAI = "openai"
     GOOGLE_CLOUD = "google_cloud"  # Google Cloud Text-to-Speech (한글 발음 우수)
+    NAVER_CLOVA = "naver_clova"  # Naver Clova Voice (한글 발음 최고)
 
 
 class TTSEngineBase(ABC):
@@ -444,14 +445,12 @@ class GoogleCloudEngine(TTSEngineBase):
             # 언어 코드 및 voice 설정
             if lang == "ko":
                 language_code = "ko-KR"
-                # 한글 최적 voice 선택
+                # 한글 최적 voice 선택 (Neural2 모델 - 가장 자연스러운 모델)
                 if voice is None:
-                    # Google Cloud의 한글 voice 중 가장 자연스러운 것 선택
-                    # Wavenet이 더 고품질이지만 유료, Standard는 무료 할당량 있음
-                    voice_name = (
-                        "ko-KR-Wavenet-A"  # 여성 음성 (최고 품질, 한글 발음 우수)
-                    )
-                    # 대안: "ko-KR-Standard-A" (무료 할당량, 품질 양호)
+                    # Google Cloud의 Neural2 모델 사용 (가장 자연스럽고 최신 모델)
+                    # 동기부여/힐링 콘텐츠에 적합한 차분하고 따뜻한 여성 음성
+                    voice_name = "ko-KR-Neural2-A"  # Neural2 모델 (가장 자연스러운 한글 음성, 차분하고 따뜻한 여성 톤)
+                    # 대안: "ko-KR-Neural2-B" (다른 톤의 여성 음성), "ko-KR-Neural2-C" (남성 음성)
                     ssml_gender = texttospeech.SsmlVoiceGender.FEMALE
                 else:
                     voice_name = voice
@@ -499,6 +498,100 @@ class GoogleCloudEngine(TTSEngineBase):
             return False
 
 
+class ClovaVoiceEngine(TTSEngineBase):
+    """Naver Clova Voice TTS 엔진 (한글 발음 최고)"""
+
+    def __init__(self):
+        if not settings.NAVER_CLOVA_CLIENT_ID or not settings.NAVER_CLOVA_CLIENT_SECRET:
+            raise ValueError(
+                "NAVER_CLOVA_CLIENT_ID와 NAVER_CLOVA_CLIENT_SECRET이 설정되지 않았습니다."
+            )
+
+        try:
+            import requests
+
+            self.requests = requests
+        except ImportError:
+            raise ImportError(
+                "requests가 설치되지 않았습니다. pip install requests로 설치하세요."
+            )
+
+        self.client_id = settings.NAVER_CLOVA_CLIENT_ID
+        self.client_secret = settings.NAVER_CLOVA_CLIENT_SECRET
+        self.api_url = "https://naveropenapi.apigw.ntruss.com/tts-premium/v1/tts"
+
+    def generate(
+        self,
+        text: str,
+        output_path: str,
+        lang: str = "ko",
+        content_type: str = None,
+        voice: str = None,
+        speed: float = None,
+    ) -> bool:
+        """Naver Clova Voice TTS로 음성 생성 (한글 발음 최고)"""
+        try:
+            # 텍스트 전처리
+            processed_text = ClovaVoiceEngine._preprocess_text(text, lang=lang)
+
+            # 음성 선택
+            if voice is None:
+                voice = settings.NAVER_CLOVA_VOICE_NAME or "nara"
+
+            # 속도 설정 (Clova Voice는 0.5 ~ 2.0 범위)
+            if speed is None:
+                # 콘텐츠 타입별 속도 최적화
+                speed_map = {
+                    "hook": 1.0,  # 중간 속도
+                    "quote": 0.95,  # 약간 느리게
+                    "story": 0.9,  # 느리고 감성적으로
+                    "fact": 1.0,  # 중간 속도
+                    "short_story": 0.95,  # 약간 느리게
+                    "meditation": 0.85,  # 매우 느리고 차분하게
+                    "breathing": 0.85,  # 매우 느리고 차분하게
+                }
+                speed = speed_map.get(content_type, 1.0)
+
+            # Clova Voice 속도 범위 제한 (0.5 ~ 2.0)
+            speed = max(0.5, min(2.0, speed))
+
+            # API 요청 헤더
+            headers = {
+                "X-NCP-APIGW-API-KEY-ID": self.client_id,
+                "X-NCP-APIGW-API-KEY": self.client_secret,
+                "Content-Type": "application/x-www-form-urlencoded",
+            }
+
+            # API 요청 데이터
+            data = {
+                "speaker": voice,  # 음성 선택
+                "speed": str(speed),  # 속도
+                "text": processed_text,  # 변환할 텍스트
+            }
+
+            # API 호출
+            response = self.requests.post(self.api_url, headers=headers, data=data)
+
+            if response.status_code == 200:
+                # 오디오 파일 저장
+                with open(output_path, "wb") as f:
+                    f.write(response.content)
+
+                logger.debug(
+                    f"   🔊 Naver Clova Voice TTS 생성: voice={voice}, speed={speed:.2f}, lang={lang}"
+                )
+                return True
+            else:
+                logger.warning(
+                    f"⚠️ Naver Clova Voice TTS API 오류: {response.status_code} - {response.text[:200]}"
+                )
+                return False
+
+        except Exception as e:
+            logger.warning(f"⚠️ Naver Clova Voice TTS 음성 생성 실패: {e}")
+            return False
+
+
 class TTSEngine:
     """TTS 엔진 팩토리 클래스"""
 
@@ -520,8 +613,14 @@ class TTSEngine:
 
             if provider is None:
                 # 자동 선택 로직
-                # Google Cloud가 설정되어 있으면 우선 사용 (한글 발음 우수)
+                # Naver Clova Voice가 설정되어 있으면 최우선 사용 (한글 발음 최고)
                 if (
+                    settings.NAVER_CLOVA_CLIENT_ID
+                    and settings.NAVER_CLOVA_CLIENT_SECRET
+                ):
+                    provider = TTSProvider.NAVER_CLOVA
+                # Google Cloud가 설정되어 있으면 우선 사용 (한글 발음 우수)
+                elif (
                     GOOGLE_CLOUD_TTS_AVAILABLE
                     and settings.GOOGLE_CLOUD_CREDENTIALS_PATH
                 ):
@@ -534,7 +633,7 @@ class TTSEngine:
                     provider = TTSProvider.GTTS
                 else:
                     raise ImportError(
-                        "사용 가능한 TTS 엔진이 없습니다. gTTS, OpenAI, 또는 Google Cloud TTS를 설치하세요."
+                        "사용 가능한 TTS 엔진이 없습니다. gTTS, OpenAI, Google Cloud TTS, 또는 Naver Clova Voice를 설치하세요."
                     )
 
         self.provider = provider
@@ -548,6 +647,8 @@ class TTSEngine:
             return OpenAIEngine()
         elif provider == TTSProvider.GOOGLE_CLOUD:
             return GoogleCloudEngine()
+        elif provider == TTSProvider.NAVER_CLOVA:
+            return ClovaVoiceEngine()
         else:
             raise ValueError(f"지원하지 않는 TTS 제공자: {provider}")
 

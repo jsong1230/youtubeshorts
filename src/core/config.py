@@ -140,6 +140,16 @@ class Settings(BaseSettings):
     GOOGLE_CLOUD_CREDENTIALS_PATH: Optional[str] = Field(
         None, validation_alias="GOOGLE_CLOUD_CREDENTIALS_PATH"
     )
+    # Naver Clova Voice TTS
+    NAVER_CLOVA_CLIENT_ID: Optional[str] = Field(
+        None, validation_alias="NAVER_CLOVA_CLIENT_ID"
+    )
+    NAVER_CLOVA_CLIENT_SECRET: Optional[str] = Field(
+        None, validation_alias="NAVER_CLOVA_CLIENT_SECRET"
+    )
+    NAVER_CLOVA_VOICE_NAME: Optional[str] = Field(
+        "nara", validation_alias="NAVER_CLOVA_VOICE_NAME"
+    )  # 기본값: nara (차분하고 따뜻한 여성 음성)
 
     # YouTube Shorts Requirements
     SHORTS_MIN_DURATION: int = 15

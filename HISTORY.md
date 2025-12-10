@@ -1,5 +1,32 @@
 ## Recent Updates
 
+- **2025-12-10 - TTS 개선, Pexels API 수정, 주제 선정 개선, 커밋 규칙 강화**
+  - **한글 TTS 모델 개선**: Google Cloud TTS Neural2-A 모델로 변경 (가장 자연스러운 한글 음성)
+    - 이전: `ko-KR-Wavenet-A` → 변경: `ko-KR-Neural2-A`
+    - 동기부여/힐링 콘텐츠에 적합한 차분하고 따뜻한 여성 톤
+  - **Naver Clova Voice TTS 지원 추가**:
+    - `ClovaVoiceEngine` 클래스 추가
+    - Naver Clova Voice API 통합 (한글 발음 최고 품질)
+    - 설정 가이드 문서 추가: `docs/NAVER_CLOVA_VOICE_SETUP.md`
+    - 자동 선택 로직에 Naver Clova Voice 우선순위 추가
+  - **Pexels API 수정**:
+    - 엔드포인트 수정: `/videos/search` → `/v1/videos/search`
+    - 배경 영상 다운로드 정상 작동 확인
+    - 에러 로깅 개선 (상세 에러 정보 표시)
+  - **주제 선정 개선**:
+    - `get_topics.py`에서 콘텐츠 타입을 HOOK으로 고정 (동기부여/힐링 콘텐츠 전용)
+    - 주제 선정 시 항상 HOOK 타입으로 생성
+  - **커밋 규칙 강화**:
+    - `.cursorrules`에 커밋 전 필수 확인 규칙 강화
+    - 사용자가 명시적으로 요청해도 실제 실행 전에 반드시 한 번 더 확인 필요
+    - 커밋 메시지를 보여주고 승인을 받아야 함
+  - **테스트 영상 생성**:
+    - 한국어 영상: "겨울철 야생동물 관찰하기: 자연 속에서 힐링하며 배우는 시간!" (57.50초)
+      - 파일: `output/videos/shorts_20251210_095922.mp4`
+    - 영어 영상: "What should you do if you receive a mysterious annuity letter on behalf of your dad?" (55.38초)
+      - 파일: `output/videos/shorts_20251210_100128.mp4`
+    - 업로드하지 않음 (적절하지 않음)
+
 - **2025-12-10 - 동기부여 및 힐링 콘텐츠로 전면 전환**
   - **콘텐츠 방향 전면 변경**: 실용 정보 중심 → 동기부여 및 힐링 콘텐츠로 전환
     - 구독자 100만 명을 보유한 '동기부여 및 힐링' 채널의 전문 PD/작가 역할 부여

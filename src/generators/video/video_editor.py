@@ -241,11 +241,12 @@ class VideoEditor:
                 try:
                     # 단색 배경 이미지 생성 (동기부여/힐링 콘텐츠에 맞는 차분한 색상)
                     from moviepy.editor import ColorClip
+
                     # 차분한 어두운 배경 (동기부여/힐링 콘텐츠에 적합)
                     bg_clip = ColorClip(
                         size=(1080, 1920),  # Shorts 해상도
                         color=(20, 20, 30),  # 어두운 남색 계열
-                        duration=group_duration
+                        duration=group_duration,
                     )
                     background_clips.append(bg_clip)
                     logger.info(f"   ✅ 단색 배경 생성 및 사용 (그룹 {gs+1}-{ge})")
