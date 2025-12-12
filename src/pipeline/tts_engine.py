@@ -480,7 +480,14 @@ class GoogleCloudEngine(TTSEngineBase):
             )
 
             # TTS 요청
-            synthesis_input = texttospeech.SynthesisInput(text=processed_text)
+            # 한글인 경우 SSML을 사용하여 언어를 강제로 지정 (영어 단어가 영어로 읽히는 문제 방지)
+            if lang == "ko":
+                # SSML을 사용하여 한글 언어 강제 지정
+                ssml_text = f'<speak><lang xml:lang="ko-KR">{processed_text}</lang></speak>'
+                synthesis_input = texttospeech.SynthesisInput(ssml=ssml_text)
+            else:
+                synthesis_input = texttospeech.SynthesisInput(text=processed_text)
+            
             response = self.client.synthesize_speech(
                 input=synthesis_input, voice=voice_config, audio_config=audio_config
             )

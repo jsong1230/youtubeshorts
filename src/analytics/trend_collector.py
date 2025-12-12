@@ -597,23 +597,23 @@ class TrendCollector:
             content_type_prompts = {
                 "hook": {
                     "en": "Create powerful Hook-style topics that grab attention in the first 3 seconds. Use the 'Mindset Flip' technique: state a common negative thought and immediately reframe it positively.",
-                    "ko": "첫 3초 안에 시청자의 관심을 끄는 강력한 Hook 스타일 주제를 생성하세요. '마인드셋 플립' 기법을 사용하세요: 흔한 부정적 생각을 제시하고 즉시 긍정적으로 재해석하세요.",
+                    "ko": "첫 3초 안에 시청자의 관심을 끄는 강력한 Hook 스타일 주제를 생성하세요. '마인드셋 플립' 기법을 사용하세요: 흔한 부정적 생각을 제시하고 즉시 긍정적으로 재해석하세요. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제를 생성해야 합니다. 한국 사용자들에게만 해당하는 내용이어야 합니다.**",
                 },
                 "quote": {
                     "en": "Create quote/knowledge-style topics that deliver powerful insights about finance, productivity, self-improvement, or investment.",
-                    "ko": "재태크, 생산성, 자기계발, 투자에 대한 강력한 인사이트를 전달하는 명언/지식 스타일 주제를 생성하세요.",
+                    "ko": "재태크, 생산성, 자기계발, 투자에 대한 강력한 인사이트를 전달하는 명언/지식 스타일 주제를 생성하세요. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제를 생성해야 합니다. 한국 사용자들에게만 해당하는 내용이어야 합니다.**",
                 },
                 "story": {
                     "en": "Create storytelling-style topics that deliver lessons through stories about psychology, history, rich habits, or real-life examples.",
-                    "ko": "심리, 역사, 부자습관, 실제 사례를 통해 교훈을 전달하는 스토리텔링 스타일 주제를 생성하세요.",
+                    "ko": "심리, 역사, 부자습관, 실제 사례를 통해 교훈을 전달하는 스토리텔링 스타일 주제를 생성하세요. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제를 생성해야 합니다. 한국 사용자들에게만 해당하는 내용이어야 합니다.**",
                 },
                 "fact": {
                     "en": "Create fact-based topics that present shocking numbers, statistics, or 'did you know' facts about finance, productivity, or lifestyle.",
-                    "ko": "재태크, 생산성, 라이프스타일에 대한 충격적인 숫자, 통계, '알고 계셨나요' 팩트를 제시하는 팩트 기반 주제를 생성하세요.",
+                    "ko": "재태크, 생산성, 라이프스타일에 대한 충격적인 숫자, 통계, '알고 계셨나요' 팩트를 제시하는 팩트 기반 주제를 생성하세요. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제를 생성해야 합니다. 한국 사용자들에게만 해당하는 내용이어야 합니다.**",
                 },
                 "short_story": {
                     "en": "Create short story-style topics that deliver life lessons, inspiration, or success stories in a personal narrative format.",
-                    "ko": "인생 교훈, 영감, 성공 스토리를 개인적 서술 형식으로 전달하는 짧은 스토리 스타일 주제를 생성하세요.",
+                    "ko": "인생 교훈, 영감, 성공 스토리를 개인적 서술 형식으로 전달하는 짧은 스토리 스타일 주제를 생성하세요. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제를 생성해야 합니다. 한국 사용자들에게만 해당하는 내용이어야 합니다.**",
                 },
             }
 
@@ -632,6 +632,8 @@ Generate {num_topics} new topic ideas for YouTube Shorts videos that:
 3. Can be explained in about 55 seconds
 4. Follow the {content_type} content style
 
+**[CRITICAL] For Korean topics, they MUST be specific to Korean culture, trends, and sentiments. Avoid generic or translated topics. For example, instead of a generic topic about \'winter\', create a topic about Korea\'s specific winter culture like \'end-of-year gatherings\' or \'winter kimchi making (gimjang)\'.**
+
 Return only the topics, one per line, without numbering or bullets. Each topic should be a complete sentence or phrase that can be used directly as a video title or topic."""
 
             if language == "ko":
@@ -642,6 +644,8 @@ Return only the topics, one per line, without numbering or bullets. Each topic s
 2. 매력적이고 클릭을 유도해야 함
 3. 약 55초 분량으로 설명 가능해야 함
 4. {content_type} 콘텐츠 스타일을 따름
+
+**[매우 중요] 한국어 주제는 반드시 한국의 문화, 트렌드, 정서에 특화되어야 합니다. 일반적이거나 번역된 느낌의 주제는 피하세요. 예를 들어, '겨울'이라는 일반적인 주제 대신 '연말 모임', '김장'과 같이 한국의 특정 겨울 문화를 다루는 주제를 만드세요.**
 
 번호나 불릿 없이 주제만 한 줄에 하나씩 반환하세요. 각 주제는 영상 제목이나 주제로 직접 사용할 수 있는 완전한 문장이나 구문이어야 합니다."""
 
@@ -993,19 +997,19 @@ Return only the topics, one per line, without numbering or bullets. Each topic s
             seasonal_prompts = {
                 "spring": {
                     "en": "Create topics that are highly relevant to spring season (March-May), such as spring cleaning, tax season, spring financial planning, spring reset routines, and seasonal transitions.",
-                    "ko": "봄 시즌(3-5월)과 매우 관련된 주제를 생성하세요. 예: 봄 정리, 세금 시즌, 봄 재무 계획, 봄 리셋 루틴, 계절 전환 등.",
+                    "ko": "봄 시즌(3-5월)과 매우 관련된 주제를 생성하세요. 예: 봄 정리, 세금 시즌, 봄 재무 계획, 봄 리셋 루틴, 계절 전환 등. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제여야 합니다.**",
                 },
                 "summer": {
                     "en": "Create topics that are highly relevant to summer season (June-August), such as summer budget planning, vacation savings, summer side hustles, summer spending management, and seasonal financial strategies.",
-                    "ko": "여름 시즌(6-8월)과 매우 관련된 주제를 생성하세요. 예: 여름 예산 계획, 휴가 저축, 여름 부업, 여름 지출 관리, 계절별 재무 전략 등.",
+                    "ko": "여름 시즌(6-8월)과 매우 관련된 주제를 생성하세요. 예: 여름 예산 계획, 휴가 저축, 여름 부업, 여름 지출 관리, 계절별 재무 전략 등. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제여야 합니다.**",
                 },
                 "autumn": {
                     "en": "Create topics that are highly relevant to autumn/fall season (September-November), such as fall financial planning, holiday budget preparation, year-end tax strategies, autumn reset routines, Black Friday savings, and seasonal transitions.",
-                    "ko": "가을 시즌(9-11월)과 매우 관련된 주제를 생성하세요. 예: 가을 재무 계획, 연말 예산 준비, 연말 세금 전략, 가을 리셋 루틴, 블랙프라이데이 저축, 계절 전환 등.",
+                    "ko": "가을 시즌(9-11월)과 매우 관련된 주제를 생성하세요. 예: 가을 재무 계획, 연말 예산 준비, 연말 세금 전략, 가을 리셋 루틴, 블랙프라이데이 저축, 계절 전환 등. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제여야 합니다.**",
                 },
                 "winter": {
                     "en": "Create topics that are highly relevant to winter season (December-February), such as winter budget management, holiday spending, year-end financial review, winter heating costs, new year financial goals, and seasonal financial planning.",
-                    "ko": "겨울 시즌(12-2월)과 매우 관련된 주제를 생성하세요. 예: 겨울 예산 관리, 연말 지출, 연말 재무 검토, 겨울 난방비, 새해 재무 목표, 계절별 재무 계획 등.",
+                    "ko": "겨울 시즌(12-2월)과 매우 관련된 주제를 생성하세요. 예: 겨울 예산 관리, 연말 지출, 연말 재무 검토, 겨울 난방비, 새해 재무 목표, 계절별 재무 계획 등. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제여야 합니다.**",
                 },
             }
 
@@ -1056,6 +1060,8 @@ Generate {num_topics} new topic ideas for YouTube Shorts videos that:
 4. Can be explained in about 55 seconds
 5. Follow the {content_type} content style
 
+**[CRITICAL] For Korean topics, they MUST be specific to Korean culture, trends, and sentiments. Avoid generic or translated topics. For example, instead of a generic topic about \'winter\', create a topic about Korea\'s specific winter culture like \'end-of-year gatherings\' or \'winter kimchi making (gimjang)\'.**
+
 Return only the topics, one per line, without numbering or bullets. Each topic should be a complete sentence or phrase that can be used directly as a video title or topic."""
 
             if language == "ko":
@@ -1067,6 +1073,8 @@ Return only the topics, one per line, without numbering or bullets. Each topic s
 3. 매력적이고 클릭을 유도해야 함
 4. 약 55초 분량으로 설명 가능해야 함
 5. {content_type} 콘텐츠 스타일을 따름
+
+**[매우 중요] 한국어 주제는 반드시 한국의 문화, 트렌드, 정서에 특화되어야 합니다. 일반적이거나 번역된 느낌의 주제는 피하세요. 예를 들어, '겨울'이라는 일반적인 주제 대신 '연말 모임', '김장'과 같이 한국의 특정 겨울 문화를 다루는 주제를 만드세요.**
 
 번호나 불릿 없이 주제만 한 줄에 하나씩 반환하세요. 각 주제는 영상 제목이나 주제로 직접 사용할 수 있는 완전한 문장이나 구문이어야 합니다."""
 
