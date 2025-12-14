@@ -597,7 +597,7 @@ class TrendCollector:
             content_type_prompts = {
                 "hook": {
                     "en": "Create powerful Hook-style topics that grab attention in the first 3 seconds. Use the 'Mindset Flip' technique: state a common negative thought and immediately reframe it positively. **[IMPORTANT] Topics must be relevant to American and Canadian audiences.**",
-"ko": "첫 3초 안에 시청자의 관심을 끄는 강력한 Hook 스타일 주제를 생성하세요. '마인드셋 플립' 기법을 사용하세요: 흔한 부정적 생각을 제시하고 즉시 긍정적으로 재해석하세요. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제를 생성해야 합니다. 한국 사용자들에게만 해당하는 내용이어야 합니다.**",
+                    "ko": "첫 3초 안에 시청자의 관심을 끄는 강력한 Hook 스타일 주제를 생성하세요. '마인드셋 플립' 기법을 사용하세요: 흔한 부정적 생각을 제시하고 즉시 긍정적으로 재해석하세요. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제를 생성해야 합니다. 한국 사용자들에게만 해당하는 내용이어야 합니다.**",
                 },
                 "quote": {
                     "en": "Create quote/knowledge-style topics that deliver powerful insights about finance, productivity, self-improvement, or investment. **[IMPORTANT] Topics must be relevant to American and Canadian audiences.**",
