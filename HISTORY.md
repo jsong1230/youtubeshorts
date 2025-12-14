@@ -1,5 +1,15 @@
 ## Recent Updates
 
+- **2025-12-14 - 한글/영어 영상 업로드 및 주제 생성 프롬프트 개선**
+  - **주제 생성 프롬프트 개선**: 영어 주제 생성 시 "American or Canadian" 문화를 반영하도록 프롬프트 수정
+  - **영상 생성 및 비공개 업로드**:
+    - 한국어: "돈이 없어서 시작하지 못했다? 작은 투자로 재테크를 시작하는 3가지 방법!" (40.11초)
+      - Video ID: `ia8-nS3mPbk`
+      - URL: <https://www.youtube.com/watch?v=ia8-nS3mPbk>
+    - 영어: "Routines decide your life long before you do." (56.49초)
+      - Video ID: `2-NYr9ym6yo`
+      - URL: <https://www.youtube.com/watch?v=2-NYr9ym6yo>
+
 - **2025-12-13 - 영상 업로드**
   - **영상 2개 비공개 업로드**:
     - 한국어: "매일 반복되는 일상에 지쳤다면? 새로운 라이프스타일을 위한 작은 변화로 활력을 찾는 법을 공유합니다." (51.63초)

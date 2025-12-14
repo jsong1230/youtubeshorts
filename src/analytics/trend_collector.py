@@ -596,23 +596,23 @@ class TrendCollector:
             # 콘텐츠 타입별 프롬프트
             content_type_prompts = {
                 "hook": {
-                    "en": "Create powerful Hook-style topics that grab attention in the first 3 seconds. Use the 'Mindset Flip' technique: state a common negative thought and immediately reframe it positively.",
-                    "ko": "첫 3초 안에 시청자의 관심을 끄는 강력한 Hook 스타일 주제를 생성하세요. '마인드셋 플립' 기법을 사용하세요: 흔한 부정적 생각을 제시하고 즉시 긍정적으로 재해석하세요. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제를 생성해야 합니다. 한국 사용자들에게만 해당하는 내용이어야 합니다.**",
+                    "en": "Create powerful Hook-style topics that grab attention in the first 3 seconds. Use the 'Mindset Flip' technique: state a common negative thought and immediately reframe it positively. **[IMPORTANT] Topics must be relevant to American and Canadian audiences.**",
+"ko": "첫 3초 안에 시청자의 관심을 끄는 강력한 Hook 스타일 주제를 생성하세요. '마인드셋 플립' 기법을 사용하세요: 흔한 부정적 생각을 제시하고 즉시 긍정적으로 재해석하세요. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제를 생성해야 합니다. 한국 사용자들에게만 해당하는 내용이어야 합니다.**",
                 },
                 "quote": {
-                    "en": "Create quote/knowledge-style topics that deliver powerful insights about finance, productivity, self-improvement, or investment.",
+                    "en": "Create quote/knowledge-style topics that deliver powerful insights about finance, productivity, self-improvement, or investment. **[IMPORTANT] Topics must be relevant to American and Canadian audiences.**",
                     "ko": "재태크, 생산성, 자기계발, 투자에 대한 강력한 인사이트를 전달하는 명언/지식 스타일 주제를 생성하세요. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제를 생성해야 합니다. 한국 사용자들에게만 해당하는 내용이어야 합니다.**",
                 },
                 "story": {
-                    "en": "Create storytelling-style topics that deliver lessons through stories about psychology, history, rich habits, or real-life examples.",
+                    "en": "Create storytelling-style topics that deliver lessons through stories about psychology, history, rich habits, or real-life examples. **[IMPORTANT] Topics must be relevant to American and Canadian audiences.**",
                     "ko": "심리, 역사, 부자습관, 실제 사례를 통해 교훈을 전달하는 스토리텔링 스타일 주제를 생성하세요. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제를 생성해야 합니다. 한국 사용자들에게만 해당하는 내용이어야 합니다.**",
                 },
                 "fact": {
-                    "en": "Create fact-based topics that present shocking numbers, statistics, or 'did you know' facts about finance, productivity, or lifestyle.",
+                    "en": "Create fact-based topics that present shocking numbers, statistics, or 'did you know' facts about finance, productivity, or lifestyle. **[IMPORTANT] Topics must be relevant to American and Canadian audiences.**",
                     "ko": "재태크, 생산성, 라이프스타일에 대한 충격적인 숫자, 통계, '알고 계셨나요' 팩트를 제시하는 팩트 기반 주제를 생성하세요. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제를 생성해야 합니다. 한국 사용자들에게만 해당하는 내용이어야 합니다.**",
                 },
                 "short_story": {
-                    "en": "Create short story-style topics that deliver life lessons, inspiration, or success stories in a personal narrative format.",
+                    "en": "Create short story-style topics that deliver life lessons, inspiration, or success stories in a personal narrative format. **[IMPORTANT] Topics must be relevant to American and Canadian audiences.**",
                     "ko": "인생 교훈, 영감, 성공 스토리를 개인적 서술 형식으로 전달하는 짧은 스토리 스타일 주제를 생성하세요. **[중요] 반드시 한국의 문화적 맥락과 정서에 맞는 주제를 생성해야 합니다. 한국 사용자들에게만 해당하는 내용이어야 합니다.**",
                 },
             }
