@@ -1,5 +1,18 @@
 ## Recent Updates
 
+- **2025-12-16 - 한글/영어 영상 생성 및 비공개 업로드**
+  - **영상 생성 및 비공개 업로드**:
+    - 한국어: "재테크? 이제는 '소확행'을 통한 재정적 자유를 꿈꿔보세요!" (52.52초)
+      - Video ID: `whsqda6l-04`
+      - URL: <https://www.youtube.com/watch?v=whsqda6l-04>
+      - 파일: `output/videos/shorts_20251216_214806.mp4`
+      - 썸네일: `output/thumbnails/thumb_20251216_214948.jpg`
+    - 영어: "Why Did I Get a Shocking $1100 Medical Bill for Routine Bloodwork?" (55.94초)
+      - Video ID: `f4sg2MFf-Sk`
+      - URL: <https://www.youtube.com/watch?v=f4sg2MFf-Sk>
+      - 파일: `output/videos/shorts_20251216_215029.mp4`
+      - 썸네일: `output/thumbnails/thumb_20251216_215237.jpg`
+
 - **2025-12-16 - YouTube Shorts 성공 공식 적용 개선**
   - **화면 전환 빈도 최적화**: 문장 기반에서 시간 기반(1.5~2초마다)으로 변경하여 영상이 더 역동적으로 전환되도록 개선
     - `background_video_manager.py`: 시간 기반 그룹핑 로직 구현
