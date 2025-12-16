@@ -33,6 +33,13 @@ try:
 except ImportError:
     GOOGLE_CLOUD_TTS_AVAILABLE = False
 
+try:
+    import replicate
+
+    REPLICATE_AVAILABLE = True
+except ImportError:
+    REPLICATE_AVAILABLE = False
+
 
 class TTSProvider(Enum):
     """TTS 제공자"""
@@ -41,6 +48,8 @@ class TTSProvider(Enum):
     OPENAI = "openai"
     GOOGLE_CLOUD = "google_cloud"  # Google Cloud Text-to-Speech (한글 발음 우수)
     NAVER_CLOVA = "naver_clova"  # Naver Clova Voice (한글 발음 최고)
+    REPLICATE = "replicate"  # Replicate Coqui TTS (고품질, 다국어 지원)
+    OPEN_ROUTER = "open_router"  # OpenRouter TTS (OpenAI API 호환)
 
 
 class TTSEngineBase(ABC):
@@ -601,6 +610,231 @@ class ClovaVoiceEngine(TTSEngineBase):
             return False
 
 
+class ReplicateEngine(TTSEngineBase):
+    """Replicate Coqui TTS 엔진 (고품질, 다국어 지원)"""
+
+    def __init__(self):
+        if not REPLICATE_AVAILABLE:
+            raise ImportError(
+                "replicate가 설치되지 않았습니다. pip install replicate로 설치하세요."
+            )
+
+        if not settings.REPLICATE_API_TOKEN:
+            raise ValueError("REPLICATE_API_TOKEN이 설정되지 않았습니다.")
+
+        try:
+            import replicate
+
+            self.replicate = replicate
+            self.client = replicate.Client(api_token=settings.REPLICATE_API_TOKEN)
+        except Exception as e:
+            raise ValueError(f"Replicate 클라이언트 초기화 실패: {e}")
+
+    def generate(
+        self,
+        text: str,
+        output_path: str,
+        lang: str = "ko",
+        content_type: str = None,
+        voice: str = None,
+        speed: float = None,
+    ) -> bool:
+        """Replicate Coqui TTS로 음성 생성 (고품질, 다국어 지원)"""
+        try:
+            # 텍스트 전처리
+            processed_text = ReplicateEngine._preprocess_text(text, lang=lang)
+
+            # XTTS-v2 모델 사용 (다국어 지원, voice cloning 가능)
+            # lucataco/xtts-v2: 고품질 다국어 TTS 모델
+            # 최신 버전 사용
+            model = "lucataco/xtts-v2"
+
+            # 언어 코드 매핑 (XTTS-v2 지원 언어)
+            # XTTS-v2는 한국어를 직접 지원하지 않으므로 영어로 폴백
+            # 한국어는 다른 TTS 엔진(Google Cloud, Naver Clova) 사용 권장
+            language_map = {
+                "ko": "en",  # 한국어는 영어로 폴백 (한국어 미지원)
+                "en": "en",
+            }
+            language_code = language_map.get(lang, "en")
+
+            # XTTS-v2는 speaker 파라미터가 필수입니다 (최소 6초 오디오)
+            # 기본 speaker 오디오 파일 URL 사용
+            # 여성 음성 기본 샘플
+            default_speaker_url = "https://replicate.delivery/pbxt/Jt79w0xsT64R1JsiJ0LQRL8UcWspg5J4RFrU6YwEKpOT1ukS/male.wav"
+            
+            # 속도 설정 (XTTS-v2는 속도 조절을 직접 지원하지 않음)
+            # 속도는 나중에 오디오 후처리로 조절 가능
+            if speed is None:
+                speed_map = {
+                    "hook": 1.1,
+                    "quote": 1.0,
+                    "story": 0.9,
+                    "fact": 1.05,
+                    "short_story": 0.95,
+                    "meditation": 0.85,
+                    "breathing": 0.85,
+                }
+                speed = speed_map.get(content_type, 1.0)
+
+            # Replicate API 호출
+            # XTTS-v2는 text, language, speaker(필수) 입력 필요
+            input_params = {
+                "text": processed_text,
+                "language": language_code,
+                "speaker": default_speaker_url,  # 기본 speaker 사용
+                "cleanup_voice": False,  # 오디오 정리 비활성화
+            }
+
+            output = self.client.run(
+                model,
+                input=input_params,
+            )
+
+            # 출력이 URL인 경우 다운로드
+            if output:
+                import requests
+
+                # output이 문자열(URL)인지 딕셔너리인지 확인
+                audio_url = output
+                if isinstance(output, dict):
+                    # 딕셔너리인 경우 'audio' 키 확인
+                    audio_url = output.get("audio") or output.get("output") or str(output)
+                elif not isinstance(output, str):
+                    audio_url = str(output)
+
+                # URL에서 오디오 파일 다운로드
+                if audio_url.startswith("http"):
+                    response = requests.get(audio_url, stream=True)
+                    if response.status_code == 200:
+                        with open(output_path, "wb") as f:
+                            for chunk in response.iter_content(chunk_size=8192):
+                                f.write(chunk)
+
+                        logger.debug(
+                            f"   🔊 Replicate Coqui TTS 생성: lang={lang}, speed={speed:.2f}"
+                        )
+                        return True
+                    else:
+                        logger.warning(
+                            f"⚠️ Replicate TTS 오디오 다운로드 실패: {response.status_code}"
+                        )
+                        return False
+                else:
+                    logger.warning(f"⚠️ Replicate TTS 출력이 유효한 URL이 아닙니다: {audio_url}")
+                    return False
+            else:
+                logger.warning("⚠️ Replicate TTS 출력이 비어있습니다.")
+                return False
+
+        except Exception as e:
+            logger.warning(f"⚠️ Replicate Coqui TTS 음성 생성 실패: {e}")
+            return False
+
+
+class OpenRouterEngine(TTSEngineBase):
+    """OpenRouter TTS 엔진 (OpenAI API 호환)"""
+
+    def __init__(self):
+        if not OPENAI_AVAILABLE:
+            raise ImportError(
+                "openai가 설치되지 않았습니다. pip install openai로 설치하세요."
+            )
+
+        if not settings.OPEN_ROUTER_API_KEY:
+            raise ValueError("OPEN_ROUTER_API_KEY가 설정되지 않았습니다.")
+
+        try:
+            from openai import OpenAI
+
+            # OpenRouter는 OpenAI API와 호환되므로 base_url을 변경
+            self.client = OpenAI(
+                api_key=settings.OPEN_ROUTER_API_KEY,
+                base_url="https://openrouter.ai/api/v1",
+            )
+        except Exception as e:
+            raise ValueError(f"OpenRouter 클라이언트 초기화 실패: {e}")
+
+    def generate(
+        self,
+        text: str,
+        output_path: str,
+        lang: str = "ko",
+        content_type: str = None,
+        voice: str = None,
+        speed: float = None,
+    ) -> bool:
+        """OpenRouter TTS로 음성 생성 (OpenAI API 호환)"""
+        try:
+            # 텍스트 전처리
+            processed_text = OpenRouterEngine._preprocess_text(text, lang=lang)
+
+            # 음성 선택
+            if voice is None:
+                voice = self._select_voice_for_content_type(content_type, lang)
+
+            # 속도 설정
+            if speed is None:
+                speed = self._select_speed_for_content_type(content_type)
+
+            speed = max(0.25, min(4.0, speed))
+
+            # OpenRouter는 OpenAI API와 호환되므로 동일한 방식으로 호출
+            # 단, 모델을 OpenRouter에서 지원하는 TTS 모델로 지정해야 함
+            # 예: "openai/tts-1" 또는 "openai/tts-1-hd"
+            model = "openai/tts-1-hd" if lang == "ko" else "openai/tts-1-hd"
+
+            response = self.client.audio.speech.create(
+                model=model,
+                voice=voice,
+                input=processed_text,
+                speed=speed,
+            )
+
+            # 응답을 파일로 저장
+            response.stream_to_file(output_path)
+
+            logger.debug(
+                f"   🔊 OpenRouter TTS 생성: voice={voice}, speed={speed:.2f}, lang={lang}"
+            )
+            return True
+
+        except Exception as e:
+            logger.warning(f"⚠️ OpenRouter TTS 음성 생성 실패: {e}")
+            return False
+
+    def _select_voice_for_content_type(self, content_type: str, lang: str) -> str:
+        """콘텐츠 타입에 맞는 voice 선택"""
+        if lang == "ko":
+            return "shimmer"  # 한국어는 shimmer가 더 자연스러운 발음
+
+        voice_map = {
+            "hook": "onyx",
+            "quote": "alloy",
+            "story": "shimmer",
+            "fact": "alloy",
+            "short_story": "nova",
+            "meditation": "shimmer",
+            "breathing": "shimmer",
+        }
+
+        return voice_map.get(content_type, "alloy")
+
+    def _select_speed_for_content_type(self, content_type: str) -> float:
+        """콘텐츠 타입에 맞는 speed 선택"""
+        speed_map = {
+            "hook": 1.1,
+            "quote": 1.0,
+            "story": 0.9,
+            "fact": 1.05,
+            "short_story": 0.95,
+            "meditation": 0.85,
+            "breathing": 0.85,
+        }
+
+        return speed_map.get(content_type, 1.0)
+
+
 class TTSEngine:
     """TTS 엔진 팩토리 클래스"""
 
@@ -621,7 +855,7 @@ class TTSEngine:
                     provider = None
 
             if provider is None:
-                # 자동 선택 로직
+                # 자동 선택 로직 (기존 검증된 TTS 엔진만 사용)
                 # Naver Clova Voice가 설정되어 있으면 최우선 사용 (한글 발음 최고)
                 if (
                     settings.NAVER_CLOVA_CLIENT_ID
@@ -658,6 +892,10 @@ class TTSEngine:
             return GoogleCloudEngine()
         elif provider == TTSProvider.NAVER_CLOVA:
             return ClovaVoiceEngine()
+        elif provider == TTSProvider.REPLICATE:
+            return ReplicateEngine()
+        elif provider == TTSProvider.OPEN_ROUTER:
+            return OpenRouterEngine()
         else:
             raise ValueError(f"지원하지 않는 TTS 제공자: {provider}")
 

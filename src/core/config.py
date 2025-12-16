@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = Field(None, validation_alias="OPENAI_API_KEY")
     CLAUDE_API_KEY: Optional[str] = Field(None, validation_alias="CLAUDE_API_KEY")
     AI_API_PROVIDER: str = Field("openai", validation_alias="AI_API_PROVIDER")
+    # Additional AI APIs
+    REPLICATE_API_TOKEN: Optional[str] = Field(None, validation_alias="REPLICATE_API_TOKEN")
+    LUMA_API_KEY: Optional[str] = Field(None, validation_alias="LUMA_API_KEY")
+    OPEN_ROUTER_API_KEY: Optional[str] = Field(None, validation_alias="OPEN_ROUTER_API_KEY")
 
     @field_validator("AI_API_PROVIDER")
     @classmethod

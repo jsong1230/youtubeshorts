@@ -13,6 +13,7 @@ openai>=2.0.0
 anthropic>=0.34.0
 httpx>=0.24.0
 requests==2.31.0
+replicate>=0.25.0  # Replicate API (고품질 TTS 지원)
 
 # 음성 생성 (TTS)
 gTTS==2.5.1
