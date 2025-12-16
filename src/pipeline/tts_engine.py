@@ -7,6 +7,7 @@ import os
 import re
 from abc import ABC, abstractmethod
 from enum import Enum
+from typing import cast, Literal
 from src.core.config import settings
 from src.utils.logger import get_logger
 
@@ -346,9 +347,13 @@ class OpenAIEngine(TTSEngineBase):
             # 영어인 경우도 tts-1-hd 사용 (일관성)
             model = "tts-1-hd" if lang == "ko" else "tts-1-hd"
 
+            # voice 타입을 Literal로 캐스팅 (OpenAI API 요구사항)
+            voice_literal = cast(
+                Literal["alloy", "echo", "fable", "onyx", "nova", "shimmer"], voice
+            )
             response = self.client.audio.speech.create(
                 model=model,  # 고품질 TTS (한글 발음 개선)
-                voice=voice,
+                voice=voice_literal,
                 input=processed_text,
                 speed=speed,
             )
@@ -696,13 +701,17 @@ class ReplicateEngine(TTSEngineBase):
                 import requests
 
                 # output이 문자열(URL)인지 딕셔너리인지 확인
-                audio_url = output
-                if isinstance(output, dict):
+                audio_url: str
+                if isinstance(output, str):
+                    audio_url = output
+                elif isinstance(output, dict):
                     # 딕셔너리인 경우 'audio' 키 확인
-                    audio_url = (
-                        output.get("audio") or output.get("output") or str(output)
-                    )
-                elif not isinstance(output, str):
+                    audio_value = output.get("audio") or output.get("output")
+                    if isinstance(audio_value, str):
+                        audio_url = audio_value
+                    else:
+                        audio_url = str(output)
+                else:
                     audio_url = str(output)
 
                 # URL에서 오디오 파일 다운로드
@@ -788,9 +797,13 @@ class OpenRouterEngine(TTSEngineBase):
             # 예: "openai/tts-1" 또는 "openai/tts-1-hd"
             model = "openai/tts-1-hd" if lang == "ko" else "openai/tts-1-hd"
 
+            # voice 타입을 Literal로 캐스팅 (OpenAI API 요구사항)
+            voice_literal = cast(
+                Literal["alloy", "echo", "fable", "onyx", "nova", "shimmer"], voice
+            )
             response = self.client.audio.speech.create(
                 model=model,
-                voice=voice,
+                voice=voice_literal,
                 input=processed_text,
                 speed=speed,
             )
