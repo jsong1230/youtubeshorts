@@ -51,6 +51,26 @@ class VideoConstants:
     # 배경 그룹
     BACKGROUND_GROUP_SIZE = 2  # 배경 변경 주기 (문장 수)
 
+    # YouTube Shorts 성공 공식 상수
+    # 화면 전환 빈도: 1.5~2초마다 전환 (성공 공식)
+    SCENE_CHANGE_INTERVAL = 1.8  # 초 (1.5~2초 범위의 중간값)
+    SCENE_CHANGE_MIN = 1.5  # 최소 전환 간격 (초)
+    SCENE_CHANGE_MAX = 2.0  # 최대 전환 간격 (초)
+
+    # 초반 3초 유지율 최적화
+    CRITICAL_FIRST_3_SECONDS = 3.0  # 초반 3초 (가장 중요한 구간)
+    HOOK_MAX_DURATION = 3.0  # Hook 최대 길이 (초)
+
+    # 자막 배치 (성공 공식: 화면 중앙/상단 배치)
+    SUBTITLE_POSITION_CENTER = "center"  # 중앙 배치
+    SUBTITLE_POSITION_TOP = "top"  # 상단 배치
+    SUBTITLE_PREFERRED_POSITION = SUBTITLE_POSITION_CENTER  # 기본값: 중앙
+    SUBTITLE_TOP_MARGIN = 200  # 상단 여백 (px) - 상단 배치 시 사용
+
+    # 루프(Loop) 설계
+    ENABLE_LOOP_DESIGN = True  # 루프 설계 활성화
+    LOOP_TRANSITION_DURATION = 0.3  # 루프 전환 길이 (초)
+
     # 영상 품질
     MIN_VIDEO_DURATION = 1.0  # 최소 영상 길이 (초)
     MIN_VIDEO_HEIGHT = 480  # 최소 영상 높이 (px)

@@ -14,6 +14,8 @@ from src.core.config import settings
 from src.generators.video_constants import VideoConstants
 from src.utils.logger import get_logger
 
+# VideoConstants import 확인
+
 logger = get_logger(__name__)
 
 
@@ -289,10 +291,16 @@ class SubtitleRenderer:
                 try:
                     # frame = txt_clip.get_frame(0)
                     # clip_height = frame.shape[0]
-                    raised_y = 250  # 1920px 기준 상단 1/8 지점
-                    txt_clip = txt_clip.set_position(("center", raised_y))
+                    # 성공 공식: 자막을 화면 중앙/상단 배치 (기본값: 중앙)
+                    position = VideoConstants.SUBTITLE_PREFERRED_POSITION
+                    if position == "top":
+                        raised_y = VideoConstants.SUBTITLE_TOP_MARGIN
+                        txt_clip = txt_clip.set_position(("center", raised_y))
+                    else:  # center (기본값)
+                        txt_clip = txt_clip.set_position(("center", "center"))
                 except Exception:
-                    txt_clip = txt_clip.set_position(("center", 250))
+                    # 폴백: 중앙 배치
+                    txt_clip = txt_clip.set_position(("center", "center"))
 
             txt_clip = txt_clip.set_start(0)
             if abs(txt_clip.duration - duration) > 0.01:

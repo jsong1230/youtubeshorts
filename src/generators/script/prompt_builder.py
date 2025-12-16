@@ -94,11 +94,17 @@ class PromptBuilder:
 
 **SCRIPT STRUCTURE (MUST FOLLOW):**
 
-1. **HOOKING (0-3 seconds)**: 
-   - Start with a POWERFUL question or unexpected fact that stops scrolling
-   - Examples: "혹시 지금 너무 지치지 않으셨나요?", "절대로 착한 사람이 되지 마세요."
-   - Must be within 3 seconds
-   - Create immediate emotional connection
+1. **HOOKING (0-3 seconds) - CRITICAL FOR SUCCESS**: 
+   - **MUST stop scrolling within 0.5 seconds** - This is the most important part!
+   - Start with ONE of these powerful techniques:
+     * **Powerful Question**: "혹시 지금 너무 지치지 않으셨나요?"
+     * **Shocking Statement**: "절대로 착한 사람이 되지 마세요."
+     * **Conclusion First**: "돈이 사라지는 이유는 실수 때문이 아닙니다."
+     * **Visual Shock**: Describe something visually striking immediately
+   - **First sentence MUST be under 3 seconds when spoken** (aim for 2-2.5 seconds)
+   - Create immediate emotional connection - make viewer feel "This is for me!"
+   - **NO greetings, NO logos, NO slow starts** - Jump straight into the hook
+   - The first 3 seconds determine if viewer stays (70%+ viewed rate needed for algorithm boost)
 
 2. **DEVELOPMENT (Main Body)**: 
    - Show EMPATHY with the viewer's pain and struggles

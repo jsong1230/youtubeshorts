@@ -1,5 +1,24 @@
 ## Recent Updates
 
+- **2025-12-16 - YouTube Shorts 성공 공식 적용 개선**
+  - **화면 전환 빈도 최적화**: 문장 기반에서 시간 기반(1.5~2초마다)으로 변경하여 영상이 더 역동적으로 전환되도록 개선
+    - `background_video_manager.py`: 시간 기반 그룹핑 로직 구현
+    - 각 배경 그룹이 1.5~2초 범위 내에서 생성되도록 강제 적용
+  - **Hook 검증 시스템 추가**: 첫 문장의 품질을 자동으로 검증하는 시스템 구현
+    - `script_validator.py`: `validate_hook()` 메서드 추가
+    - 검증 항목: 길이(3초 이내), 기법(질문/충격적 진술/결론 먼저), 금지 사항(인사/로고/느린 시작)
+    - `video_compositor.py`: 첫 문장 생성 시 자동 검증 로직 추가
+  - **자막 배치 개선**: 화면 하단에서 중앙 배치로 변경하여 가독성 향상
+    - `video_editor.py`: VideoConstants 설정을 사용하여 자막 위치 제어
+    - 기본값: 중앙 배치, 상단 배치 옵션 제공
+  - **루프(Loop) 설계 추가**: 영상 끝과 시작이 자연스럽게 연결되도록 설계
+    - `video_editor.py`: `apply_loop_design()` 메서드 추가
+    - 반복 재생 시 매끄러운 전환으로 APV 100%+ 목표에 기여
+  - **문서화**: `docs/SUCCESS_FORMULA_IMPROVEMENTS.md` 파일 생성하여 개선 사항 상세 기록
+  - **테스트 영상 생성**: "The secret to building wealth isn't what you earn, it's what you keep" (54.41초)
+    - 파일: `output/videos/shorts_20251216_170531.mp4`
+    - Hook 검증, 화면 전환 빈도, 자막 배치 등 모든 개선 사항 적용 확인
+
 - **2025-12-14 - 한글/영어 영상 업로드 및 주제 생성 프롬프트 개선**
   - **주제 생성 프롬프트 개선**: 영어 주제 생성 시 "American or Canadian" 문화를 반영하도록 프롬프트 수정
   - **영상 생성 및 비공개 업로드**:

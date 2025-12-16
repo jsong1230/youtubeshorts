@@ -1,12 +1,75 @@
 import hashlib
-from typing import List
+import re
+from typing import List, Tuple, Optional
 from src.utils.logger import get_logger
+from src.generators.video_constants import VideoConstants
 
 logger = get_logger(__name__)
 
 
 class ScriptValidator:
     """Handles validation of generated scripts."""
+
+    def validate_hook(
+        self, first_sentence: str, first_sentence_duration: float
+    ) -> Tuple[bool, List[str]]:
+        """Hook 검증 (성공 공식: 초반 3초 Hook 강화)
+        
+        Args:
+            first_sentence: 첫 문장
+            first_sentence_duration: 첫 문장의 TTS 길이 (초)
+            
+        Returns:
+            (is_valid, issues): 검증 결과와 문제점 리스트
+        """
+        issues = []
+        is_valid = True
+        
+        # 1. 길이 검증 (3초 이내)
+        max_hook_duration = VideoConstants.HOOK_MAX_DURATION
+        if first_sentence_duration > max_hook_duration:
+            issues.append(
+                f"❌ Hook이 너무 깁니다: {first_sentence_duration:.2f}초 (목표: {max_hook_duration}초 이내)"
+            )
+            is_valid = False
+        else:
+            logger.info(
+                f"✅ Hook 길이 적절: {first_sentence_duration:.2f}초 (목표: {max_hook_duration}초 이내)"
+            )
+        
+        # 2. 강력한 Hook 기법 검증
+        hook_techniques = {
+            "question": r"^\s*[가-힣a-zA-Z]*\?|^[가-힣a-zA-Z]*\s+[가-힣a-zA-Z]*\?",  # 질문
+            "shocking": r"절대|절대로|never|don't|never|absolutely|completely",  # 충격적 진술
+            "conclusion_first": r"^[가-힣a-zA-Z]*는|^[가-힣a-zA-Z]*은|^[가-힣a-zA-Z]*이|^[가-힣a-zA-Z]*가|^The|^This|^That",  # 결론 먼저
+        }
+        
+        has_technique = False
+        for technique_name, pattern in hook_techniques.items():
+            if re.search(pattern, first_sentence, re.IGNORECASE):
+                has_technique = True
+                logger.info(f"✅ Hook 기법 감지: {technique_name}")
+                break
+        
+        if not has_technique:
+            issues.append(
+                "⚠️ 강력한 Hook 기법이 감지되지 않음 (질문/충격적 진술/결론 먼저 제시 권장)"
+            )
+            # 경고만 표시 (실패로 처리하지 않음)
+        
+        # 3. 금지 사항 검증
+        forbidden_patterns = [
+            r"안녕|hello|hi|greetings",  # 인사
+            r"로고|logo|브랜드|brand",  # 로고
+            r"시작|start|beginning",  # 느린 시작
+        ]
+        
+        for pattern in forbidden_patterns:
+            if re.search(pattern, first_sentence, re.IGNORECASE):
+                issues.append(f"❌ 금지된 패턴 감지: '{pattern}' (인사/로고/느린 시작 금지)")
+                is_valid = False
+        
+        return is_valid, issues
 
     def is_script_unique(self, script_sentences: List[str]) -> bool:
         """Checks if the script is unique compared to recent scripts."""

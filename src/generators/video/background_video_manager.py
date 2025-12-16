@@ -87,21 +87,65 @@ class BackgroundVideoManager:
     def prepare_background_clips(
         self, script: List[str], audio_durations: List[float], topic: str
     ) -> Tuple[List[Tuple[int, int, Optional[str], Optional[str]]], Set[int]]:
-        """배경 클립 준비
+        """배경 클립 준비 (성공 공식: 1.5~2초마다 화면 전환)
 
         Returns:
             tuple: (background_groups, downloaded_video_ids)
             background_groups: List of tuples (start_idx, end_idx, video_path, image_path)
         """
         background_groups: List[Tuple[int, int, Optional[str], Optional[str]]] = []
-        group_size = VideoConstants.BACKGROUND_GROUP_SIZE
         use_background_video = settings.USE_BACKGROUND_VIDEO
         downloaded_video_ids: Set[int] = set()
 
-        for i in range(0, len(script), group_size):
-            group_end = min(i + group_size, len(script))
+        # 성공 공식: 1.5~2초마다 화면 전환 (강제 적용 - 시간 기반)
+        # 문장 경계를 무시하고 시간만으로 그룹을 나눔
+        scene_change_interval = VideoConstants.SCENE_CHANGE_INTERVAL
+        scene_change_min = VideoConstants.SCENE_CHANGE_MIN
+        scene_change_max = VideoConstants.SCENE_CHANGE_MAX
+
+        # 시간 기반으로 그룹 나누기 (1.5~2초마다 강제 전환)
+        i = 0
+        accumulated_time = 0.0
+        
+        while i < len(script):
+            group_start = i
             group_sentence = script[i]
-            group_duration = sum(audio_durations[i:group_end])
+            group_duration = 0.0
+            group_end = i
+            
+            # 목표 그룹 길이 (1.5~2초 범위 내에서 랜덤)
+            import random
+            target_duration = random.uniform(scene_change_min, scene_change_max)
+            
+            # 목표 길이까지 문장 추가 (최대 2초까지만)
+            while group_end < len(script) and group_duration < target_duration:
+                next_duration = audio_durations[group_end]
+                
+                # 다음 문장을 추가하면 목표 길이를 넘는지 확인
+                if group_duration + next_duration > target_duration:
+                    # 목표 길이에 거의 도달했으면 그룹 완성
+                    # (최소 1.5초는 확보)
+                    if group_duration >= scene_change_min:
+                        break
+                    # 최소 길이 미만이면 다음 문장 추가 (목표를 약간 넘어도 OK)
+                
+                group_duration += next_duration
+                group_end += 1
+                
+                # 최대 길이(2초)를 넘으면 강제로 그룹 완성
+                if group_duration >= scene_change_max:
+                    break
+            
+            # 최소 하나의 문장은 포함 (안전장치)
+            if group_end == group_start:
+                group_end = group_start + 1
+                group_duration = audio_durations[group_start]
+            
+            # 그룹 길이를 최대 2초로 제한 (강제 적용)
+            if group_duration > scene_change_max:
+                # 그룹을 2초로 제한하고, 나머지는 다음 그룹으로
+                group_duration = scene_change_max
+                # group_end는 그대로 유지 (다음 그룹에서 처리)
 
             bg_video_path = None
             if use_background_video and settings.PEXELS_API_KEY:
@@ -146,9 +190,13 @@ class BackgroundVideoManager:
                     continue
 
             background_groups.append((i, group_end, bg_video_path, None))
-            logger.debug(
-                f"   배경 미디어 그룹 {len(background_groups)}: 문장 {i+1}-{group_end} (영상) - {group_sentence[:30]}...)"
+            logger.info(
+                f"   📹 배경 그룹 {len(background_groups)}: 문장 {i+1}-{group_end}, 길이 {group_duration:.2f}초 (목표: {target_duration:.2f}초, 범위: {scene_change_min:.1f}~{scene_change_max:.1f}초)"
             )
+            logger.debug(
+                f"      문장: {group_sentence[:50]}..."
+            )
+            i = group_end  # 다음 그룹 시작
 
         return background_groups, downloaded_video_ids
 
