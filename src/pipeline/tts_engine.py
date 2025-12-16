@@ -662,7 +662,7 @@ class ReplicateEngine(TTSEngineBase):
             # 기본 speaker 오디오 파일 URL 사용
             # 여성 음성 기본 샘플
             default_speaker_url = "https://replicate.delivery/pbxt/Jt79w0xsT64R1JsiJ0LQRL8UcWspg5J4RFrU6YwEKpOT1ukS/male.wav"
-            
+
             # 속도 설정 (XTTS-v2는 속도 조절을 직접 지원하지 않음)
             # 속도는 나중에 오디오 후처리로 조절 가능
             if speed is None:
@@ -699,7 +699,9 @@ class ReplicateEngine(TTSEngineBase):
                 audio_url = output
                 if isinstance(output, dict):
                     # 딕셔너리인 경우 'audio' 키 확인
-                    audio_url = output.get("audio") or output.get("output") or str(output)
+                    audio_url = (
+                        output.get("audio") or output.get("output") or str(output)
+                    )
                 elif not isinstance(output, str):
                     audio_url = str(output)
 
@@ -721,7 +723,9 @@ class ReplicateEngine(TTSEngineBase):
                         )
                         return False
                 else:
-                    logger.warning(f"⚠️ Replicate TTS 출력이 유효한 URL이 아닙니다: {audio_url}")
+                    logger.warning(
+                        f"⚠️ Replicate TTS 출력이 유효한 URL이 아닙니다: {audio_url}"
+                    )
                     return False
             else:
                 logger.warning("⚠️ Replicate TTS 출력이 비어있습니다.")
