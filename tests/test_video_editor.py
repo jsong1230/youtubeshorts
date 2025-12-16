@@ -169,4 +169,5 @@ class TestVideoEditor:
         video_editor.subtitle_renderer.create_subtitle_clip.assert_called_with(
             "Hello", 2.0, language="ko"
         )
-        mock_sub_clip.set_position.assert_called_with(("center", "bottom"))
+        # 성공 공식 적용: 자막은 중앙 배치 (기본값)
+        mock_sub_clip.set_position.assert_called_with(("center", "center"))
