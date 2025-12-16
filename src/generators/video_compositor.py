@@ -79,18 +79,23 @@ class VideoCompositor:
                 logger.debug(
                     f"   문장 {i+1}: {actual_duration:.2f}초 - {sentence[:30]}..."
                 )
-                
+
                 # Hook 검증 (첫 문장만)
                 if i == 0:
                     from src.generators.script.script_validator import ScriptValidator
+
                     validator = ScriptValidator()
-                    is_valid, issues = validator.validate_hook(sentence, actual_duration)
+                    is_valid, issues = validator.validate_hook(
+                        sentence, actual_duration
+                    )
                     if issues:
                         logger.warning("⚠️ Hook 검증 결과:")
                         for issue in issues:
                             logger.warning(f"   {issue}")
                     if is_valid:
-                        logger.info("✅ Hook 검증 통과: 첫 문장이 성공 공식에 부합합니다")
+                        logger.info(
+                            "✅ Hook 검증 통과: 첫 문장이 성공 공식에 부합합니다"
+                        )
             else:
                 # 음성 생성 실패 시 기본 duration 사용
                 default_duration = duration / len(script)

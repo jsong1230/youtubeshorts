@@ -99,28 +99,27 @@ class BackgroundVideoManager:
 
         # 성공 공식: 1.5~2초마다 화면 전환 (강제 적용 - 시간 기반)
         # 문장 경계를 무시하고 시간만으로 그룹을 나눔
-        scene_change_interval = VideoConstants.SCENE_CHANGE_INTERVAL
         scene_change_min = VideoConstants.SCENE_CHANGE_MIN
         scene_change_max = VideoConstants.SCENE_CHANGE_MAX
 
         # 시간 기반으로 그룹 나누기 (1.5~2초마다 강제 전환)
         i = 0
-        accumulated_time = 0.0
-        
+
         while i < len(script):
             group_start = i
             group_sentence = script[i]
             group_duration = 0.0
             group_end = i
-            
+
             # 목표 그룹 길이 (1.5~2초 범위 내에서 랜덤)
             import random
+
             target_duration = random.uniform(scene_change_min, scene_change_max)
-            
+
             # 목표 길이까지 문장 추가 (최대 2초까지만)
             while group_end < len(script) and group_duration < target_duration:
                 next_duration = audio_durations[group_end]
-                
+
                 # 다음 문장을 추가하면 목표 길이를 넘는지 확인
                 if group_duration + next_duration > target_duration:
                     # 목표 길이에 거의 도달했으면 그룹 완성
@@ -128,19 +127,19 @@ class BackgroundVideoManager:
                     if group_duration >= scene_change_min:
                         break
                     # 최소 길이 미만이면 다음 문장 추가 (목표를 약간 넘어도 OK)
-                
+
                 group_duration += next_duration
                 group_end += 1
-                
+
                 # 최대 길이(2초)를 넘으면 강제로 그룹 완성
                 if group_duration >= scene_change_max:
                     break
-            
+
             # 최소 하나의 문장은 포함 (안전장치)
             if group_end == group_start:
                 group_end = group_start + 1
                 group_duration = audio_durations[group_start]
-            
+
             # 그룹 길이를 최대 2초로 제한 (강제 적용)
             if group_duration > scene_change_max:
                 # 그룹을 2초로 제한하고, 나머지는 다음 그룹으로
@@ -193,9 +192,7 @@ class BackgroundVideoManager:
             logger.info(
                 f"   📹 배경 그룹 {len(background_groups)}: 문장 {i+1}-{group_end}, 길이 {group_duration:.2f}초 (목표: {target_duration:.2f}초, 범위: {scene_change_min:.1f}~{scene_change_max:.1f}초)"
             )
-            logger.debug(
-                f"      문장: {group_sentence[:50]}..."
-            )
+            logger.debug(f"      문장: {group_sentence[:50]}...")
             i = group_end  # 다음 그룹 시작
 
         return background_groups, downloaded_video_ids

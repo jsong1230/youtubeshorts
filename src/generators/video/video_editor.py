@@ -133,16 +133,11 @@ class VideoEditor:
 
             # 마지막 프레임 추출 (루프 전환용)
             if total_duration > loop_transition:
-                last_frame_time = total_duration - loop_transition
-                last_frame = video.get_frame(last_frame_time)
-
                 # 첫 프레임과 마지막 프레임이 유사한지 확인
                 # (실제로는 페이드 효과로 자연스럽게 연결)
                 # 루프를 위한 추가 처리는 필요 시 구현
 
-                logger.debug(
-                    f"   🔄 루프 설계 적용: 전환 길이 {loop_transition:.2f}초"
-                )
+                logger.debug(f"   🔄 루프 설계 적용: 전환 길이 {loop_transition:.2f}초")
             else:
                 logger.debug("   ⚠️ 영상이 너무 짧아 루프 설계를 적용할 수 없습니다.")
 
@@ -336,11 +331,15 @@ class VideoEditor:
                             subtitle_clip = subtitle_clip.set_position(
                                 ("center", VideoConstants.SUBTITLE_TOP_MARGIN)
                             )
-                            position_str = f"상단 ({VideoConstants.SUBTITLE_TOP_MARGIN}px)"
+                            position_str = (
+                                f"상단 ({VideoConstants.SUBTITLE_TOP_MARGIN}px)"
+                            )
                         else:  # center (기본값)
-                            subtitle_clip = subtitle_clip.set_position(("center", "center"))
+                            subtitle_clip = subtitle_clip.set_position(
+                                ("center", "center")
+                            )
                             position_str = "중앙"
-                        
+
                         # 첫 자막만 상세 로그 출력
                         if i == 0:
                             logger.info(
