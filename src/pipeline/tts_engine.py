@@ -34,10 +34,10 @@ except ImportError:
     GOOGLE_CLOUD_TTS_AVAILABLE = False
 
 try:
-    import replicate
+    import importlib.util
 
-    REPLICATE_AVAILABLE = True
-except ImportError:
+    REPLICATE_AVAILABLE = importlib.util.find_spec("replicate") is not None
+except Exception:
     REPLICATE_AVAILABLE = False
 
 
