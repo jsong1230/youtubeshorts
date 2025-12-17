@@ -1,5 +1,18 @@
 ## Recent Updates
 
+- **2025-12-17 - 한글/영어 영상 생성 및 비공개 업로드**
+  - **영상 생성 및 비공개 업로드**:
+    - 한국어: "연말 정산 똑똑하게 하기: 소득공제와 세금 환급 전략" (45.26초)
+      - Video ID: `MEntKtQb7z0`
+      - URL: <https://www.youtube.com/watch?v=MEntKtQb7z0>
+      - 파일: `output/videos/shorts_20251217_175952.mp4`
+      - 썸네일: `output/thumbnails/thumb_20251217_180155.jpg`
+    - 영어: "Think you're being scammed? Here's how to spot the red flags!" (56.02초)
+      - Video ID: `Oxn47QokSak`
+      - URL: <https://www.youtube.com/watch?v=Oxn47QokSak>
+      - 파일: `output/videos/shorts_20251217_180233.mp4`
+      - 썸네일: `output/thumbnails/thumb_20251217_180439.jpg`
+
 - **2025-12-16 - 한글/영어 영상 생성 및 비공개 업로드**
   - **영상 생성 및 비공개 업로드**:
     - 한국어: "재테크? 이제는 '소확행'을 통한 재정적 자유를 꿈꿔보세요!" (52.52초)
