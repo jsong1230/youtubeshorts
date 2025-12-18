@@ -1,5 +1,18 @@
 ## Recent Updates
 
+- **2025-12-18 - 한글/영어 영상 생성 및 비공개 업로드**
+  - **영상 생성 및 비공개 업로드**:
+    - 한국어: "혼자 사는 당신을 위한, 집에서 쉽게 만드는 맛있는 반찬 레시피" (53.43초)
+      - Video ID: `paMA5vc76Mw`
+      - URL: <https://www.youtube.com/watch?v=paMA5vc76Mw>
+      - 파일: `output/videos/shorts_20251218_161150.mp4`
+      - 썸네일: `output/thumbnails/thumb_20251218_161349.jpg`
+    - 영어: "What to Do If Stolen Checks Are Cashed After Being Canceled!" (55.57초)
+      - Video ID: `hXOfeNGqXUs`
+      - URL: <https://www.youtube.com/watch?v=hXOfeNGqXUs>
+      - 파일: `output/videos/shorts_20251218_161426.mp4`
+      - 썸네일: `output/thumbnails/thumb_20251218_161617.jpg`
+
 - **2025-12-17 - 한글/영어 영상 생성 및 비공개 업로드**
   - **영상 생성 및 비공개 업로드**:
     - 한국어: "연말 정산 똑똑하게 하기: 소득공제와 세금 환급 전략" (45.26초)
