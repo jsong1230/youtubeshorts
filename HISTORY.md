@@ -1,5 +1,21 @@
 ## Recent Updates
 
+- **2025-12-19 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
+- **2025-12-19 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
 - **2025-12-19 - 한글/영어 영상 생성 및 비공개 업로드**
   - **영상 생성 및 비공개 업로드**:
     - 한국어: "연말 세일로 예산 절약하는 똑똑한 쇼핑 팁" (51.62초)
