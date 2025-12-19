@@ -69,7 +69,9 @@ class BackgroundVideoManager:
                     f"🔄 대체 키워드 사용: {force_keyword} -> {english_keyword}"
                 )
             else:
-                keyword, english_keyword = self._extract_keywords(sentence, topic, language=language)
+                keyword, english_keyword = self._extract_keywords(
+                    sentence, topic, language=language
+                )
 
             logger.debug(f"🎬 배경 영상 다운로드 시도: {keyword} -> {english_keyword}")
 
@@ -87,7 +89,11 @@ class BackgroundVideoManager:
             return None, None
 
     def prepare_background_clips(
-        self, script: List[str], audio_durations: List[float], topic: str, language: str = "ko"
+        self,
+        script: List[str],
+        audio_durations: List[float],
+        topic: str,
+        language: str = "ko",
     ) -> Tuple[List[Tuple[int, int, Optional[str], Optional[str]]], Set[int]]:
         """배경 클립 준비 (성공 공식: 1.5~2초마다 화면 전환)
 
@@ -151,7 +157,12 @@ class BackgroundVideoManager:
             bg_video_path = None
             if use_background_video and settings.PEXELS_API_KEY:
                 bg_video_path, video_id = self._download_with_retry_strategy(
-                    group_sentence, i, group_duration, topic, downloaded_video_ids, language=language
+                    group_sentence,
+                    i,
+                    group_duration,
+                    topic,
+                    downloaded_video_ids,
+                    language=language,
                 )
                 if bg_video_path and video_id:
                     downloaded_video_ids.add(video_id)
@@ -171,7 +182,12 @@ class BackgroundVideoManager:
                 ]
                 for final_keyword in final_fallback_keywords:
                     bg_video_path, video_id = self._download_with_retry_strategy(
-                        final_keyword, i, group_duration, topic, downloaded_video_ids, language=language
+                        final_keyword,
+                        i,
+                        group_duration,
+                        topic,
+                        downloaded_video_ids,
+                        language=language,
                     )
                     if bg_video_path and video_id:
                         downloaded_video_ids.add(video_id)
@@ -252,11 +268,15 @@ class BackgroundVideoManager:
                 f"그룹 {group_start+1}-{group_end}의 배경 영상을 로드할 수 없습니다: {e}"
             )
 
-    def _extract_keywords(self, sentence: str, topic: str, language: str = "ko") -> Tuple[str, str]:
+    def _extract_keywords(
+        self, sentence: str, topic: str, language: str = "ko"
+    ) -> Tuple[str, str]:
         """키워드 추출"""
         topic_keyword = None
         if topic and self.media_downloader:
-            topic_keywords = self.media_downloader.extract_keywords(topic, language=language)
+            topic_keywords = self.media_downloader.extract_keywords(
+                topic, language=language
+            )
             if topic_keywords:
                 topic_keyword = topic_keywords[0]
                 topic_english = self.media_downloader.translate_keyword_to_english(
@@ -315,13 +335,17 @@ class BackgroundVideoManager:
 
         # 1차: 문장 키워드
         if self.media_downloader:
-            sentence_keywords = self.media_downloader.extract_keywords(sentence, language=language)
+            sentence_keywords = self.media_downloader.extract_keywords(
+                sentence, language=language
+            )
             if sentence_keywords:
                 retry_keywords.append(sentence_keywords[0])
 
         # 2차: 주제 키워드
         if topic and self.media_downloader:
-            topic_keywords = self.media_downloader.extract_keywords(topic, language=language)
+            topic_keywords = self.media_downloader.extract_keywords(
+                topic, language=language
+            )
             if topic_keywords and topic_keywords[0] not in retry_keywords:
                 retry_keywords.append(topic_keywords[0])
 
