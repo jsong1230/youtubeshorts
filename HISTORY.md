@@ -8,13 +8,18 @@
   - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
 
 
-- **2025-12-19 - Video Uploaded**
-  - **Title**: Test Topic #Shorts
-  - **Topic**: Test Topic
-  - **Type**: fact
-  - **Video ID**: VIDEO_ID_123
-  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
-
+- **2025-12-19 - 한글/영어 영상 생성 및 비공개 업로드**
+  - **영상 생성 및 비공개 업로드**:
+    - 한국어: "새해 목표 설정, 겨울에 실천하기 좋은 자기개발 팁!" (46.94초)
+      - Video ID: `ssC_2m12i-I`
+      - URL: <https://www.youtube.com/watch?v=ssC_2m12i-I>
+      - 파일: `output/videos/shorts_20251219_231811.mp4`
+      - 썸네일: `output/thumbnails/thumb_20251219_232002.jpg`
+    - 영어: "Tiny routines create massive peace." (54.84초)
+      - Video ID: `pV4oUKigjAs`
+      - URL: <https://www.youtube.com/watch?v=pV4oUKigjAs>
+      - 파일: `output/videos/shorts_20251219_232040.mp4`
+      - 썸네일: `output/thumbnails/thumb_20251219_232230.jpg`
 
 - **2025-12-19 - 한글/영어 영상 생성 및 비공개 업로드**
   - **영상 생성 및 비공개 업로드**:
