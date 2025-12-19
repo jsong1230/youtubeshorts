@@ -41,18 +41,27 @@ class MediaDownloader:
         """기본 API 호출"""
         return api_func(*args, **kwargs)
 
-    def extract_keywords(self, sentence: str) -> List[str]:
+    def extract_keywords(self, sentence: str, language: str = "ko") -> List[str]:
         """문장에서 이미지 키워드 추출 (AI 사용)"""
         # AI를 사용해서 더 정확한 키워드 추출 시도
         if self.openai_client:
             try:
+                # 한국어인 경우 한국 관련 시각 키워드 강조
+                korean_visual_instruction = ""
+                if language == "ko":
+                    korean_visual_instruction = (
+                        "If the target language is Korean, prioritize Korean-specific visual keywords like "
+                        "'Seoul cityscape', 'Korean traditional architecture', 'Hanok', 'Korean people', "
+                        "'Korean food', 'Gangnam', 'Hongdae', 'K-style' to ensure cultural relevance. "
+                    )
+
                 response = self._api_call_with_retry(
                     self.openai_client.chat.completions.create,
                     model="gpt-4o-mini",
                     messages=[
                         {
                             "role": "system",
-                            "content": "You are an expert at extracting visual keywords for video/image search. Extract 1-5 diverse, specific English keywords from the given sentence that are suitable for background video search. Include varied keywords (objects, actions, moods, settings) to maximize diversity. For abstract sentences, include mood keywords like 'abstract', 'cinematic', 'moody', 'minimal', 'dynamic'. Always provide multiple diverse options.",
+                            "content": f"You are an expert at extracting visual keywords for video/image search. {korean_visual_instruction}Extract 1-5 diverse, specific English keywords from the given sentence that are suitable for background video search. Include varied keywords (objects, actions, moods, settings) to maximize diversity. For abstract sentences, include mood keywords like 'abstract', 'cinematic', 'moody', 'minimal', 'dynamic'. Always provide multiple diverse options.",
                         },
                         {
                             "role": "user",

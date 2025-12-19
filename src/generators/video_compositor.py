@@ -152,7 +152,7 @@ class VideoCompositor:
         # 배경 그룹 준비 (BackgroundVideoManager 사용)
         background_groups, downloaded_video_ids = (
             self.background_manager.prepare_background_clips(
-                script, sentence_audio_durations, topic
+                script, sentence_audio_durations, topic, language=language
             )
         )
 

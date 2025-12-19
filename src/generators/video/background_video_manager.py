@@ -44,11 +44,13 @@ class BackgroundVideoManager:
         topic: str = None,
         exclude_video_ids: Set[int] = None,
         force_keyword: str = None,
+        language: str = "ko",
     ) -> Tuple[Optional[str], Optional[int]]:
         """문장에 맞는 배경 영상 다운로드
 
         Args:
             force_keyword: 강제로 사용할 키워드 (재시도 시 사용)
+            language: 언어 코드 ('ko' 또는 'en' 등)
 
         Returns:
             tuple: (bg_video_path, video_id) 또는 (None, None)
@@ -67,7 +69,7 @@ class BackgroundVideoManager:
                     f"🔄 대체 키워드 사용: {force_keyword} -> {english_keyword}"
                 )
             else:
-                keyword, english_keyword = self._extract_keywords(sentence, topic)
+                keyword, english_keyword = self._extract_keywords(sentence, topic, language=language)
 
             logger.debug(f"🎬 배경 영상 다운로드 시도: {keyword} -> {english_keyword}")
 
@@ -85,7 +87,7 @@ class BackgroundVideoManager:
             return None, None
 
     def prepare_background_clips(
-        self, script: List[str], audio_durations: List[float], topic: str
+        self, script: List[str], audio_durations: List[float], topic: str, language: str = "ko"
     ) -> Tuple[List[Tuple[int, int, Optional[str], Optional[str]]], Set[int]]:
         """배경 클립 준비 (성공 공식: 1.5~2초마다 화면 전환)
 
@@ -149,7 +151,7 @@ class BackgroundVideoManager:
             bg_video_path = None
             if use_background_video and settings.PEXELS_API_KEY:
                 bg_video_path, video_id = self._download_with_retry_strategy(
-                    group_sentence, i, group_duration, topic, downloaded_video_ids
+                    group_sentence, i, group_duration, topic, downloaded_video_ids, language=language
                 )
                 if bg_video_path and video_id:
                     downloaded_video_ids.add(video_id)
@@ -169,7 +171,7 @@ class BackgroundVideoManager:
                 ]
                 for final_keyword in final_fallback_keywords:
                     bg_video_path, video_id = self._download_with_retry_strategy(
-                        final_keyword, i, group_duration, topic, downloaded_video_ids
+                        final_keyword, i, group_duration, topic, downloaded_video_ids, language=language
                     )
                     if bg_video_path and video_id:
                         downloaded_video_ids.add(video_id)
@@ -250,11 +252,11 @@ class BackgroundVideoManager:
                 f"그룹 {group_start+1}-{group_end}의 배경 영상을 로드할 수 없습니다: {e}"
             )
 
-    def _extract_keywords(self, sentence: str, topic: str) -> Tuple[str, str]:
+    def _extract_keywords(self, sentence: str, topic: str, language: str = "ko") -> Tuple[str, str]:
         """키워드 추출"""
         topic_keyword = None
         if topic and self.media_downloader:
-            topic_keywords = self.media_downloader.extract_keywords(topic)
+            topic_keywords = self.media_downloader.extract_keywords(topic, language=language)
             if topic_keywords:
                 topic_keyword = topic_keywords[0]
                 topic_english = self.media_downloader.translate_keyword_to_english(
@@ -265,7 +267,7 @@ class BackgroundVideoManager:
                 )
 
         sentence_keywords = (
-            self.media_downloader.extract_keywords(sentence)
+            self.media_downloader.extract_keywords(sentence, language=language)
             if self.media_downloader
             else []
         )
@@ -306,24 +308,25 @@ class BackgroundVideoManager:
         duration: float,
         topic: str,
         exclude_video_ids: Set[int],
+        language: str = "ko",
     ) -> Tuple[Optional[str], Optional[int]]:
         """재시도 전략으로 배경 영상 다운로드"""
         retry_keywords = []
 
         # 1차: 문장 키워드
         if self.media_downloader:
-            sentence_keywords = self.media_downloader.extract_keywords(sentence)
+            sentence_keywords = self.media_downloader.extract_keywords(sentence, language=language)
             if sentence_keywords:
                 retry_keywords.append(sentence_keywords[0])
 
         # 2차: 주제 키워드
         if topic and self.media_downloader:
-            topic_keywords = self.media_downloader.extract_keywords(topic)
+            topic_keywords = self.media_downloader.extract_keywords(topic, language=language)
             if topic_keywords and topic_keywords[0] not in retry_keywords:
                 retry_keywords.append(topic_keywords[0])
 
         # 3차: 주제 카테고리별 특화 키워드
-        category_keywords = self._get_category_keywords(topic)
+        category_keywords = self._get_category_keywords(topic, language=language)
         retry_keywords.extend(category_keywords)
 
         # 4차: 귀여운 이미지/영상 우선 선택을 위한 키워드 추가
@@ -342,6 +345,7 @@ class BackgroundVideoManager:
                 topic=topic,
                 exclude_video_ids=exclude_video_ids,
                 force_keyword=keyword if retry_idx > 0 else None,
+                language=language,
             )
             if bg_video_path and video_id:
                 return bg_video_path, video_id
@@ -370,6 +374,7 @@ class BackgroundVideoManager:
                 topic=topic,
                 exclude_video_ids=exclude_video_ids,
                 force_keyword=fallback_keyword,
+                language=language,
             )
             if bg_video_path and video_id:
                 logger.info(
@@ -382,9 +387,14 @@ class BackgroundVideoManager:
         )
         return None, None
 
-    def _get_category_keywords(self, topic: str) -> List[str]:
+    def _get_category_keywords(self, topic: str, language: str = "ko") -> List[str]:
         """주제 카테고리별 키워드 반환"""
         topic_lower = (topic or "").lower()
+
+        # 한국어인 경우 한국 특화 키워드 추가
+        korean_specific = []
+        if language == "ko":
+            korean_specific = ["seoul", "korean", "korea", "hanok", "k-style"]
 
         # 재태크 관련
         if any(
@@ -414,7 +424,7 @@ class BackgroundVideoManager:
                 "budget",
                 "wealth",
                 "business",
-            ]
+            ] + korean_specific
 
         # AI 관련
         elif any(
@@ -435,7 +445,7 @@ class BackgroundVideoManager:
                 "robot",
                 "digital",
                 "innovation",
-            ]
+            ] + korean_specific
 
         # 생산성 관련
         elif any(
@@ -458,7 +468,7 @@ class BackgroundVideoManager:
                 "focus",
                 "office",
                 "desk",
-            ]
+            ] + korean_specific
 
         # 자기계발 관련
         elif any(
@@ -482,7 +492,7 @@ class BackgroundVideoManager:
                 "goal",
                 "inspiration",
                 "mindset",
-            ]
+            ] + korean_specific
 
         # 생활/정리 관련
         elif any(
@@ -504,7 +514,7 @@ class BackgroundVideoManager:
                 "organization",
                 "declutter",
                 "interior",
-            ]
+            ] + korean_specific
 
         # 기본 키워드
         return [
@@ -516,7 +526,7 @@ class BackgroundVideoManager:
             "nature",
             "abstract",
             "cinematic",
-        ]
+        ] + korean_specific
 
     def _download_from_pexels(
         self,

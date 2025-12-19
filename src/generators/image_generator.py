@@ -228,6 +228,15 @@ class ImageGenerator:
             else:
                 style_prompt = "Style: High contrast, vibrant colors, 4k resolution, unreal engine 5 render style, highly detailed, eye-catching, dramatic composition."
 
+            # 한국어인 경우 한국어 문화와 미학을 반영하는 스타일 추가
+            if language == "ko":
+                korean_aesthetic = (
+                    " aesthetic, inspired by modern Korean minimalist design and K-drama cinematography. "
+                    "Incorporate subtle Korean cultural elements if appropriate (e.g., Seoul cityscape, modern Korean architecture). "
+                    "The mood should be clean, trendy, and sophisticated (K-style)."
+                )
+                style_prompt += korean_aesthetic
+
             # 주제 기반 프롬프트 생성 (영어/한국어 공통적으로 영어 프롬프트 사용 권장 - DALL-E 3가 영어를 더 잘 이해함)
             # 하지만 한국어 설정이므로 한국어 뉘앙스를 살리기 위해 혼용하거나 영어로 번역하는 것이 좋음
             # 여기서는 프롬프트 구조를 강화하여 영어로 작성 (DALL-E 3 최적화)
