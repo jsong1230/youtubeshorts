@@ -6,7 +6,7 @@ import re
 import random
 import time
 import datetime
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 try:
     # from openai import OpenAI
@@ -54,7 +54,7 @@ class ScriptGenerator:
         "exploration": 0.15,
     }
 
-    HIGH_PERFORMING_TOPICS = {
+    HIGH_PERFORMING_TOPICS: Dict[ContentType, List[str]] = {
         ContentType.HOOK: [
             # AI & 크립토 중심 주제로 업데이트 예정 (성과 데이터 축적 후)
         ],

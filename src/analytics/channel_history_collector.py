@@ -5,6 +5,7 @@
 
 from typing import List, Dict, Set
 from datetime import datetime, timedelta
+from pathlib import Path
 from src.core.config import settings
 from src.utils.logger import get_logger
 
@@ -72,7 +73,7 @@ class ChannelHistoryCollector:
         if use_cache and self._cache_timestamp:
             if datetime.now() - self._cache_timestamp < self._cache_ttl:
                 if cache_key in self._cache:
-                    logger.debug(f"💾 캐시에서 채널 영상 목록 반환 (Search API 미사용)")
+                    logger.debug("💾 캐시에서 채널 영상 목록 반환 (Search API 미사용)")
                     return self._cache[cache_key]
 
         # 2. 로컬 DB에서 먼저 시도
@@ -360,7 +361,9 @@ class ChannelHistoryCollector:
                 conn = sqlite3.connect(db_path)
                 cursor = conn.cursor()
 
-                cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+                cutoff_date_str: str = (
+                    datetime.now() - timedelta(days=days)
+                ).isoformat()
 
                 cursor.execute(
                     """
@@ -368,7 +371,7 @@ class ChannelHistoryCollector:
                     WHERE topic IS NOT NULL AND topic != '' 
                     AND created_at >= ?
                     """,
-                    (cutoff_date,),
+                    (cutoff_date_str,),
                 )
 
                 rows = cursor.fetchall()

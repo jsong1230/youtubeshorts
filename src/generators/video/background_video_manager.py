@@ -349,7 +349,7 @@ class BackgroundVideoManager:
         # 한국어인 경우 한국 키워드를 최우선으로 사용
         if language == "ko" and korean_priority_keywords:
             # 한국 키워드가 이미 포함되어 있는지 확인
-            all_keywords = []
+            all_keywords: list[str] = []
             if sentence_keywords:
                 all_keywords.extend(sentence_keywords)
             if topic_keywords:

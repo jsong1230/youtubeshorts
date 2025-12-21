@@ -8,6 +8,52 @@
   - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
 
 
+- **2025-12-21 - 년도 언급 금지 규칙 추가 및 데이터베이스 이슈 수정**
+  - **목표**: 스크립트 생성 시 구체적인 년도(2025, 2026 등) 언급을 금지하여 시간에 구애받지 않는 콘텐츠 생성
+  - **주요 변경 사항**:
+    - `prompt_builder.py`: 년도 언급 금지 규칙 추가
+      - 한국어/영어 프롬프트에 구체적인 년도 숫자 언급 금지 규칙 추가
+      - 대신 "내년에는", "새해에는", "요즘", "최근" 등 일반적인 시간 표현 사용
+      - 모든 콘텐츠 타입(HOOK, QUOTE, STORY, FACT, SHORT_STORY, AUTO)에 규칙 적용
+    - `video_pipeline.py`: 데이터베이스 호출 이슈 수정
+      - `add_video()` 호출 시 존재하지 않는 인자 제거 (`video_path`, `privacy_status`, `tags`, `category_id`, `language`, `topic_source`)
+      - 실제 메서드 시그니처에 맞게 `video_id`, `title`, `topic`, `script`만 전달
+    - 타입 어노테이션 수정
+      - `background_video_manager.py`: `all_keywords` 타입 명시
+      - `channel_history_collector.py`: `cutoff_date_str` 변수명 변경 (중복 방지)
+      - `script_generator.py`: `HIGH_PERFORMING_TOPICS` 타입 어노테이션 추가
+    - 테스트 수정
+      - `test_youtube_uploader.py`: `upload_log.json` 모킹 추가
+      - `types-pytz` 설치로 mypy 에러 해결
+  - **효과**:
+    - 생성된 스크립트에 구체적인 년도가 포함되지 않아 시간에 구애받지 않는 콘텐츠 생성
+    - 데이터베이스 업데이트 에러 해결로 업로드 후 정상적으로 DB에 저장됨
+    - 모든 CI 테스트 통과 (black, ruff, mypy, pytest)
+
+- **2025-12-21 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
+- **2025-12-21 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
+- **2025-12-21 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
 - **2025-12-21 - YouTube Search API 최소화: 로컬 데이터 우선 사용으로 Quota 절약**
   - **목표**: YouTube Search API 사용량을 최소화하여 일일 할당량 절약 및 안정성 향상
   - **주요 변경 사항**:

@@ -234,12 +234,17 @@ class TestYouTubeUploaderTodayCheck:
         assert result is True
 
     @patch("src.utils.youtube_auth.get_authenticated_service")
-    def test_check_today_uploaded_false(self, mock_auth):
+    @patch("pathlib.Path.exists")
+    @patch("builtins.open")
+    def test_check_today_uploaded_false(self, mock_open, mock_exists, mock_auth):
         """Test check returns False when no video uploaded today"""
         mock_service = Mock()
         mock_auth.return_value = mock_service
 
-        # Mock empty response
+        # Mock 로컬 파일이 없거나 오늘 날짜가 없는 경우
+        mock_exists.return_value = False  # upload_log.json이 없음
+
+        # Mock empty response for YouTube API
         mock_request = Mock()
         mock_request.execute.return_value = {"items": []}
         mock_service.search().list.return_value = mock_request

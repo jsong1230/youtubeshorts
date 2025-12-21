@@ -324,17 +324,16 @@ class VideoPipeline:
             return
 
         # DB
+        script_str = (
+            "\n".join(assets["script"])
+            if isinstance(assets["script"], list)
+            else assets.get("script", "")
+        )
         self.database.add_video(
             video_id=video_id,
             title=assets["title"],
             topic=assets["actual_topic"],
-            video_path=assets["video_path"],
-            privacy_status=settings.PRIVACY_STATUS,
-            tags=assets["tags"],
-            category_id=settings.CATEGORY_ID,
-            language=settings.VIDEO_LANGUAGE,
-            script=assets["script"],
-            topic_source=self._last_topic_source,
+            script=script_str,
         )
 
         # Sync
