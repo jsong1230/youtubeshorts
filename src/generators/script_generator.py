@@ -56,35 +56,19 @@ class ScriptGenerator:
 
     HIGH_PERFORMING_TOPICS = {
         ContentType.HOOK: [
-            "Money vanishes in patterns, not accidents.",
-            "Structure builds wealth faster than motivation ever could.",
-            "AI automation frees the 30 minutes you keep losing.",
-            "Routines decide your life long before you do.",
-            "Tiny routines create massive peace.",
+            # AI & 크립토 중심 주제로 업데이트 예정 (성과 데이터 축적 후)
         ],
         ContentType.QUOTE: [
-            "Tiny routines create massive peace.",
-            "Money is measurement; direction is wealth.",
-            "Consistency outruns talent every single time.",
-            "Decluttering a room calms your mind, and a calm mind cuts anxiety.",
+            # AI & 크립토 중심 주제로 업데이트 예정 (성과 데이터 축적 후)
         ],
         ContentType.STORY: [
-            "He cleared one closet and reset his entire routine.",
-            "A 30-day expense log rebuilt her bank balance.",
-            "A five-minute evening review saved a burned-out manager.",
-            "An AI micro-routine gave him back an hour every morning.",
+            # AI & 크립토 중심 주제로 업데이트 예정 (성과 데이터 축적 후)
         ],
         ContentType.FACT: [
-            "Tracking spend for 30 days cuts impulse buys by 15%.",
-            "Decluttered desks raise focus by 25%.",
-            "Skipping a winter oil check can cost an engine replacement.",
-            "AI batching saves at least 30 minutes per day.",
+            # AI & 크립토 중심 주제로 업데이트 예정 (성과 데이터 축적 후)
         ],
         ContentType.SHORT_STORY: [
-            "Logging expenses for 30 days changed my bank balance.",
-            "Ten minutes of routine completely rerouted her life.",
-            "Preparing for winter once cut our heating bill in half.",
-            "I automated emails with AI and finally slept.",
+            # AI & 크립토 중심 주제로 업데이트 예정 (성과 데이터 축적 후)
         ],
         ContentType.AUTO: [],
     }

@@ -272,6 +272,59 @@ class BackgroundVideoManager:
         self, sentence: str, topic: str, language: str = "ko"
     ) -> Tuple[str, str]:
         """키워드 추출"""
+        # 한국어인 경우 한국 키워드 우선 추가
+        korean_priority_keywords = []
+        if language == "ko":
+            # 주제/문장 내용에 따라 적절한 한국 키워드 선택
+            topic_lower = (topic or "").lower()
+            sentence_lower = (sentence or "").lower()
+
+            # 주제/문장 내용 분석하여 적절한 한국 키워드 추가
+            if any(
+                word in topic_lower + sentence_lower
+                for word in [
+                    "집",
+                    "집안",
+                    "방",
+                    "난방",
+                    "온도",
+                    "커튼",
+                    "창문",
+                    "이불",
+                    "필터",
+                ]
+            ):
+                korean_priority_keywords = [
+                    "Korean home",
+                    "Korean apartment",
+                    "Korean living room",
+                    "Korean interior",
+                ]
+            elif any(
+                word in topic_lower + sentence_lower
+                for word in ["사무실", "직장", "업무", "생산성", "재태크", "돈", "절약"]
+            ):
+                korean_priority_keywords = [
+                    "Korean office",
+                    "Korean lifestyle",
+                    "Seoul cityscape",
+                ]
+            elif any(
+                word in topic_lower + sentence_lower
+                for word in ["도시", "서울", "거리", "시장"]
+            ):
+                korean_priority_keywords = [
+                    "Seoul cityscape",
+                    "Korean street",
+                    "Korean market",
+                ]
+            else:
+                korean_priority_keywords = [
+                    "Korean lifestyle",
+                    "Korean home",
+                    "Seoul cityscape",
+                ]
+
         topic_keyword = None
         if topic and self.media_downloader:
             topic_keywords = self.media_downloader.extract_keywords(
@@ -292,6 +345,29 @@ class BackgroundVideoManager:
             else []
         )
         sentence_keyword = sentence_keywords[0] if sentence_keywords else None
+
+        # 한국어인 경우 한국 키워드를 최우선으로 사용
+        if language == "ko" and korean_priority_keywords:
+            # 한국 키워드가 이미 포함되어 있는지 확인
+            all_keywords = []
+            if sentence_keywords:
+                all_keywords.extend(sentence_keywords)
+            if topic_keywords:
+                all_keywords.extend(topic_keywords)
+
+            # 한국 키워드가 없으면 추가
+            has_korean_keyword = any(
+                "korean" in k.lower() or "seoul" in k.lower() or "hanok" in k.lower()
+                for k in all_keywords
+            )
+
+            if not has_korean_keyword and korean_priority_keywords:
+                # 한국 키워드를 첫 번째로 추가
+                priority_keyword = korean_priority_keywords[0]
+                logger.info(f"🇰🇷 한국 키워드 우선 추가: {priority_keyword}")
+                keyword = priority_keyword
+                english_keyword = priority_keyword  # 이미 영어
+                return keyword, english_keyword
 
         if sentence_keyword:
             keyword = sentence_keyword

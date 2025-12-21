@@ -499,6 +499,36 @@ def collect_topics(language="en"):
     # 중복 제거
     all_topics = list(dict.fromkeys(all_topics))  # 순서 유지하면서 중복 제거
 
+    # 영상과 어울리지 않는 주제 필터링 (계절적/문화적 주제 제외)
+    excluded_keywords = [
+        "김장",
+        "김치",
+        "절임",
+        "장아찌",
+        "피클",
+        "추수",
+        "수확",
+        "농사",
+        "밭일",
+        "설날",
+        "추석",
+        "명절",
+        "제사",
+        "차례",
+        "단오",
+        "칠석",
+        "한식",
+    ]
+    original_count = len(all_topics)
+    all_topics = [
+        topic
+        for topic in all_topics
+        if not any(keyword in topic for keyword in excluded_keywords)
+    ]
+    excluded_count = original_count - len(all_topics)
+    if excluded_count > 0:
+        print(f"🎬 영상 적합성 필터링: {excluded_count}개 제외됨 (계절/문화 주제)")
+
     # 언어별 필터링 (한국어는 한글만, 영어는 영어만)
     original_count = len(all_topics)
     all_topics = filter_by_language(all_topics, language=language)
@@ -515,9 +545,33 @@ def collect_topics(language="en"):
         if filtered_count > 0:
             print(f"🚫 HISTORY.md 중복 주제 {filtered_count}개 제외됨")
 
+    # YouTube 채널에서 기존 주제 가져오기 및 필터링
+    print("📺 [7/7] YouTube 채널 기존 주제 확인 중...", end=" ", flush=True)
+    start_time = time.time()
+    try:
+        from src.analytics.channel_history_collector import ChannelHistoryCollector
+
+        channel_collector = ChannelHistoryCollector()
+        # 채널의 기존 주제 필터링 (최근 90일간의 영상 기준)
+        original_count = len(all_topics)
+        all_topics = channel_collector.filter_duplicate_topics(
+            new_topics=all_topics, days=90
+        )
+        filtered_count = original_count - len(all_topics)
+        elapsed = time.time() - start_time
+        if filtered_count > 0:
+            print(
+                f"✅ 완료 (채널 중복 주제 {filtered_count}개 제외됨, {elapsed:.1f}초)"
+            )
+        else:
+            print(f"✅ 완료 (중복 없음, {elapsed:.1f}초)")
+    except Exception as e:
+        elapsed = time.time() - start_time
+        print(f"⚠️ 채널 확인 실패: {str(e)[:50]} ({elapsed:.1f}초) - 계속 진행")
+
     print("=" * 60)
     print(
-        f"📊 총 {len(all_topics)}개 주제 수집 완료 (언어 필터링 + HISTORY.md 필터링 후)"
+        f"📊 총 {len(all_topics)}개 주제 수집 완료 (언어 필터링 + HISTORY.md 필터링 + 채널 필터링 후)"
     )
 
     return all_topics

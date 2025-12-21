@@ -50,9 +50,16 @@ class MediaDownloader:
                 korean_visual_instruction = ""
                 if language == "ko":
                     korean_visual_instruction = (
-                        "If the target language is Korean, prioritize Korean-specific visual keywords like "
-                        "'Seoul cityscape', 'Korean traditional architecture', 'Hanok', 'Korean people', "
-                        "'Korean food', 'Gangnam', 'Hongdae', 'K-style' to ensure cultural relevance. "
+                        "**[CRITICAL - KOREAN VIDEO PRIORITY] If the target language is Korean, you MUST prioritize Korean-specific visual keywords. "
+                        "ALWAYS include at least one Korean cultural keyword as the FIRST or PRIMARY keyword from: "
+                        "'Seoul cityscape', 'Korean traditional architecture', 'Hanok', 'Korean people', 'Korean food', "
+                        "'Gangnam', 'Hongdae', 'K-style', 'Korean lifestyle', 'Korean home', 'Korean office', "
+                        "'Korean street', 'Korean market', 'Korean culture', 'Korean apartment', 'Korean house', "
+                        "'Korean winter', 'Korean home interior', 'Korean living room', 'Korean kitchen', 'Korean bedroom', "
+                        "'Korean city', 'Korean urban', 'Korean modern', 'Korean traditional' to ensure cultural relevance. "
+                        "For finance/productivity topics, ALWAYS use 'Korean office', 'Korean home', 'Korean lifestyle', 'Seoul cityscape' as the PRIMARY keyword. "
+                        "For home/lifestyle topics, use 'Korean home', 'Korean apartment', 'Korean living room', 'Korean kitchen' as PRIMARY keywords. "
+                        "The Korean keyword should be the FIRST keyword in the list to maximize search priority for Korean videos. "
                     )
 
                 response = self._api_call_with_retry(

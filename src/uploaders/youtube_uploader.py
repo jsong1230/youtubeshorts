@@ -202,20 +202,49 @@ class YouTubeUploader:
     def check_today_uploaded(self) -> bool:
         """
         오늘 업로드한 영상이 있는지 확인
+        Search API 대신 upload_log.json에서 확인 (quota 절약)
 
         Returns:
             오늘 업로드한 영상이 있으면 True, 없으면 False
         """
         try:
+            # 오늘 날짜
+            today = datetime.now().date()
+
+            # 1. upload_log.json에서 확인 (우선)
+            try:
+                import json
+                from pathlib import Path
+
+                log_file = Path("data/upload_log.json")
+                if log_file.exists():
+                    with open(log_file, "r", encoding="utf-8") as f:
+                        upload_logs = json.load(f)
+
+                    # 최신 항목부터 확인 (최근 업로드가 앞에 있음)
+                    for log_entry in upload_logs[-10:]:  # 최근 10개만 확인
+                        timestamp_str = log_entry.get("timestamp", "")
+                        if timestamp_str:
+                            try:
+                                log_date = datetime.fromisoformat(
+                                    timestamp_str.replace("Z", "+00:00")
+                                ).date()
+                                if log_date == today:
+                                    title = log_entry.get("title", "")
+                                    logger.info(
+                                        f"✅ 오늘 이미 업로드된 영상 발견 (로컬): {title}"
+                                    )
+                                    return True
+                            except Exception:
+                                pass
+            except Exception as e:
+                logger.debug(f"⚠️ upload_log.json 읽기 실패: {e}")
+
+            # 2. Search API는 최후의 수단으로만 사용 (로컬 데이터가 없을 때만)
             if not self.youtube:
                 return False
 
-            # 오늘 날짜
-            today = datetime.now().date()
-            # today_start = datetime.combine(today, datetime.min.time())
-            # today_start_iso = today_start.isoformat() + "Z"
-
-            # 채널의 최근 업로드 영상 조회
+            logger.warning("⚠️ 로컬 데이터가 없어 Search API 사용 (quota 소모)")
             request = self.youtube.search().list(
                 part="snippet", forMine=True, type="video", maxResults=10, order="date"
             )

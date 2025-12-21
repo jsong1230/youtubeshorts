@@ -33,6 +33,9 @@ class ChannelHistoryCollector:
         """채널 히스토리 수집기 초기화"""
         self.youtube = None
         self.openai_client = None
+        self._cache = {}  # Search API 호출 캐싱
+        self._cache_timestamp = None
+        self._cache_ttl = timedelta(hours=24)  # 24시간 캐시
 
         # YouTube API 초기화
         if YOUTUBE_API_AVAILABLE:
@@ -50,24 +53,55 @@ class ChannelHistoryCollector:
                 logger.warning(f"⚠️ OpenAI 클라이언트 초기화 실패: {e}")
 
     def get_channel_videos(
-        self, max_results: int = 100, days: int = None
+        self, max_results: int = 100, days: int = None, use_cache: bool = True
     ) -> List[Dict]:
         """
         우리 채널의 업로드된 영상 목록 가져오기
+        Search API 사용을 최소화하기 위해 캐싱 및 로컬 DB 우선 사용
 
         Args:
             max_results: 가져올 영상 수 (최대 50)
             days: 최근 며칠간의 영상만 가져오기 (None이면 전체)
+            use_cache: 캐시 사용 여부 (기본값: True)
 
         Returns:
             영상 리스트 (video_id, title, topic, published_at 등)
         """
-        if not self.youtube:
-            logger.warning("⚠️ YouTube API가 초기화되지 않았습니다.")
-            return []
+        # 1. 캐시 확인 (24시간 유효)
+        cache_key = f"{max_results}_{days}"
+        if use_cache and self._cache_timestamp:
+            if datetime.now() - self._cache_timestamp < self._cache_ttl:
+                if cache_key in self._cache:
+                    logger.debug(f"💾 캐시에서 채널 영상 목록 반환 (Search API 미사용)")
+                    return self._cache[cache_key]
 
+        # 2. 로컬 DB에서 먼저 시도
+        videos = self._get_videos_from_local_db(max_results=max_results, days=days)
+
+        # 3. 로컬 데이터가 충분하면 Search API 사용 안 함
+        if len(videos) >= min(max_results, 50):
+            logger.info(
+                f"✅ 로컬 DB에서 {len(videos)}개 영상 정보 가져옴 (Search API 미사용)"
+            )
+            if use_cache:
+                self._cache[cache_key] = videos
+                self._cache_timestamp = datetime.now()
+            return videos
+
+        # 4. Search API는 최후의 수단으로만 사용
+        if not self.youtube:
+            logger.warning(
+                "⚠️ YouTube API가 초기화되지 않았고 로컬 데이터도 부족합니다."
+            )
+            if use_cache:
+                self._cache[cache_key] = videos
+                self._cache_timestamp = datetime.now()
+            return videos
+
+        logger.warning(
+            f"⚠️ 로컬 데이터 부족 ({len(videos)}개) - Search API 사용 (quota 소모)"
+        )
         try:
-            videos: List[Dict] = []
             next_page_token = None
             max_pages = 5  # 최대 5페이지 (250개 영상)
             page_count = 0
@@ -132,18 +166,150 @@ class ChannelHistoryCollector:
 
                 page_count += 1
 
-            logger.info(f"✅ 채널에서 {len(videos)}개 영상 수집 완료")
+            logger.info(f"✅ Search API로 {len(videos)}개 영상 수집 완료")
+
+            # 캐시 저장
+            if use_cache:
+                self._cache[cache_key] = videos
+                self._cache_timestamp = datetime.now()
+
             return videos
         except Exception as e:
             logger.warning(f"⚠️ 채널 영상 수집 실패: {e}")
             import traceback
 
             traceback.print_exc()
-            return []
+            # 로컬 데이터라도 반환
+            if use_cache:
+                self._cache[cache_key] = videos
+                self._cache_timestamp = datetime.now()
+            return videos
+
+    def _get_videos_from_local_db(
+        self, max_results: int = 100, days: int = None
+    ) -> List[Dict]:
+        """
+        로컬 데이터베이스(videos.db, upload_log.json)에서 영상 정보 가져오기
+        Search API 사용 없이 로컬 데이터만 사용
+        """
+        videos: List[Dict] = []
+
+        # 1. upload_log.json에서 가져오기 (최신 데이터)
+        try:
+            import json
+
+            log_file = Path("data/upload_log.json")
+            if log_file.exists():
+                with open(log_file, "r", encoding="utf-8") as f:
+                    upload_logs = json.load(f)
+
+                cutoff_date = None
+                if days:
+                    cutoff_date = datetime.now() - timedelta(days=days)
+
+                # 최신 항목부터 처리
+                for log_entry in reversed(upload_logs[-max_results:]):
+                    timestamp_str = log_entry.get("timestamp", "")
+                    if timestamp_str:
+                        try:
+                            log_date = datetime.fromisoformat(
+                                timestamp_str.replace("Z", "+00:00")
+                            )
+
+                            if cutoff_date and log_date < cutoff_date:
+                                continue
+
+                            video_id = log_entry.get("video_id", "")
+                            if (
+                                video_id and video_id != "VIDEO_ID_123"
+                            ):  # 테스트 ID 제외
+                                videos.append(
+                                    {
+                                        "video_id": video_id,
+                                        "title": log_entry.get("title", ""),
+                                        "topic": log_entry.get("topic", ""),
+                                        "published_at": log_date,
+                                        "thumbnail": "",  # upload_log에는 썸네일 URL 없음
+                                    }
+                                )
+                        except Exception:
+                            pass
+        except Exception as e:
+            logger.debug(f"⚠️ upload_log.json 읽기 실패: {e}")
+
+        # 2. videos.db에서 가져오기 (백업)
+        try:
+            import sqlite3
+
+            db_path = Path("data/videos.db")
+            if db_path.exists():
+                conn = sqlite3.connect(str(db_path))
+                cursor = conn.cursor()
+
+                cutoff_date_str = None
+                if days:
+                    cutoff_date_str = (
+                        datetime.now() - timedelta(days=days)
+                    ).isoformat()
+
+                if cutoff_date_str:
+                    cursor.execute(
+                        """
+                        SELECT video_id, title, topic, upload_date
+                        FROM videos
+                        WHERE upload_date >= ?
+                        ORDER BY upload_date DESC
+                        LIMIT ?
+                        """,
+                        (cutoff_date_str, max_results),
+                    )
+                else:
+                    cursor.execute(
+                        """
+                        SELECT video_id, title, topic, upload_date
+                        FROM videos
+                        ORDER BY upload_date DESC
+                        LIMIT ?
+                        """,
+                        (max_results,),
+                    )
+
+                rows = cursor.fetchall()
+                for row in rows:
+                    video_id, title, topic, upload_date = row
+                    if video_id and video_id not in [v.get("video_id") for v in videos]:
+                        try:
+                            published_at = (
+                                datetime.fromisoformat(upload_date)
+                                if upload_date
+                                else datetime.now()
+                            )
+                        except Exception:
+                            published_at = datetime.now()
+
+                        videos.append(
+                            {
+                                "video_id": video_id,
+                                "title": title or "",
+                                "topic": topic or "",
+                                "published_at": published_at,
+                                "thumbnail": "",
+                            }
+                        )
+
+                conn.close()
+        except Exception as e:
+            logger.debug(f"⚠️ videos.db 읽기 실패: {e}")
+
+        # 날짜순 정렬
+        videos.sort(key=lambda x: x.get("published_at", datetime.min), reverse=True)
+
+        return videos[:max_results]
 
     def get_existing_topics(self, days: int = 90) -> Set[str]:  # 최근 90일간의 영상만
         """
         우리 채널의 기존 주제 목록 가져오기 (중복 체크용)
+        Search API 대신 videos.db와 upload_log.json에서 가져옴 (quota 절약)
 
         Args:
             days: 최근 며칠간의 영상만 가져오기
@@ -151,16 +317,83 @@ class ChannelHistoryCollector:
         Returns:
             기존 주제 Set (중복 체크용)
         """
-        videos = self.get_channel_videos(max_results=200, days=days)
-
         topics = set()
-        for video in videos:
-            topic = video.get("topic", "")
-            if topic:
-                # 소문자로 변환하여 비교 (대소문자 무시)
-                topics.add(topic.lower().strip())
 
-        logger.info(f"✅ 기존 주제 {len(topics)}개 수집 완료 (최근 {days}일)")
+        # 1. upload_log.json에서 주제 가져오기 (최신 데이터)
+        try:
+            import json
+            from pathlib import Path
+            from datetime import datetime, timedelta
+
+            log_file = Path("data/upload_log.json")
+            if log_file.exists():
+                with open(log_file, "r", encoding="utf-8") as f:
+                    upload_logs = json.load(f)
+
+                cutoff_date = datetime.now() - timedelta(days=days)
+
+                for log_entry in upload_logs:
+                    timestamp_str = log_entry.get("timestamp", "")
+                    if timestamp_str:
+                        try:
+                            log_date = datetime.fromisoformat(
+                                timestamp_str.replace("Z", "+00:00")
+                            )
+                            if log_date >= cutoff_date:
+                                topic = log_entry.get("topic", "")
+                                if topic:
+                                    topics.add(topic.lower().strip())
+                        except Exception:
+                            pass
+
+                logger.debug(f"📝 upload_log.json에서 {len(topics)}개 주제 수집")
+        except Exception as e:
+            logger.debug(f"⚠️ upload_log.json 읽기 실패: {e}")
+
+        # 2. videos.db에서 주제 가져오기 (백업)
+        try:
+            import sqlite3
+            from datetime import datetime, timedelta
+
+            db_path = "data/videos.db"
+            if Path(db_path).exists():
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+
+                cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+
+                cursor.execute(
+                    """
+                    SELECT DISTINCT topic FROM videos
+                    WHERE topic IS NOT NULL AND topic != '' 
+                    AND created_at >= ?
+                    """,
+                    (cutoff_date,),
+                )
+
+                rows = cursor.fetchall()
+                for row in rows:
+                    if row[0]:
+                        topics.add(row[0].lower().strip())
+
+                conn.close()
+                logger.debug(f"💾 videos.db에서 추가 주제 수집 (총 {len(topics)}개)")
+        except Exception as e:
+            logger.debug(f"⚠️ videos.db 읽기 실패: {e}")
+
+        # 3. Search API는 최후의 수단으로만 사용 (캐싱된 데이터가 없을 때만)
+        if len(topics) == 0:
+            logger.warning("⚠️ 로컬 데이터가 없어 Search API 사용 (quota 소모)")
+            videos = self.get_channel_videos(max_results=200, days=days)
+            for video in videos:
+                topic = video.get("topic", "")
+                if topic:
+                    topics.add(topic.lower().strip())
+        else:
+            logger.info(
+                f"✅ 기존 주제 {len(topics)}개 수집 완료 (로컬 데이터 사용, Search API 미사용)"
+            )
+
         return topics
 
     def check_topic_similarity(

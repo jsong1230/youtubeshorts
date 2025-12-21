@@ -78,6 +78,16 @@ class Settings(BaseSettings):
     TREND_MODE: bool = Field(False, validation_alias="TREND_MODE")
     PREFER_SHORT_VIDEOS: bool = Field(True, validation_alias="PREFER_SHORT_VIDEOS")
 
+    # Target Audience (언어별 기본값)
+    TARGET_AUDIENCE_KO: str = Field(
+        "20-40대 (2040 세대) - 재태크에 관심 있는 직장인, 자영업자, 투자 초보자. 이들의 고충: 주거비 부담, 연봉 협상, 전세/월세 고민, 적금/예금 활용, 주택청약, 퇴직금 관리, 국민연금 등. 이들의 욕구: 안정적인 재무 계획, 부동산 투자, 주식 투자 입문, 절약 습관, 목돈 만들기 등.",
+        validation_alias="TARGET_AUDIENCE_KO",
+    )
+    TARGET_AUDIENCE_EN: str = Field(
+        "25-45 years old - Adults interested in financial planning, living in the US/Canada. Their pain points: housing costs, salary negotiation, retirement planning, debt management, investment basics, budgeting, etc. Their desires: stable financial future, real estate investment, stock market entry, savings habits, building wealth, etc.",
+        validation_alias="TARGET_AUDIENCE_EN",
+    )
+
     # Upload Schedule
     UPLOAD_SCHEDULE_TIME: str = Field("09:00", validation_alias="UPLOAD_SCHEDULE_TIME")
     UPLOAD_TIMEZONE: str = Field("Asia/Seoul", validation_alias="UPLOAD_TIMEZONE")

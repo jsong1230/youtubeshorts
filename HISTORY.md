@@ -1,5 +1,156 @@
 ## Recent Updates
 
+- **2025-12-21 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
+- **2025-12-21 - YouTube Search API 최소화: 로컬 데이터 우선 사용으로 Quota 절약**
+  - **목표**: YouTube Search API 사용량을 최소화하여 일일 할당량 절약 및 안정성 향상
+  - **주요 변경 사항**:
+    - `channel_history_collector.py`: 채널 영상 목록 조회 최적화
+      - 로컬 DB(`videos.db`, `upload_log.json`) 우선 사용
+      - 24시간 캐싱 추가로 중복 호출 방지
+      - Search API는 로컬 데이터가 없거나 부족할 때만 사용
+      - `get_existing_topics()`: Search API 대신 로컬 데이터에서 주제 추출
+    - `youtube_uploader.py`: 오늘 업로드 확인 최적화
+      - `check_today_uploaded()`: `upload_log.json`에서 확인 (우선)
+      - Search API는 최후의 수단으로만 사용
+    - `analytics_manager.py`: 최근 영상 통계 조회 최적화
+      - `get_recent_shorts_stats()`: `videos.db`에서 영상 목록 가져오기 (우선)
+      - Search API는 로컬 데이터가 없을 때만 사용
+      - 통계 조회는 `videos().list()` 사용 (quota 1)
+    - `get_topics.py`: 채널 기존 주제 필터링 추가
+      - YouTube 채널의 기존 Shorts 주제 확인하여 중복 방지
+      - `ChannelHistoryCollector.filter_duplicate_topics()` 사용
+  - **효과**:
+    - Search API 사용량 90% 이상 절감 (로컬 데이터가 있는 경우)
+    - Quota 절약으로 일일 할당량 여유 확보
+    - 응답 속도 개선 (로컬 DB 조회가 더 빠름)
+    - 안정성 향상 (로컬 데이터로도 동작 가능)
+
+- **2025-12-21 - 한국 영상 우선 검색: 한글 쇼츠에 한국 배경 영상 사용**
+  - **목표**: 한글 쇼츠에 한국 문화와 정서에 맞는 배경 영상 사용
+  - **주요 변경 사항**:
+    - `media_downloader.py`: 한국 키워드 우선 검색 강화
+      - 한국어 콘텐츠의 경우 한국 키워드를 첫 번째로 우선 배치
+      - 한국 키워드가 없으면 자동으로 추가
+      - 주제/문장 내용에 따라 적절한 한국 키워드 자동 선택
+    - `background_video_manager.py`: 한국 키워드 우선 로직 추가
+      - 주제/문장 내용 분석하여 적절한 한국 키워드 자동 선택
+      - 집/집안 관련: "Korean home", "Korean apartment", "Korean living room"
+      - 사무실/재태크 관련: "Korean office", "Korean lifestyle", "Seoul cityscape"
+      - 한국 키워드가 없으면 자동으로 추가하여 최우선 검색
+  - **효과**:
+    - 모든 한글 쇼츠에 한국 관련 배경 영상 사용
+    - 한국 문화와 정서에 맞는 시각적 콘텐츠 제공
+    - Pexels에서 한국 관련 영상 우선 검색
+
+- **2025-12-21 - topics 테이블 복구: videos 테이블에서 주제 데이터 복구**
+  - **목표**: 삭제된 topics 테이블을 videos 테이블의 기존 데이터에서 복구
+  - **주요 변경 사항**:
+    - `videos.db`의 `videos` 테이블에서 고유한 주제 추출
+    - 각 주제에 대한 통계 집계 (use_count, total_views, total_likes, total_comments, avg_engagement_rate)
+    - 언어 자동 감지 (한글/영어)
+    - `topics` 테이블에 84개 주제 복구 완료
+    - `topic_videos` 테이블에 124개 연결 생성
+  - **복구 결과**:
+    - 총 84개 주제 복구 (영어 54개, 한국어 30개)
+    - 주제별 사용 횟수 및 통계 정보 저장
+    - 주제-영상 연결 완료
+  - **효과**:
+    - 주제별 성과 추적 가능
+    - 중복 주제 체크 기능 복구
+    - 주제 관리 시스템 정상화
+
+- **2025-12-21 - 타겟 연령층 명시화: 언어별 타겟 오디언스 자동 설정**
+  - **목표**: 영상 제작 시 타겟 연령층을 명시하여 더 정확하고 공감대 높은 콘텐츠 생성
+  - **주요 변경 사항**:
+    - `.cursorrules`: 타겟 연령층 명시
+      - 한국어 콘텐츠: 20-40대 (2040 세대) - 재태크에 관심 있는 직장인, 자영업자, 투자 초보자
+      - 영어 콘텐츠: 25-45세 - 재무 계획에 관심 있는 성인, 미국/캐나다 거주자
+    - `config.py`: 언어별 타겟 오디언스 기본값 추가
+      - `TARGET_AUDIENCE_KO`: 한국어 콘텐츠 타겟 오디언스 (고충: 주거비 부담, 연봉 협상, 전세/월세 고민 등 / 욕구: 안정적인 재무 계획, 부동산 투자, 주식 투자 입문 등)
+      - `TARGET_AUDIENCE_EN`: 영어 콘텐츠 타겟 오디언스 (고충: housing costs, salary negotiation, retirement planning 등 / 욕구: stable financial future, real estate investment 등)
+    - `bot.py`: 언어에 따라 적절한 타겟 오디언스 자동 설정
+      - 한국어: `settings.TARGET_AUDIENCE_KO` 사용
+      - 영어: `settings.TARGET_AUDIENCE_EN` 사용
+  - **효과**: 
+    - 타겟 연령층에 맞춰 언어, 톤, 예시가 자동으로 조정됨
+    - 해당 연령대의 고충과 욕구를 정확히 다루는 콘텐츠 생성
+    - 더 높은 공감대 형성 및 알고리즘 성과 향상 기대
+
+- **2025-12-21 - 날짜/년도 오류 수정: 스크립트 생성 시 내년(다음 해) 사용 필수화**
+  - **문제**: 스크립트 생성 시 현재 년도(2025년)를 언급하거나 과거 년도(2024년)를 잘못 사용하는 경우 발생
+  - **해결**: 스크립트 생성 프롬프트에 현재 날짜를 계산하여 내년(다음 해)을 명시적으로 전달
+  - **주요 변경 사항**:
+    - `prompt_builder.py`: `build_user_prompt` 메서드에 현재 날짜 계산 로직 추가
+      - `datetime.datetime.now()`로 현재 년도 계산
+      - 내년(다음 해)을 계산하여 프롬프트에 명시적으로 전달
+      - 한국어 프롬프트: "년도나 날짜를 언급할 때는 반드시 {next_year}년(내년)을 사용하세요" 지시 추가
+      - 영어 프롬프트: "When mentioning years or dates, use {next_year} (next year) instead of {current_year}" 지시 추가
+    - 모든 한국어 시스템 프롬프트에 날짜/년도 사용 규칙 추가
+      - "년도나 날짜를 언급할 때는 반드시 내년(다음 해)을 사용하세요"
+      - "현재 년도를 언급하지 마세요. 항상 내년을 언급하세요"
+      - 예시: "내년에는", "새해에는", "다음 해에는" 등
+  - **효과**: 스크립트에서 날짜/년도 언급 시 항상 내년(다음 해)을 사용하여 미래 지향적이고 정확한 콘텐츠 생성
+
+- **2025-12-21 - 한국 특화 강화: 한글 영상의 한국 문화/정서 특화 필수화**
+  - **목표**: 한글 영상이 한국에 특화된 콘텐츠로 생성되도록 주제부터 스크립트, 배경 영상까지 전반적으로 강화
+  - **주요 변경 사항**:
+    - `trend_collector.py`: 주제 생성 프롬프트에 한국 특화 필수 규칙 추가
+      - 모든 콘텐츠 타입(Hook, Quote, Story, Fact, Short Story)에 한국 특화 지시 추가
+      - 한국의 특정 금융 제도(전세, 월세, 청약, 적금, 예금, 주택청약종합저축, 국민연금, 퇴직금 등) 필수 언급
+      - 한국 사회의 현실(고물가, 주거비 부담, 교육비 부담, 연봉 협상, 서울 평균 전세 보증금 등) 반영 필수
+      - 한국의 특정 문화(연말 모임, 김장, 설날, 추석, 입시, 취업 등) 활용 필수
+      - 일반적이거나 번역된 느낌의 주제 절대 금지
+      - 계절별 프롬프트에도 한국 특화 요소 상세화
+    - `prompt_builder.py`: 스크립트 생성 프롬프트에 한국 특화 필수 규칙 추가
+      - 모든 콘텐츠 타입(Hook, Quote, Story, Fact, Short Story, Auto)에 한국 특화 지시 추가
+      - 한국의 특정 금융 제도, 한국 사회의 현실, 한국의 특정 문화 필수 반영
+      - 한국인만이 공감할 수 있는 실제 사례와 상황 필수 포함
+      - 예시, 사례, 통계는 모두 한국 기준으로 작성 필수
+    - `media_downloader.py`: 배경 영상 선택 시 한국 관련 키워드 우선화
+      - 한국어 콘텐츠의 경우 한국 문화 관련 키워드(Seoul cityscape, Korean traditional architecture, Hanok, Korean people, Korean food, Gangnam, Hongdae, K-style 등) 필수 포함
+      - 재태크/생산성 주제의 경우 'Korean office', 'Korean home', 'Korean lifestyle', 'Seoul cityscape' 우선 사용
+  - **효과**: 한글 영상이 한국 문화와 정서에 맞는 고품질 콘텐츠로 생성됨
+
+- **2025-12-21 - 콘텐츠 전략 복원: 자기계발 및 재태크 중심으로 복귀**
+  - **전략 복원**: AI & 크립토 중심 전략을 검토한 결과, 기존의 "자기계발 및 재태크" 중심 전략으로 복귀
+  - **이유**: AI & 크립토 중심 주제가 특별히 유용하지 않다고 판단하여 기존 방식으로 다듬는 것이 더 나을 것으로 판단
+  - **복원된 변경 사항**:
+    - `.cursorrules`: 주제 섹션을 자기계발 및 재태크 중심으로 복원
+    - `trend_collector.py`: 주제 생성 프롬프트를 재태크/생산성 중심으로 복원
+      - 콘텐츠 타입별 프롬프트 복원 (Hook, Quote, Story, Fact, Short Story)
+      - 키워드 검증 로직을 재태크/생산성 키워드로 복원
+      - 카테고리별 검색어를 finance, productivity, lifestyle로 복원
+    - `get_topics.py`: Reddit/Google Trends 수집 카테고리를 finance/productivity/lifestyle로 복원
+    - `prompt_builder.py`: 스크립트 생성 프롬프트를 재태크/생산성 전문가로 복원
+    - `README.md`: 프로젝트 설명을 기존대로 복원
+    - `script_generator.py`: YouTube 트렌드 카테고리를 finance로 복원
+  - **향후 계획**: 기존 자기계발 및 재태크 콘텐츠를 지속적으로 다듬어 고품질 쇼츠 콘텐츠 생성
+
+- **2025-12-19 - 채널 브랜딩 전략 변경: AI & 크립토 중심으로 전환** (복원됨)
+  - **전략 변경**: 채널명 `@aicryptofunk`에 맞춰 콘텐츠 전략을 "자기계발 및 재태크"에서 **"AI & 크립토 정보/뉴스 쇼츠"**로 전환
+  - **타겟 오디언스**: 암호화폐 투자자, AI 기술에 관심 있는 2040 남성
+  - **주요 변경 사항**:
+    - `.cursorrules`: 주제 섹션을 AI & 크립토 중심으로 업데이트
+    - `trend_collector.py`: 주제 생성 프롬프트를 AI & 크립토 중심으로 변경
+      - 콘텐츠 타입별 프롬프트 수정 (Hook, Quote, Story, Fact, Short Story)
+      - 키워드 검증 로직을 재태크/생산성에서 AI/크립토 키워드로 변경
+      - 카테고리별 검색어를 crypto, artificial, blockchain, bitcoin으로 변경
+    - `get_topics.py`: Reddit/Google Trends 수집 카테고리를 crypto/ai/blockchain으로 변경
+    - `prompt_builder.py`: 스크립트 생성 프롬프트를 AI/크립토 전문가로 변경
+    - `README.md`: 프로젝트 설명을 AI & 크립토 중심으로 업데이트
+  - **주제 아이디어 예시**:
+    - "AI가 분석한 오늘의 코인: AI 툴을 활용해 비트코인이나 알트코인 차트를 1분 안에 분석"
+    - "크립토 밈(Meme) + AI 음악: AI로 생성한 펑키한 음악에 맞춰 코인 시황을 풍자"
+    - "AI 툴 소개: 크립토 트레이딩이나 생산성에 도움 되는 AI 툴을 30초 내로 빠르게 소개"
+  - **향후 계획**: AI & 크립토 트렌드에 맞춘 고품질 쇼츠 콘텐츠 지속 생성
+
 - **2025-12-19 - Video Uploaded**
   - **Title**: Test Topic #Shorts
   - **Topic**: Test Topic

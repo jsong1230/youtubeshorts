@@ -112,12 +112,21 @@ class ShortsBot:
 
             # AI로 영상 생성 (매번 새로운 아이디어로)
             logger.info("📹 영상 생성 중...")
+
+            # 언어별 타겟 오디언스 설정
+            from src.core.config import settings
+
+            if language == "ko":
+                target_audience = settings.TARGET_AUDIENCE_KO
+            else:
+                target_audience = settings.TARGET_AUDIENCE_EN
+
             result = self.video_generator.generate_video(
                 topic=topic,
                 duration=None,
                 performance_prompt=None,
                 language=language,
-                target_audience="General Audience",  # 기본값
+                target_audience=target_audience,
             )
 
             # 반환값 처리

@@ -39,46 +39,98 @@ class AnalyticsManager:
             return None
 
     def get_recent_shorts_stats(self, max_results=10):
-        """최근 업로드된 Shorts 영상 통계 조회"""
+        """
+        최근 업로드된 Shorts 영상 통계 조회
+        Search API 대신 videos.db에서 가져오기 (quota 절약)
+        """
         if not self.youtube:
             return []
 
         try:
-            # 1. 최근 업로드된 영상 목록 조회
-            request = self.youtube.search().list(
-                part="snippet",
-                forMine=True,
-                type="video",
-                maxResults=max_results,
-                order="date",
-            )
-            response = request.execute()
-
+            # 1. videos.db에서 최근 영상 목록 가져오기 (우선)
             videos = []
             video_ids = []
 
-            for item in response.get("items", []):
-                video_id = item["id"]["videoId"]
-                video_ids.append(video_id)
-                videos.append(
-                    {
-                        "id": video_id,
-                        "title": item["snippet"]["title"],
-                        "published_at": item["snippet"]["publishedAt"],
-                        "thumbnail": item["snippet"]["thumbnails"]["default"]["url"],
-                    }
+            try:
+                import sqlite3
+                from pathlib import Path
+
+                db_path = Path("data/videos.db")
+                if db_path.exists():
+                    conn = sqlite3.connect(str(db_path))
+                    cursor = conn.cursor()
+
+                    cursor.execute(
+                        """
+                        SELECT video_id, title, upload_date, topic
+                        FROM videos
+                        ORDER BY upload_date DESC
+                        LIMIT ?
+                        """,
+                        (max_results,),
+                    )
+
+                    rows = cursor.fetchall()
+                    for row in rows:
+                        video_id, title, upload_date, topic = row
+                        if video_id:
+                            video_ids.append(video_id)
+                            videos.append(
+                                {
+                                    "id": video_id,
+                                    "title": title or "",
+                                    "published_at": upload_date or "",
+                                    "topic": topic or "",
+                                }
+                            )
+
+                    conn.close()
+
+                    if video_ids:
+                        logger.debug(
+                            f"💾 videos.db에서 {len(video_ids)}개 영상 정보 가져옴 (Search API 미사용)"
+                        )
+            except Exception as e:
+                logger.debug(f"⚠️ videos.db 읽기 실패: {e}")
+
+            # 2. Search API는 최후의 수단으로만 사용 (로컬 데이터가 없을 때만)
+            if not video_ids:
+                logger.warning("⚠️ 로컬 데이터가 없어 Search API 사용 (quota 소모)")
+                request = self.youtube.search().list(
+                    part="snippet",
+                    forMine=True,
+                    type="video",
+                    maxResults=max_results,
+                    order="date",
                 )
+                response = request.execute()
+
+                for item in response.get("items", []):
+                    video_id = item["id"]["videoId"]
+                    video_ids.append(video_id)
+                    videos.append(
+                        {
+                            "id": video_id,
+                            "title": item["snippet"]["title"],
+                            "published_at": item["snippet"]["publishedAt"],
+                            "topic": item["snippet"]
+                            .get("title", "")
+                            .replace(" #Shorts", "")
+                            .replace("#Shorts", "")
+                            .strip(),
+                        }
+                    )
 
             if not video_ids:
                 return []
 
-            # 2. 각 영상의 상세 통계 조회 (배치 처리)
+            # 3. 각 영상의 상세 통계 조회 (배치 처리) - 이건 videos().list() 사용 (quota 적음)
             stats_request = self.youtube.videos().list(
                 part="statistics,contentDetails", id=",".join(video_ids)
             )
             stats_response = stats_request.execute()
 
-            # 3. 데이터 병합
+            # 4. 데이터 병합
             stats_map = {item["id"]: item for item in stats_response["items"]}
 
             results = []
