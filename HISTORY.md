@@ -1,5 +1,25 @@
 ## Recent Updates
 
+- **2025-12-22 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
+- **2025-12-22 - Video Uploaded**
+  - **한국어 영상 1**: 서울 평균 월세로 여유롭게 사는 비법 공개!
+    - Video ID: `alARaxs7Nyo`
+    - URL: <https://www.youtube.com/watch?v=alARaxs7Nyo>
+    - 길이: 57.01초
+    - 상태: 비공개 업로드 완료
+  - **영어 영상 1**: First-Time Home Buyers: Essential Advice You Can't Afford to Ignore!
+    - Video ID: `jsVOcYyyFc8`
+    - URL: <https://www.youtube.com/watch?v=jsVOcYyyFc8>
+    - 길이: 54.77초
+    - 상태: 비공개 업로드 완료
+
 - **2025-12-21 - Video Uploaded**
   - **Title**: Test Topic #Shorts
   - **Topic**: Test Topic
