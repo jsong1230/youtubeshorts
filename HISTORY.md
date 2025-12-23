@@ -1,5 +1,40 @@
 ## Recent Updates
 
+- **2025-12-23 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
+- **2025-12-23 - Video Uploaded**
+  - **영문 영상 1**: Dopamine Detox: How to Reset Your Brain from Social Media Addiction #Shorts
+    - Video ID: `UvYG5QUMAlQ`
+    - URL: <https://www.youtube.com/watch?v=UvYG5QUMAlQ>
+    - 길이: 약 54초
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+
+- **2025-12-23 - 주제 제공 방식 변경**
+  - **변경 사항**: 모든 주제(한글/영문)는 사용자가 직접 제공하고, 시스템은 중복 확인 및 영상 생성만 담당
+  - **효과**: 주제 선정 과정 간소화 및 사용자 의도에 맞는 주제 선택 가능
+
+- **2025-12-23 - Video Uploaded**
+  - **한국어 영상 1**: 퇴근 후 2시간, 인생을 바꾸는 '저녁 루틴'
+    - Video ID: `ihJj9w7M9Bk`
+    - URL: <https://www.youtube.com/watch?v=ihJj9w7M9Bk>
+    - 길이: 약 55초
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **한국어 영상 2**: '미라클 모닝' 실패하는 사람들의 공통점
+    - Video ID: `MydrZxnpuYQ`
+    - URL: <https://www.youtube.com/watch?v=MydrZxnpuYQ>
+    - 길이: 약 55초
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+
+- **2025-12-23 - 한글 주제 제공 방식 변경**
+  - **변경 사항**: 한글 주제는 사용자가 직접 제공하고, 시스템은 중복 확인 및 영상 생성만 담당
+  - **효과**: 주제 선정 과정 간소화 및 사용자 의도에 맞는 주제 선택 가능
+
 - **2025-12-22 - Video Uploaded**
   - **Title**: Test Topic #Shorts
   - **Topic**: Test Topic
