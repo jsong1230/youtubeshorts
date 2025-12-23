@@ -1,12 +1,48 @@
 ## Recent Updates
 
-- **2025-12-23 - Video Uploaded**
+- **2025-12-24 - Video Uploaded**
   - **Title**: Test Topic #Shorts
   - **Topic**: Test Topic
   - **Type**: fact
   - **Video ID**: VIDEO_ID_123
   - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
 
+
+- **2025-12-23 - Video Uploaded (한글 1개, 영문 1개)**
+  - **한국어 영상**: 직장인 투잡, 현실적인 월 50만 원 벌기 #Shorts
+    - Video ID: `uNdjF3wrZ5c`
+    - URL: <https://www.youtube.com/watch?v=uNdjF3wrZ5c>
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **영문 영상**: High-Income Skills to Learn: Top 5 Skills That Pay Well in 2025 #Shorts
+    - Video ID: `2xA8Vqu9zyg`
+    - URL: <https://www.youtube.com/watch?v=2xA8Vqu9zyg>
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+
+- **2025-12-23 - Video Uploaded (한글 3개, 영문 3개)**
+  - **한국어 영상 1**: 포모도로 기법: 25분 집중의 기적 #Shorts
+    - Video ID: `t-P6qeveyPU`
+    - URL: <https://www.youtube.com/watch?v=t-P6qeveyPU>
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **한국어 영상 2**: 스마트폰 중독 탈출: 화면 흑백 모드의 위력 #Shorts
+    - Video ID: `WQ5ekfjmraw`
+    - URL: <https://www.youtube.com/watch?v=WQ5ekfjmraw>
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **한국어 영상 3**: 부자들의 독서법은 무엇이 다를까? #Shorts
+    - Video ID: `HxKFwjRI80M`
+    - URL: <https://www.youtube.com/watch?v=HxKFwjRI80M>
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **영문 영상 1**: Passive Income Ideas for Beginners: Start Earning While You Sleep #Shorts
+    - Video ID: `YG3CJiaCbsI`
+    - URL: <https://www.youtube.com/watch?v=YG3CJiaCbsI>
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **영문 영상 2**: The 50/30/20 Rule: Simple Budgeting Formula for Financial Success #Shorts
+    - Video ID: `3hkTAUej0mk`
+    - URL: <https://www.youtube.com/watch?v=3hkTAUej0mk>
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **영문 영상 3**: Loud Budgeting: The New Trend of Being Proudly Frugal #Shorts
+    - Video ID: `TjjtrKhnLsQ`
+    - URL: <https://www.youtube.com/watch?v=TjjtrKhnLsQ>
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
 
 - **2025-12-23 - Video Uploaded**
   - **영문 영상 1**: Dopamine Detox: How to Reset Your Brain from Social Media Addiction #Shorts
