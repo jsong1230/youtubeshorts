@@ -125,6 +125,18 @@ class Settings(BaseSettings):
     )
     DEFAULT_TAGS: Union[List[str], str] = Field(
         default_factory=lambda: [
+            # 필수 태그 (사용자 요청)
+            "AIInnerNote",
+            "Shorts",
+            "자기계발",
+            "재테크",
+            "마인드셋",
+            "돈공부",
+            "AI",
+            "SelfImprovement",
+            "PersonalFinance",
+            "Mindset",
+            # 기존 태그
             "shorts",
             "쇼츠",
             "ai",

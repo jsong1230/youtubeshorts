@@ -8,6 +8,20 @@
   - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
 
 
+- **2025-12-23 - 필수 태그 설정 추가**
+  - 모든 영상에 다음 태그가 자동으로 포함되도록 설정:
+    - `AIInnerNote`, `Shorts`, `자기계발`, `재테크`, `마인드셋`, `돈공부`
+    - `AI`, `SelfImprovement`, `PersonalFinance`, `Mindset`
+  - 변경 파일: `src/core/config.py`의 `DEFAULT_TAGS` 업데이트
+
+- **2025-12-24 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
 - **2025-12-23 - Video Uploaded (한글 1개, 영문 1개)**
   - **한국어 영상**: 직장인 투잡, 현실적인 월 50만 원 벌기 #Shorts
     - Video ID: `uNdjF3wrZ5c`
