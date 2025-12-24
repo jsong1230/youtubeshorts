@@ -1,12 +1,54 @@
 ## Recent Updates
 
-- **2025-12-24 - Video Uploaded**
+- **2025-12-25 - Video Uploaded**
   - **Title**: Test Topic #Shorts
   - **Topic**: Test Topic
   - **Type**: fact
   - **Video ID**: VIDEO_ID_123
   - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
 
+
+- **2025-12-25 - Video Uploaded (한글 3개, 영문 3개)**
+  - **한국어 영상 1**: 신입사원/주니어 필독: 센스 있는 업무 보고 3원칙 #Shorts
+    - 파일: `shorts_20251223_065106.mp4`
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **한국어 영상 2**: "죄송합니다" 금지령? 프로의 사과법 #Shorts
+    - 파일: `shorts_20251223_065319.mp4`
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **한국어 영상 3**: 무례한 사람에게 웃으며 대처하는 법 #Shorts
+    - 파일: `shorts_20251223_065840.mp4`
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **영문 영상 1**: Shadow Work Prompts: Journaling Questions to Heal Your Inner Self #Shorts
+    - 파일: `shorts_20251223_094619.mp4`
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **영문 영상 2**: Atomic Habits: The 1% Rule - How Small Changes Create Big Results #Shorts
+    - 파일: `shorts_20251223_094831.mp4`
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **영문 영상 3**: Monk Mode: 30-Day Challenge to Eliminate Distractions and Focus #Shorts
+    - 파일: `shorts_20251223_095034.mp4`
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - 업로드 후 모든 로컬 파일 삭제 완료
+
+- **2025-12-23 - Video Uploaded (한글 3개, 영문 3개)**
+  - **한국어 영상 1**: 오타니 쇼헤이의 목표 달성법 (만다라트 차트) #Shorts
+    - 파일: `shorts_20251223_064904.mp4`
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **한국어 영상 2**: 챗GPT(AI)로 칼퇴근하는 3가지 방법 #Shorts
+    - 파일: `shorts_20251223_065523.mp4`
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **한국어 영상 3**: '착한 아이 콤플렉스' 버리기 #Shorts
+    - 파일: `shorts_20251223_070046.mp4`
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **영문 영상 1**: The Art of Not Caring: How to Stop Worrying About What Others Think #Shorts
+    - 파일: `shorts_20251223_093933.mp4`
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **영문 영상 2**: Overcoming Imposter Syndrome: 5 Signs You're Suffering and How to Fix It #Shorts
+    - 파일: `shorts_20251223_094155.mp4`
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **영문 영상 3**: Romanticizing Your Life: Turn Your Ordinary Day Into Something Special #Shorts
+    - 파일: `shorts_20251223_094414.mp4`
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - 업로드 후 모든 로컬 파일 삭제 완료
 
 - **2025-12-23 - 필수 태그 설정 추가**
   - 모든 영상에 다음 태그가 자동으로 포함되도록 설정:
