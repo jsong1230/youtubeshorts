@@ -440,5 +440,83 @@
       "youtube": "VIDEO_ID_123"
     },
     "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2025-12-23T07:20:58.350490",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2025-12-23T10:24:17.285532",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2025-12-24T08:29:27.774335",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2025-12-24T21:22:48.848621",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2025-12-25T00:35:34.604073",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2025-12-26T09:49:26.311761",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
   }
 ]

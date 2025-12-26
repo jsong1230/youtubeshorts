@@ -529,6 +529,53 @@ def collect_topics(language="en"):
     if excluded_count > 0:
         print(f"🎬 영상 적합성 필터링: {excluded_count}개 제외됨 (계절/문화 주제)")
 
+    # 투자 관련 키워드 필터링 (자기계발 주제 선정 시 - 투자/재태크만 제외)
+    if language == "ko":
+        investment_keywords = [
+            "투자",
+            "부동산",
+            "주식",
+            "재태크",
+            "재테크",
+            "전세",
+            "월세",
+            "청약",
+            "적금",
+            "예금",
+            "연금",
+            "퇴직금",
+            "자산",
+            "포트폴리오",
+            "펀드",
+            "invest",
+            "finance",
+            "investment",
+            "real estate",
+            "stock",
+            "portfolio",
+        ]
+
+        original_count = len(all_topics)
+        filtered_topics = []
+
+        for topic in all_topics:
+            topic_lower = topic.lower()
+
+            # 투자/재태크 관련 키워드가 포함되어 있으면 제외
+            # 단, "연봉", "월급" 등은 자기계발 맥락에서 사용될 수 있으므로 제외하지 않음
+            if any(keyword in topic_lower for keyword in investment_keywords):
+                continue
+
+            # 나머지는 모두 포함 (자기계발, 생산성, 라이프스타일 등)
+            filtered_topics.append(topic)
+
+        all_topics = filtered_topics
+        excluded_count = original_count - len(all_topics)
+        if excluded_count > 0:
+            print(
+                f"💰 투자/재태크 관련 주제 필터링: {excluded_count}개 제외됨, {len(all_topics)}개 남음 (자기계발 중심)"
+            )
+
     # 언어별 필터링 (한국어는 한글만, 영어는 영어만)
     original_count = len(all_topics)
     all_topics = filter_by_language(all_topics, language=language)

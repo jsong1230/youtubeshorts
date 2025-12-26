@@ -1,12 +1,66 @@
 ## Recent Updates
 
-- **2025-12-25 - Video Uploaded**
+- **2025-12-26 - Video Uploaded**
   - **Title**: Test Topic #Shorts
   - **Topic**: Test Topic
   - **Type**: fact
   - **Video ID**: VIDEO_ID_123
   - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
 
+
+- **2025-12-25 - Video Uploaded (한글 3개, 영문 3개) - 모든 남은 영상 업로드 완료**
+  - **한국어 영상 1**: 마인드셋 리셋: 생각을 정리하고 삶의 방향을 바로 세우는 핵심 사고법 #Shorts
+    - Video ID: `r6Dz02jh9uU`
+    - URL: <https://www.youtube.com/watch?v=r6Dz02jh9uU>
+    - 상태: 비공개 업로드 완료 (2시간 후 예약)
+  - **한국어 영상 2**: 2030 사회초년생이 절대 하면 안 되는 소비 #Shorts
+    - Video ID: `d7KrRJeS0v8`
+    - URL: <https://www.youtube.com/watch?v=d7KrRJeS0v8>
+    - 상태: 비공개 업로드 완료 (2시간 후 예약)
+  - **한국어 영상 3**: 인생 인사이트: 오늘 바로 써먹을 수 있는 짧고 강한 깨달음 #Shorts
+    - Video ID: `CBodNv72u08`
+    - URL: <https://www.youtube.com/watch?v=CBodNv72u08>
+    - 상태: 비공개 업로드 완료 (2시간 후 예약)
+  - **영문 영상 1**: Sunday Reset Routine: How to Beat Monday Blues and Start Your Week Right #Shorts
+    - Video ID: `nLueNisNjqI`
+    - URL: <https://www.youtube.com/watch?v=nLueNisNjqI>
+    - 상태: 비공개 업로드 완료 (2시간 후 예약)
+  - **영문 영상 2**: The 2-Minute Rule: Stop Procrastinating and Start Taking Action #Shorts
+    - Video ID: `7uCAHYjOsKg`
+    - URL: <https://www.youtube.com/watch?v=7uCAHYjOsKg>
+    - 상태: 비공개 업로드 완료 (2시간 후 예약)
+  - **영문 영상 3**: Corporate Speak Translation: What Your Boss Really Means #Shorts
+    - Video ID: `jFc1e2EMwps`
+    - URL: <https://www.youtube.com/watch?v=jFc1e2EMwps>
+    - 상태: 비공개 업로드 완료 (2시간 후 예약)
+  - 업로드 후 모든 로컬 파일 삭제 완료
+
+- **2025-12-25 - Video Uploaded (한글 3개, 영문 3개)**
+  - **한국어 영상 1**: 번아웃이 왔다는 3가지 신호 (자가진단) #Shorts
+    - Video ID: `Zdy4TGahvwM`
+    - URL: <https://www.youtube.com/watch?v=Zdy4TGahvwM>
+    - 상태: 비공개 업로드 완료 (2시간 후 예약)
+  - **한국어 영상 2**: 돈의 기본기: 누구나 알아야 할 돈 관리와 투자 기초 개념 #Shorts
+    - Video ID: `LSTwbYEpw6w`
+    - URL: <https://www.youtube.com/watch?v=LSTwbYEpw6w>
+    - 상태: 비공개 업로드 완료 (2시간 후 예약)
+  - **한국어 영상 3**: 생산성 & 루틴: 시간을 지배하고 꾸준함을 만드는 일상 시스템 #Shorts
+    - Video ID: `M3j-D7Cxu_Q`
+    - URL: <https://www.youtube.com/watch?v=M3j-D7Cxu_Q>
+    - 상태: 비공개 업로드 완료 (2시간 후 예약)
+  - **영문 영상 1**: Eat That Frog: Do Your Hardest Task First Thing in the Morning #Shorts
+    - Video ID: `-gu4Lz3YVFA`
+    - URL: <https://www.youtube.com/watch?v=-gu4Lz3YVFA>
+    - 상태: 비공개 업로드 완료 (2시간 후 예약)
+  - **영문 영상 2**: Public Speaking Hacks: Overcome Fear and Speak with Confidence #Shorts
+    - Video ID: `XccCRuYzSoc`
+    - URL: <https://www.youtube.com/watch?v=XccCRuYzSoc>
+    - 상태: 비공개 업로드 완료 (2시간 후 예약)
+  - **영문 영상 3**: Setting Boundaries Without Guilt: How to Say No Politely but Firmly #Shorts
+    - Video ID: `q5TdzTjjdm8`
+    - URL: <https://www.youtube.com/watch?v=q5TdzTjjdm8>
+    - 상태: 비공개 업로드 완료 (2시간 후 예약)
+  - 업로드 후 모든 로컬 파일 삭제 완료
 
 - **2025-12-25 - Video Uploaded (한글 3개, 영문 3개)**
   - **한국어 영상 1**: 신입사원/주니어 필독: 센스 있는 업무 보고 3원칙 #Shorts
