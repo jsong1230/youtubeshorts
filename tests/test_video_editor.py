@@ -62,9 +62,19 @@ class TestVideoEditor:
             def add_mask(self):
                 # mask 객체도 FakeClip과 유사한 구조를 가져야 함
                 mask_obj = FakeClip(self.duration)
-                mask_obj.set_position = lambda pos: mask_obj
-                mask_obj.set_end = lambda end: mask_obj
-                mask_obj.set_start = lambda start, change_end=False: mask_obj
+
+                def set_position(pos):  # type: ignore
+                    return mask_obj
+
+                def set_end(end):  # type: ignore
+                    return mask_obj
+
+                def set_start(start, change_end=False):  # type: ignore
+                    return mask_obj
+
+                mask_obj.set_position = set_position  # type: ignore[method-assign]
+                mask_obj.set_end = set_end  # type: ignore[attr-defined]
+                mask_obj.set_start = set_start  # type: ignore[attr-defined]
                 self.mask = mask_obj
                 return self
 
