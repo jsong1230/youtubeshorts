@@ -165,7 +165,7 @@ def get_unique_pexels_videos(
 
     while len(unique_videos) < count and page <= max_pages:
         # API 파라미터 설정
-        params = {
+        params: Dict[str, Any] = {
             "query": query,
             "per_page": per_page,
             "page": page,
@@ -176,7 +176,7 @@ def get_unique_pexels_videos(
         try:
             # API 요청
             response = requests.get(
-                base_url, params=params, headers=headers, timeout=10
+                base_url, params=params, headers=headers, timeout=10  # type: ignore[arg-type]
             )
             response.raise_for_status()
 
