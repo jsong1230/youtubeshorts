@@ -518,5 +518,70 @@
       "youtube": "VIDEO_ID_123"
     },
     "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2026-01-10T15:06:12.362090",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2026-01-10T15:08:06.812031",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2026-01-10T15:09:02.408402",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2026-01-10T15:10:10.796372",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2026-01-10T15:11:12.288230",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
   }
 ]

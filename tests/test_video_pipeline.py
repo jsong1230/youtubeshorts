@@ -3,7 +3,7 @@ Tests for VideoPipeline class
 """
 
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from src.pipeline.video_pipeline import VideoPipeline
 
@@ -44,9 +44,18 @@ class TestVideoPipeline:
 
     def test_determine_parameters(self, pipeline):
         """Test determining video parameters"""
-        topic, language, request_id = pipeline._determine_parameters(
-            topic="How to save money", language=None
-        )
+        # 중복 주제 체크를 모킹하여 테스트 통과하도록 설정
+        with patch(
+            "src.analytics.channel_history_collector.ChannelHistoryCollector"
+        ) as mock_collector_class:
+            mock_collector = Mock()
+            mock_collector.get_existing_topics.return_value = []  # 빈 리스트 반환 (중복 없음)
+            mock_collector.check_topic_similarity.return_value = (False, None)  # 중복 아님
+            mock_collector_class.return_value = mock_collector
+
+            topic, language, request_id = pipeline._determine_parameters(
+                topic="How to save money", language=None
+            )
 
         assert topic == "How to save money"
         assert language == "en"
@@ -54,9 +63,18 @@ class TestVideoPipeline:
 
     def test_determine_parameters_korean(self, pipeline):
         """Test determining video parameters for Korean topic"""
-        topic, language, request_id = pipeline._determine_parameters(
-            topic="돈 버는 방법", language=None
-        )
+        # 중복 주제 체크를 모킹하여 테스트 통과하도록 설정
+        with patch(
+            "src.analytics.channel_history_collector.ChannelHistoryCollector"
+        ) as mock_collector_class:
+            mock_collector = Mock()
+            mock_collector.get_existing_topics.return_value = []  # 빈 리스트 반환 (중복 없음)
+            mock_collector.check_topic_similarity.return_value = (False, None)  # 중복 아님
+            mock_collector_class.return_value = mock_collector
+
+            topic, language, request_id = pipeline._determine_parameters(
+                topic="돈 버는 방법", language=None
+            )
 
         assert topic == "돈 버는 방법"
         assert language == "ko"

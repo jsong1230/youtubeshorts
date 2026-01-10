@@ -68,7 +68,17 @@ class TestShortsBot:
         # create_video_only uses self.pipeline.metadata_manager
         bot.pipeline.metadata_manager.generate_description = Mock(return_value="Desc")
 
-        with patch("config.VIDEO_OUTPUT_DIR", str(tmp_path)):
+        # Mock 중복 주제 체크를 건너뛰기 위해 ChannelHistoryCollector 모킹
+        # 실제 import 경로는 함수 내부에서 이루어지므로 해당 경로를 모킹
+        with patch("config.VIDEO_OUTPUT_DIR", str(tmp_path)), patch(
+            "src.analytics.channel_history_collector.ChannelHistoryCollector"
+        ) as mock_collector_class:
+            # 중복 체크가 항상 통과하도록 설정
+            mock_collector = Mock()
+            mock_collector.get_existing_topics.return_value = []  # 빈 리스트 반환 (중복 없음)
+            mock_collector.check_topic_similarity.return_value = (False, None)  # 중복 아님
+            mock_collector_class.return_value = mock_collector
+
             result = bot.create_video_only(topic="Test Topic")
 
         assert result == video_path
