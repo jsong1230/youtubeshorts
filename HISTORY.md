@@ -1,5 +1,32 @@
 ## Recent Updates
 
+- **2025-01-10 - Video Uploaded (한글 3개, 영문 3개)**
+  - **한국어 영상 1**: 월급이 통장을 스쳐 지나갈 때 꼭 봐야 하는 영상 #Shorts
+    - Video ID: `1M-Q61Y46zA`
+    - URL: <https://www.youtube.com/watch?v=1M-Q61Y46zA>
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **한국어 영상 2**: 남들과 비교되어 자존감이 낮아진 당신에게 #Shorts
+    - Video ID: `Bqv8wPNGqpE`
+    - URL: <https://www.youtube.com/watch?v=Bqv8wPNGqpE>
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **한국어 영상 3**: 퇴근 후 무기력함, 의지 탓이 아닙니다 (해결법) #Shorts
+    - Video ID: `Wgd0y9x5qwU`
+    - URL: <https://www.youtube.com/watch?v=Wgd0y9x5qwU>
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **영문 영상 1**: Why Your Salary is Keeping You Poor #Shorts
+    - Video ID: `1FfZ_d-J3PE`
+    - URL: <https://www.youtube.com/watch?v=1FfZ_d-J3PE>
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **영문 영상 2**: Discipline Eats Motivation for Breakfast #Shorts
+    - Video ID: `zD62WpNSiYk`
+    - URL: <https://www.youtube.com/watch?v=zD62WpNSiYk>
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - **영문 영상 3**: Stop Wasting Your 20s (The 2-Minute Rule) #Shorts
+    - Video ID: `OCrC2483MKw`
+    - URL: <https://www.youtube.com/watch?v=OCrC2483MKw>
+    - 상태: 비공개 업로드 완료 (다음날 0시 예약)
+  - 업로드 후 모든 로컬 파일 삭제 완료
+
 - **2025-01-10 - 기능 추가: 주제 중복 방지 시스템**
   - **주제 중복 체크 기능 추가**: 사용자가 직접 주제를 제공할 때도 자동으로 중복 체크 수행
   - **작동 방식**:

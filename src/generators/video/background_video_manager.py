@@ -468,9 +468,7 @@ class BackgroundVideoManager:
             # 랜덤으로 힐링 키워드 선택
             retry_keywords = [random.choice(healing_keywords)]
             unique_keywords = retry_keywords  # 힐링 모드에서도 unique_keywords 정의
-            logger.debug(
-                "   🌿 힐링 키워드 모드: 추천 키워드 무시, 힐링 키워드만 사용"
-            )
+            logger.debug("   🌿 힐링 키워드 모드: 추천 키워드 무시, 힐링 키워드만 사용")
         else:
             # 기존 로직 (힐링 모드가 아닐 때만)
             retry_keywords = []
