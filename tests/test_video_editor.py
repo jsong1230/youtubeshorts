@@ -91,7 +91,9 @@ class TestVideoEditor:
         assert result is not None
         # 실제 CompositeVideoClip 객체이거나 모킹된 객체일 수 있음
         # duration 속성이 있거나 모킹된 객체인지 확인
-        assert hasattr(result, 'duration') or result == fake_final or mock_composite.called
+        assert (
+            hasattr(result, "duration") or result == fake_final or mock_composite.called
+        )
 
     def test_apply_fade_effects(self, video_editor):
         """Test fade effect application"""

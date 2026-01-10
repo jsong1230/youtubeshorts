@@ -49,8 +49,13 @@ class TestVideoPipeline:
             "src.analytics.channel_history_collector.ChannelHistoryCollector"
         ) as mock_collector_class:
             mock_collector = Mock()
-            mock_collector.get_existing_topics.return_value = []  # 빈 리스트 반환 (중복 없음)
-            mock_collector.check_topic_similarity.return_value = (False, None)  # 중복 아님
+            mock_collector.get_existing_topics.return_value = (
+                []
+            )  # 빈 리스트 반환 (중복 없음)
+            mock_collector.check_topic_similarity.return_value = (
+                False,
+                None,
+            )  # 중복 아님
             mock_collector_class.return_value = mock_collector
 
             topic, language, request_id = pipeline._determine_parameters(
@@ -68,8 +73,13 @@ class TestVideoPipeline:
             "src.analytics.channel_history_collector.ChannelHistoryCollector"
         ) as mock_collector_class:
             mock_collector = Mock()
-            mock_collector.get_existing_topics.return_value = []  # 빈 리스트 반환 (중복 없음)
-            mock_collector.check_topic_similarity.return_value = (False, None)  # 중복 아님
+            mock_collector.get_existing_topics.return_value = (
+                []
+            )  # 빈 리스트 반환 (중복 없음)
+            mock_collector.check_topic_similarity.return_value = (
+                False,
+                None,
+            )  # 중복 아님
             mock_collector_class.return_value = mock_collector
 
             topic, language, request_id = pipeline._determine_parameters(
