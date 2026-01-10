@@ -6,7 +6,7 @@ import schedule
 import time
 from datetime import datetime
 import pytz  # type: ignore
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any, Union, List
 import json
 
 from src.generators.video_generator import AIVideoGenerator
@@ -85,7 +85,13 @@ class ShortsBot:
             use_multi_platform=self.use_multi_platform,
         )
 
-    def create_video_only(self, topic: str = None):
+    def create_video_only(
+        self,
+        topic: str = None,
+        language: str = None,
+        creative_brief: str = None,
+        preferred_keywords: List[str] = None,
+    ):
         """영상 생성만 (업로드 없음)"""
         # This method could also be moved to VideoPipeline or refactored to use it
         # For now, keeping it here but reusing some logic if possible, or leaving as is to minimize risk
@@ -97,21 +103,64 @@ class ShortsBot:
             logger.info("📹 영상 생성 테스트 시작")
             logger.info("=" * 50)
 
-            # 언어 자동 감지 (기본값: 영어, 주제가 한글이면 한글로 설정)
-            language = "en"  # 기본값을 영어로 변경
-            if topic:
-                import re
+            # 언어 처리: 명시적으로 지정된 경우 사용, 없으면 자동 감지
+            if language is None:
+                # 언어 자동 감지 (기본값: 영어, 주제가 한글이면 한글로 설정)
+                language = "en"  # 기본값을 영어로 변경
+                if topic:
+                    import re
 
-                korean_chars = len(re.findall(r"[가-힣]", topic))
-                total_chars = len(re.findall(r"[a-zA-Z가-힣]", topic))
-                if total_chars > 0 and korean_chars / total_chars > 0.5:
-                    language = "ko"
-                    logger.info(f"🌐 언어 자동 감지: 한국어 (주제: {topic})")
-                else:
-                    logger.info(f"🌐 언어 자동 감지: 영어 (주제: {topic})")
+                    korean_chars = len(re.findall(r"[가-힣]", topic))
+                    total_chars = len(re.findall(r"[a-zA-Z가-힣]", topic))
+                    if total_chars > 0 and korean_chars / total_chars > 0.5:
+                        language = "ko"
+                        logger.info(f"🌐 언어 자동 감지: 한국어 (주제: {topic})")
+                    else:
+                        logger.info(f"🌐 언어 자동 감지: 영어 (주제: {topic})")
+            else:
+                lang_label = "한국어" if language == "ko" else "영어"
+                logger.info(f"🌐 언어 명시 지정: {lang_label} (language={language})")
 
             # AI로 영상 생성 (매번 새로운 아이디어로)
             logger.info("📹 영상 생성 중...")
+
+            # 주제 중복 체크 (사용자가 직접 주제를 제공한 경우)
+            if topic:
+                try:
+                    from src.analytics.channel_history_collector import (
+                        ChannelHistoryCollector,
+                    )
+
+                    channel_collector = ChannelHistoryCollector()
+                    existing_topics = channel_collector.get_existing_topics(
+                        days=365
+                    )  # 최근 1년간의 주제 확인
+
+                    if existing_topics:
+                        is_similar, similar_topic = (
+                            channel_collector.check_topic_similarity(
+                                new_topic=topic,
+                                existing_topics=existing_topics,
+                                threshold=0.7,
+                            )
+                        )
+
+                        if is_similar:
+                            logger.warning("=" * 60)
+                            logger.warning(f"⚠️ 중복 주제 감지: '{topic}'")
+                            logger.warning(f"   유사한 기존 주제: '{similar_topic}'")
+                            logger.warning("=" * 60)
+                            logger.error(
+                                "❌ 동일하거나 유사한 주제가 이미 업로드되었습니다."
+                            )
+                            logger.error(
+                                "   다른 주제를 선택하거나 --force 플래그를 사용하여 강제로 생성할 수 있습니다."
+                            )
+                            return None
+                        else:
+                            logger.info(f"✅ 주제 중복 체크 통과: '{topic}'")
+                except Exception as e:
+                    logger.warning(f"⚠️ 주제 중복 체크 실패 (계속 진행): {e}")
 
             # 언어별 타겟 오디언스 설정
             from src.core.config import settings
@@ -127,6 +176,8 @@ class ShortsBot:
                 performance_prompt=None,
                 language=language,
                 target_audience=target_audience,
+                creative_brief=creative_brief,
+                preferred_keywords=preferred_keywords,
             )
 
             # 반환값 처리

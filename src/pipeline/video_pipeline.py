@@ -58,7 +58,9 @@ class VideoPipeline:
                 return None
 
             # 2. Determine parameters
-            topic, language, request_id = self._determine_parameters(topic, language)
+            topic, language, request_id = self._determine_parameters(
+                topic, language, force
+            )
 
             # 3. Get performance prompt
             performance_prompt = self._get_performance_prompt()
@@ -125,7 +127,7 @@ class VideoPipeline:
         return True
 
     def _determine_parameters(
-        self, topic: str, language: str
+        self, topic: str, language: str, force: bool = False
     ) -> Tuple[str, str, Optional[str]]:
         """Determines topic and language."""
         request_id = None
@@ -154,6 +156,43 @@ class VideoPipeline:
                 request_id = user_request["id"]
                 logger.info(f"📝 Using User Request: {topic} (ID: {request_id})")
                 self.user_request_handler.mark_in_progress(request_id)
+
+        # 주제 중복 체크 (사용자가 직접 주제를 제공한 경우, force 모드가 아닐 때만)
+        if topic and not force:
+            try:
+                from src.analytics.channel_history_collector import (
+                    ChannelHistoryCollector,
+                )
+
+                channel_collector = ChannelHistoryCollector()
+                existing_topics = channel_collector.get_existing_topics(
+                    days=365
+                )  # 최근 1년간의 주제 확인
+
+                if existing_topics:
+                    is_similar, similar_topic = (
+                        channel_collector.check_topic_similarity(
+                            new_topic=topic,
+                            existing_topics=existing_topics,
+                            threshold=0.7,
+                        )
+                    )
+
+                    if is_similar:
+                        logger.warning("=" * 60)
+                        logger.warning(f"⚠️ 중복 주제 감지: '{topic}'")
+                        logger.warning(f"   유사한 기존 주제: '{similar_topic}'")
+                        logger.warning("=" * 60)
+                        raise ValueError(
+                            f"동일하거나 유사한 주제가 이미 업로드되었습니다: '{similar_topic}'. "
+                            "다른 주제를 선택하거나 --force 플래그를 사용하여 강제로 생성할 수 있습니다."
+                        )
+                    else:
+                        logger.info(f"✅ 주제 중복 체크 통과: '{topic}'")
+            except ValueError:
+                raise  # 중복 주제 에러는 그대로 전달
+            except Exception as e:
+                logger.warning(f"⚠️ 주제 중복 체크 실패 (계속 진행): {e}")
 
         return topic, language, request_id
 

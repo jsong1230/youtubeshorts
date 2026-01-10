@@ -62,6 +62,11 @@ class Settings(BaseSettings):
     BACKGROUND_MUSIC_VOLUME: float = Field(
         0.25, validation_alias="BACKGROUND_MUSIC_VOLUME"
     )
+    # Healing & Nature keywords only (decouple from script topic)
+    # 기본값: True - 오디오는 정보성, 비디오는 항상 힐링/자연/동물만 사용
+    USE_HEALING_KEYWORDS_ONLY: bool = Field(
+        True, validation_alias="USE_HEALING_KEYWORDS_ONLY"
+    )
 
     @field_validator("BACKGROUND_MUSIC_VOLUME")
     @classmethod

@@ -44,6 +44,75 @@ def main():
     if len(sys.argv) > 1:
         command = sys.argv[1]
 
+        # 중복 방지 관리 명령어
+        if command == "check-video-ids" or command == "video-ids-status":
+            from src.utils.pexels_video_fetcher import (
+                get_used_video_count,
+                reset_used_video_ids,
+            )
+            from pathlib import Path
+
+            count = get_used_video_count()
+            file_path = Path(__file__).parent / "data" / "used_video_ids.json"
+
+            logger.info("=" * 60)
+            logger.info("📊 사용된 비디오 ID 현황")
+            logger.info("=" * 60)
+            logger.info(f"현재 사용된 비디오 ID 개수: {count}개")
+            logger.info(f"파일 위치: {file_path}")
+
+            if count > 100:
+                logger.warning(
+                    f"⚠️ 사용된 ID가 {count}개로 많습니다. 영상 생성이 어려울 수 있습니다."
+                )
+                logger.info(
+                    "💡 해결 방법: 'python main.py reset-video-ids' 명령어로 초기화하세요."
+                )
+            elif count > 50:
+                logger.info(
+                    f"ℹ️ 사용된 ID가 {count}개입니다. 필요시 초기화를 고려하세요."
+                )
+            else:
+                logger.info(f"✅ 사용된 ID가 {count}개로 정상 범위입니다.")
+
+            logger.info("=" * 60)
+            sys.exit(0)
+
+        elif command == "reset-video-ids" or command == "clear-video-ids":
+            from src.utils.pexels_video_fetcher import (
+                reset_used_video_ids,
+                get_used_video_count,
+            )
+
+            count_before = get_used_video_count()
+
+            logger.info("=" * 60)
+            logger.info("🗑️ 사용된 비디오 ID 초기화")
+            logger.info("=" * 60)
+            logger.info(f"초기화 전 사용된 ID 개수: {count_before}개")
+
+            # 사용자 확인
+            if len(sys.argv) > 2 and sys.argv[2] == "--yes":
+                confirm = True
+            else:
+                response = input("정말로 모든 사용 기록을 삭제하시겠습니까? (yes/no): ")
+                confirm = response.lower() in ["yes", "y"]
+
+            if confirm:
+                reset_used_video_ids()
+                count_after = get_used_video_count()
+                logger.info(
+                    f"✅ 초기화 완료! (이전: {count_before}개 → 현재: {count_after}개)"
+                )
+                logger.info(
+                    "이제 새로운 영상 생성 시 모든 비디오를 사용할 수 있습니다."
+                )
+            else:
+                logger.info("❌ 초기화가 취소되었습니다.")
+
+            logger.info("=" * 60)
+            sys.exit(0)
+
         if command == "topics" or command == "get-topics":
             # 주제 선정 명령어
             from get_topics import collect_topics
@@ -130,20 +199,40 @@ def main():
 
         if command == "test" or command == "generate":
             # 영상 생성만 (업로드 없음)
-            topic = sys.argv[2] if len(sys.argv) > 2 else None
-            bot.create_video_only(topic=topic)
+            # --ko, --en 플래그 확인
+            args = sys.argv[2:] if len(sys.argv) > 2 else []
+            language = None
+            if "--ko" in args:
+                language = "ko"
+                args = [arg for arg in args if arg != "--ko"]
+            elif "--en" in args:
+                language = "en"
+                args = [arg for arg in args if arg != "--en"]
+
+            topic = args[0] if args else None
+            bot.create_video_only(topic=topic, language=language)
 
         elif command == "upload":
             # 즉시 업로드
-            # --force, -f, --public 플래그 제외하고 주제 추출
+            # --force, -f, --public, --private, --ko, --en 플래그 제외하고 주제 추출
+            all_args = sys.argv[2:]
+            force = "--force" in all_args or "-f" in all_args
+            # 기본값: 비공개 (--public 플래그가 있으면 예약 업로드)
+            is_private = "--public" not in all_args  # --public이 없으면 비공개가 기본값
+
+            # 언어 플래그 확인
+            language = None
+            if "--ko" in all_args:
+                language = "ko"
+            elif "--en" in all_args:
+                language = "en"
+
+            # 플래그 제외하고 주제 추출
             args = [
                 arg
-                for arg in sys.argv[2:]
-                if arg not in ["--force", "-f", "--public", "--private"]
+                for arg in all_args
+                if arg not in ["--force", "-f", "--public", "--private", "--ko", "--en"]
             ]
-            force = "--force" in sys.argv or "-f" in sys.argv
-            # 기본값: 비공개 (--public 플래그가 있으면 예약 업로드)
-            is_private = "--public" not in sys.argv  # --public이 없으면 비공개가 기본값
 
             # 첫 번째 인자가 파일 경로인지 확인
             if args and (args[0].endswith(".mp4") or os.path.exists(args[0])):
@@ -239,7 +328,9 @@ def main():
                 # 주제로 새로 생성 및 업로드
                 topic = args[0] if args else None
                 # upload 명령어도 업로드 전 사용자 확인 받기 (규칙: 항상 확인 후 업로드)
-                bot.create_and_upload(topic=topic, force=force, auto_upload=False)
+                bot.create_and_upload(
+                    topic=topic, force=force, language=language, auto_upload=False
+                )
 
         elif command == "stats":
             # 통계 업데이트 및 리포트
@@ -630,10 +721,16 @@ def main():
         else:
             logger.info("사용법:")
             logger.info("  python main.py topics [개수]   - 주제 선정 (기본값: 3개)")
-            logger.info("  python main.py test [주제]     - 영상 생성만 (업로드 없음)")
             logger.info(
-                "  python main.py upload [주제/파일] [--force] [--public]  - 즉시 영상 생성 및 업로드"
+                "  python main.py test [주제] [--ko|--en]     - 영상 생성만 (업로드 없음)"
             )
+            logger.info("    --ko: 한국어로 생성")
+            logger.info("    --en: 영어로 생성 (기본값)")
+            logger.info(
+                "  python main.py upload [주제/파일] [--ko|--en] [--force] [--public]  - 즉시 영상 생성 및 업로드"
+            )
+            logger.info("    --ko: 한국어로 생성")
+            logger.info("    --en: 영어로 생성 (기본값)")
             logger.info("    --force: 중복 체크 건너뛰기")
             logger.info("    --public: 예약 업로드 모드 (기본값: 비공개 즉시 업로드)")
             logger.info(

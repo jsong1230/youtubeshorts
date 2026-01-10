@@ -7,8 +7,12 @@ class VideoConstants:
     """영상 생성 관련 상수"""
 
     # 해상도
-    VIDEO_WIDTH = 1080
-    VIDEO_HEIGHT = 1920
+    VIDEO_WIDTH = 1080  # 최종 영상 너비 (9:16 유지)
+    VIDEO_HEIGHT = 1920  # 최종 영상 높이 (9:16 유지)
+    # 콘텐츠 영역: 9:9 정사각형 (위아래 검은색 배경 포함)
+    CONTENT_WIDTH = 1080  # 콘텐츠 영역 너비 (정사각형)
+    CONTENT_HEIGHT = 1080  # 콘텐츠 영역 높이 (정사각형)
+    BLACK_BAR_HEIGHT = 420  # 위아래 검은색 배경 높이 (각각: (1920-1080)/2)
     VIDEO_FPS = 30
 
     # 영상 길이
@@ -40,12 +44,17 @@ class VideoConstants:
     # 자막
     SUBTITLE_BOTTOM_MARGIN = 150  # 하단 여백 (px)
     SUBTITLE_PADDING = 40  # 자막 배경 패딩 (px)
-    SUBTITLE_MAX_WIDTH = 900  # 자막 최대 너비 (px)
+    SUBTITLE_MAX_WIDTH = 840  # 자막 최대 너비 (px) - 좌우 30픽셀씩 줄임 (900 -> 840)
     SUBTITLE_BACKGROUND_ALPHA = 200  # 자막 배경 투명도
 
     # 폰트
-    BASE_FONT_SIZE = 100
-    FONT_SIZES = [90, 80, 70, 60]  # 폰트 크기 옵션
+    BASE_FONT_SIZE = 130  # 폰트 크기 30% 증가 (100 -> 130)
+    FONT_SIZES = [
+        117,
+        104,
+        91,
+        78,
+    ]  # 폰트 크기 옵션 (30% 증가: 90->117, 80->104, 70->91, 60->78)
     LINE_SPACING = 50  # 줄 간격 (px)
 
     # 배경 그룹

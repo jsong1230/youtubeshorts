@@ -4,6 +4,7 @@ Refactored to use helper classes for better modularity.
 """
 
 import os
+from typing import List
 from moviepy.editor import AudioFileClip
 
 from src.core.config import settings
@@ -46,6 +47,7 @@ class VideoCompositor:
         output_filename: str = None,
         content_type: ContentType = None,
         language: str = "ko",
+        preferred_keywords: List[str] = None,
     ) -> str:
         """
         스크립트로부터 영상 생성
@@ -152,7 +154,11 @@ class VideoCompositor:
         # 배경 그룹 준비 (BackgroundVideoManager 사용)
         background_groups, downloaded_video_ids = (
             self.background_manager.prepare_background_clips(
-                script, sentence_audio_durations, topic, language=language
+                script,
+                sentence_audio_durations,
+                topic,
+                language=language,
+                preferred_keywords=preferred_keywords,
             )
         )
 

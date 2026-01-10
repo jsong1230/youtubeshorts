@@ -6,9 +6,7 @@ import os
 import random
 import requests
 from typing import Optional, Tuple, List, Set
-from moviepy.editor import VideoFileClip, ImageClip, concatenate_videoclips
-from PIL import Image
-import numpy as np
+from moviepy.editor import VideoFileClip, concatenate_videoclips
 
 from src.core.config import settings
 from src.generators.video_constants import VideoConstants
@@ -94,97 +92,57 @@ class BackgroundVideoManager:
         audio_durations: List[float],
         topic: str,
         language: str = "ko",
+        preferred_keywords: List[str] = None,
     ) -> Tuple[List[Tuple[int, int, Optional[str], Optional[str]]], Set[int]]:
-        """배경 클립 준비 (성공 공식: 1.5~2초마다 화면 전환)
+        """배경 클립 준비 (자막과 완전히 독립, 각 문장마다 배경 영상 다운로드)
 
         Returns:
             tuple: (background_groups, downloaded_video_ids)
             background_groups: List of tuples (start_idx, end_idx, video_path, image_path)
+            각 문장마다 하나의 배경 영상이 할당되며, 영상은 원래 길이만큼 사용됨
         """
         background_groups: List[Tuple[int, int, Optional[str], Optional[str]]] = []
         use_background_video = settings.USE_BACKGROUND_VIDEO
         downloaded_video_ids: Set[int] = set()
 
-        # 성공 공식: 1.5~2초마다 화면 전환 (강제 적용 - 시간 기반)
-        # 문장 경계를 무시하고 시간만으로 그룹을 나눔
-        scene_change_min = VideoConstants.SCENE_CHANGE_MIN
-        scene_change_max = VideoConstants.SCENE_CHANGE_MAX
-
-        # 시간 기반으로 그룹 나누기 (1.5~2초마다 강제 전환)
-        i = 0
-
-        while i < len(script):
-            group_start = i
-            group_sentence = script[i]
-            group_duration = 0.0
-            group_end = i
-
-            # 목표 그룹 길이 (1.5~2초 범위 내에서 랜덤)
-            import random
-
-            target_duration = random.uniform(scene_change_min, scene_change_max)
-
-            # 목표 길이까지 문장 추가 (최대 2초까지만)
-            while group_end < len(script) and group_duration < target_duration:
-                next_duration = audio_durations[group_end]
-
-                # 다음 문장을 추가하면 목표 길이를 넘는지 확인
-                if group_duration + next_duration > target_duration:
-                    # 목표 길이에 거의 도달했으면 그룹 완성
-                    # (최소 1.5초는 확보)
-                    if group_duration >= scene_change_min:
-                        break
-                    # 최소 길이 미만이면 다음 문장 추가 (목표를 약간 넘어도 OK)
-
-                group_duration += next_duration
-                group_end += 1
-
-                # 최대 길이(2초)를 넘으면 강제로 그룹 완성
-                if group_duration >= scene_change_max:
-                    break
-
-            # 최소 하나의 문장은 포함 (안전장치)
-            if group_end == group_start:
-                group_end = group_start + 1
-                group_duration = audio_durations[group_start]
-
-            # 그룹 길이를 최대 2초로 제한 (강제 적용)
-            if group_duration > scene_change_max:
-                # 그룹을 2초로 제한하고, 나머지는 다음 그룹으로
-                group_duration = scene_change_max
-                # group_end는 그대로 유지 (다음 그룹에서 처리)
+        # 각 문장마다 독립적으로 배경 영상 다운로드 (자막과 완전히 독립)
+        for i, sentence in enumerate(script):
+            sentence_duration = audio_durations[i] if i < len(audio_durations) else 3.0
 
             bg_video_path = None
             if use_background_video and settings.PEXELS_API_KEY:
+                # 힐링 키워드 모드: 추천 키워드 무시, 항상 힐링/자연/동물 키워드만 사용
+                # 오디오는 정보성, 비디오는 항상 힐링/자연/동물만 사용
                 bg_video_path, video_id = self._download_with_retry_strategy(
-                    group_sentence,
+                    sentence,
                     i,
-                    group_duration,
+                    sentence_duration,  # 문장 길이만큼 요청 (하지만 영상은 원래 길이 사용)
                     topic,
                     downloaded_video_ids,
                     language=language,
+                    preferred_keyword=None,  # 추천 키워드 무시
                 )
                 if bg_video_path and video_id:
                     downloaded_video_ids.add(video_id)
 
             if not bg_video_path:
-                # 최종 폴백: 매우 일반적인 키워드로 재시도
+                # 최종 폴백: 힐링 키워드로 재시도
                 logger.warning(
-                    "   ⚠️ 배경 영상 다운로드 실패, 최종 폴백 키워드로 재시도..."
+                    f"   ⚠️ 배경 영상 다운로드 실패 (문장 {i+1}), 힐링 키워드로 재시도..."
                 )
-                final_fallback_keywords = [
+                healing_fallback_keywords = [
                     "nature",
-                    "calm",
-                    "peaceful",
-                    "abstract",
-                    "minimal",
-                    "zen",
+                    "calm nature",
+                    "peaceful nature",
+                    "relaxing nature",
+                    "forest",
+                    "ocean waves",
                 ]
-                for final_keyword in final_fallback_keywords:
+                for final_keyword in healing_fallback_keywords:
                     bg_video_path, video_id = self._download_with_retry_strategy(
                         final_keyword,
                         i,
-                        group_duration,
+                        sentence_duration,
                         topic,
                         downloaded_video_ids,
                         language=language,
@@ -192,26 +150,25 @@ class BackgroundVideoManager:
                     if bg_video_path and video_id:
                         downloaded_video_ids.add(video_id)
                         logger.info(
-                            f"   ✅ 최종 폴백 키워드로 배경 영상 다운로드 성공: {final_keyword}"
+                            f"   ✅ 힐링 폴백 키워드로 배경 영상 다운로드 성공: {final_keyword}"
                         )
                         break
 
                 if not bg_video_path:
                     # 최종 폴백: 이미지 사용 (배경 영상 대신)
                     logger.warning(
-                        f"   ⚠️ 배경 영상 다운로드 실패, 이미지 폴백 사용 (그룹 {i+1}-{group_end})"
+                        f"   ⚠️ 배경 영상 다운로드 실패, 이미지 폴백 사용 (문장 {i+1})"
                     )
-                    # 이미지 경로를 None으로 설정하여 이미지 생성기로 폴백
-                    bg_image_path = None  # 이미지 생성기가 처리하도록
-                    background_groups.append((i, group_end, None, bg_image_path))
+                    bg_image_path = None
+                    background_groups.append((i, i + 1, None, bg_image_path))
                     continue
 
-            background_groups.append((i, group_end, bg_video_path, None))
+            # 각 문장마다 하나의 배경 영상 (독립적)
+            background_groups.append((i, i + 1, bg_video_path, None))
             logger.info(
-                f"   📹 배경 그룹 {len(background_groups)}: 문장 {i+1}-{group_end}, 길이 {group_duration:.2f}초 (목표: {target_duration:.2f}초, 범위: {scene_change_min:.1f}~{scene_change_max:.1f}초)"
+                f"   📹 배경 영상 {i+1}: 문장 {i+1}, 영상 길이: 원본 길이 사용 (문장 길이: {sentence_duration:.2f}초)"
             )
-            logger.debug(f"      문장: {group_sentence[:50]}...")
-            i = group_end  # 다음 그룹 시작
+            logger.debug(f"      문장: {sentence[:50]}...")
 
         return background_groups, downloaded_video_ids
 
@@ -222,56 +179,107 @@ class BackgroundVideoManager:
         group_start: int,
         group_end: int,
     ) -> VideoFileClip:
-        """배경 영상 클립 생성"""
+        """배경 영상 클립 생성 (원래 길이만큼 사용, 자막과 독립)"""
         try:
             logger.debug(
-                f"   📹 배경 영상 로드 (그룹 {group_start+1}-{group_end}): {bg_video_path}"
+                f"   📹 배경 영상 로드 (문장 {group_start+1}): {bg_video_path}"
             )
             source_video = VideoFileClip(bg_video_path)
             source_duration = source_video.duration
             logger.debug(
-                f"   원본 영상 길이: {source_duration:.2f}초, 그룹 길이: {group_duration:.2f}초"
+                f"   원본 영상 길이: {source_duration:.2f}초 (문장 길이: {group_duration:.2f}초와 독립)"
             )
 
-            # Resize
+            # Resize to 9:9 square (content area)
             source_video = source_video.resize(
-                (VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT)
+                (VideoConstants.CONTENT_WIDTH, VideoConstants.CONTENT_HEIGHT)
             )
 
-            # Extend if needed
+            # 원래 영상 길이만큼 사용 (자막과 완전히 독립)
+            # 영상이 짧으면 반복, 길면 원래 길이만큼만 사용
             if source_duration < group_duration:
-                last_frame = source_video.get_frame(source_duration - 0.1)
-                last_frame_img = Image.fromarray(last_frame.astype("uint8"))
-
-                remaining_duration = group_duration - source_duration
-                last_frame_clip = ImageClip(np.array(last_frame_img)).set_duration(
-                    remaining_duration
-                )
-                last_frame_clip = last_frame_clip.resize(
-                    (VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT)
-                )
-
-                group_clip = concatenate_videoclips([source_video, last_frame_clip])
+                # 영상이 문장보다 짧으면 반복
+                repeat_count = int(group_duration / source_duration) + 1
+                repeated_clips = [source_video] * repeat_count
+                group_clip = concatenate_videoclips(repeated_clips)
+                # 필요한 길이만큼 자르기
+                group_clip = group_clip.subclip(0, group_duration)
                 source_video.close()
                 logger.debug(
-                    f"   ✅ 배경 영상 + 마지막 프레임 확장: {source_duration:.2f}초 + {remaining_duration:.2f}초 = {group_duration:.2f}초"
+                    f"   ✅ 배경 영상 반복: {source_duration:.2f}초 × {repeat_count}회 → {group_duration:.2f}초"
                 )
             else:
-                group_clip = source_video.subclip(0, group_duration)
-                source_video.close()
-                logger.debug(f"   ✅ 배경 영상 준비 완료: {group_duration:.2f}초")
+                # 영상이 문장보다 길면 원래 길이만큼만 사용 (자르지 않음)
+                group_clip = source_video  # 원래 길이 그대로 사용
+                logger.debug(
+                    f"   ✅ 배경 영상 원본 길이 사용: {source_duration:.2f}초 (문장 길이와 독립)"
+                )
 
             return group_clip
         except Exception as e:
             logger.error(f"   ❌ 배경 영상 사용 실패: {e}", exc_info=True)
             raise ValueError(
-                f"그룹 {group_start+1}-{group_end}의 배경 영상을 로드할 수 없습니다: {e}"
+                f"문장 {group_start+1}의 배경 영상을 로드할 수 없습니다: {e}"
             )
 
     def _extract_keywords(
         self, sentence: str, topic: str, language: str = "ko"
     ) -> Tuple[str, str]:
         """키워드 추출"""
+        # Healing & Nature 키워드만 사용 모드 (스크립트 주제와 무관하게)
+        # 오디오는 정보성, 비디오는 항상 힐링/자연/동물만 사용
+        if settings.USE_HEALING_KEYWORDS_ONLY:
+            healing_keywords = [
+                # Nature
+                "forest",
+                "ocean waves",
+                "mountain drone",
+                "rainforest",
+                "snow falling",
+                "beach sunset",
+                "mountain lake",
+                "autumn leaves",
+                "starry night",
+                "meadow",
+                "waterfall",
+                "desert dunes",
+                "tropical beach",
+                "bamboo forest",
+                "zen garden",
+                "clouds time lapse",
+                "sunset clouds",
+                # Animals
+                "cute cat",
+                "puppy",
+                "cute dog",
+                "kitten",
+                # Satisfying/Relaxing
+                "raining window",
+                "galaxy",
+                "flower field",
+                "bonfire",
+                "underwater",
+                "aurora",
+                "cherry blossom",
+                "campfire",
+                "coral reef",
+                "satisfying",
+                "satisfying video",
+                "satisfying nature",
+                "relaxing nature",
+                "calm nature",
+                "peaceful nature",
+                "meditation nature",
+                "zen nature",
+                "serene nature",
+                "tranquil nature",
+            ]
+            import random
+
+            selected_keyword = random.choice(healing_keywords)
+            logger.info(f"🌿 힐링 키워드 모드: '{selected_keyword}' 선택 (주제와 무관)")
+            return selected_keyword, selected_keyword
+
         # 한국어인 경우 한국 키워드 우선 추가
         korean_priority_keywords = []
         if language == "ko":
@@ -405,39 +413,103 @@ class BackgroundVideoManager:
         topic: str,
         exclude_video_ids: Set[int],
         language: str = "ko",
+        preferred_keyword: str = None,
     ) -> Tuple[Optional[str], Optional[int]]:
         """재시도 전략으로 배경 영상 다운로드"""
-        retry_keywords = []
-
-        # 1차: 문장 키워드
-        if self.media_downloader:
-            sentence_keywords = self.media_downloader.extract_keywords(
-                sentence, language=language
+        # 힐링 키워드 모드: 추천 키워드 및 주제/문장 키워드 무시
+        # 오디오는 정보성, 비디오는 항상 힐링/자연/동물만 사용
+        if settings.USE_HEALING_KEYWORDS_ONLY:
+            # 힐링 키워드 리스트 (중복 방지를 위해 매번 랜덤 선택)
+            healing_keywords = [
+                # Nature
+                "forest",
+                "ocean waves",
+                "mountain drone",
+                "rainforest",
+                "snow falling",
+                "beach sunset",
+                "mountain lake",
+                "autumn leaves",
+                "starry night",
+                "meadow",
+                "waterfall",
+                "desert dunes",
+                "tropical beach",
+                "bamboo forest",
+                "zen garden",
+                "clouds time lapse",
+                "sunset clouds",
+                # Animals
+                "cute cat",
+                "puppy",
+                "cute dog",
+                "kitten",
+                # Satisfying/Relaxing
+                "raining window",
+                "galaxy",
+                "flower field",
+                "bonfire",
+                "underwater",
+                "aurora",
+                "cherry blossom",
+                "campfire",
+                "coral reef",
+                "satisfying",
+                "satisfying video",
+                "satisfying nature",
+                "relaxing nature",
+                "calm nature",
+                "peaceful nature",
+                "meditation nature",
+                "zen nature",
+                "serene nature",
+                "tranquil nature",
+            ]
+            # 랜덤으로 힐링 키워드 선택
+            retry_keywords = [random.choice(healing_keywords)]
+            unique_keywords = retry_keywords  # 힐링 모드에서도 unique_keywords 정의
+            logger.debug(
+                "   🌿 힐링 키워드 모드: 추천 키워드 무시, 힐링 키워드만 사용"
             )
-            if sentence_keywords:
-                retry_keywords.append(sentence_keywords[0])
+        else:
+            # 기존 로직 (힐링 모드가 아닐 때만)
+            retry_keywords = []
 
-        # 2차: 주제 키워드
-        if topic and self.media_downloader:
-            topic_keywords = self.media_downloader.extract_keywords(
-                topic, language=language
-            )
-            if topic_keywords and topic_keywords[0] not in retry_keywords:
-                retry_keywords.append(topic_keywords[0])
+            # 최우선: 사용자가 제공한 추천 키워드
+            if preferred_keyword:
+                retry_keywords.append(preferred_keyword)
+                logger.debug(f"   🎯 추천 키워드 최우선 사용: {preferred_keyword}")
 
-        # 3차: 주제 카테고리별 특화 키워드
-        category_keywords = self._get_category_keywords(topic, language=language)
-        retry_keywords.extend(category_keywords)
+            # 1차: 문장 키워드
+            if self.media_downloader:
+                sentence_keywords = self.media_downloader.extract_keywords(
+                    sentence, language=language
+                )
+                if sentence_keywords:
+                    retry_keywords.append(sentence_keywords[0])
 
-        # 4차: 귀여운 이미지/영상 우선 선택을 위한 키워드 추가
-        cute_keywords = ["cute", "adorable", "aesthetic", "beautiful", "charming"]
-        retry_keywords.extend(cute_keywords)
+            # 2차: 주제 키워드
+            if topic and self.media_downloader:
+                topic_keywords = self.media_downloader.extract_keywords(
+                    topic, language=language
+                )
+                if topic_keywords and topic_keywords[0] not in retry_keywords:
+                    retry_keywords.append(topic_keywords[0])
 
-        # 키워드 다양성 확보
-        unique_keywords = list(dict.fromkeys(retry_keywords))
-        random.shuffle(unique_keywords)
+            # 3차: 주제 카테고리별 특화 키워드
+            category_keywords = self._get_category_keywords(topic, language=language)
+            retry_keywords.extend(category_keywords)
 
-        for retry_idx, keyword in enumerate(unique_keywords[:8]):
+            # 4차: 귀여운 이미지/영상 우선 선택을 위한 키워드 추가
+            cute_keywords = ["cute", "adorable", "aesthetic", "beautiful", "charming"]
+            retry_keywords.extend(cute_keywords)
+
+            # 키워드 다양성 확보
+            unique_keywords = list(dict.fromkeys(retry_keywords))
+            random.shuffle(unique_keywords)
+            retry_keywords = unique_keywords[:8]
+
+        for retry_idx, keyword in enumerate(retry_keywords):
             bg_video_path, video_id = self.download_video_for_sentence(
                 sentence,
                 index,
@@ -635,95 +707,141 @@ class BackgroundVideoManager:
         duration: float,
         exclude_video_ids: Optional[Set[int]],
     ) -> Tuple[Optional[str], Optional[int]]:
-        """Pexels에서 영상 다운로드"""
+        """Pexels에서 영상 다운로드 (중복 방지 및 최신 영상 우선)"""
         try:
-            # /v1/videos/search 엔드포인트 사용 (올바른 API 경로)
-            pexels_video_url = f"https://api.pexels.com/v1/videos/search?query={english_keyword}&per_page=80&orientation=portrait"
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-                "Authorization": settings.PEXELS_API_KEY,
-            }
+            # 전역적으로 사용된 비디오 ID 로드 (중복 방지)
+            from src.utils.pexels_video_fetcher import (
+                _load_used_video_ids,
+                _add_video_id,
+            )
 
-            response = self.http_get_with_retry(pexels_video_url, headers=headers)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("videos") and len(data["videos"]) > 0:
-                    if exclude_video_ids is None:
-                        exclude_video_ids = set()
+            global_used_video_ids = _load_used_video_ids()
+            if exclude_video_ids is None:
+                exclude_video_ids = set()
+            # 전역 사용 기록과 현재 세션 제외 목록 병합
+            all_excluded_ids = exclude_video_ids | global_used_video_ids
 
-                    # Collect available videos with quality scoring
-                    available_videos = []
-                    for video in data["videos"]:
-                        video_id = video.get("id", 0)
-                        if video_id in exclude_video_ids:
+            # 최신 영상 우선 검색을 위해 sort='newest' 파라미터 추가
+            # 페이지네이션을 통해 더 많은 옵션 탐색
+            max_pages = 3  # 최대 3페이지까지 검색 (240개 비디오)
+            per_page = 80
+
+            for page in range(1, max_pages + 1):
+                pexels_video_url = f"https://api.pexels.com/v1/videos/search?query={english_keyword}&per_page={per_page}&orientation=portrait&page={page}&sort=newest"
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+                    "Authorization": settings.PEXELS_API_KEY,
+                }
+
+                response = self.http_get_with_retry(pexels_video_url, headers=headers)
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("videos") and len(data["videos"]) > 0:
+
+                        # Collect available videos with quality scoring
+                        available_videos = []
+                        for video in data["videos"]:
+                            video_id = video.get("id", 0)
+                            # 전역 사용 기록과 현재 세션 제외 목록 모두 확인
+                            if video_id in all_excluded_ids:
+                                continue
+
+                            duration_sec = video.get("duration", 0)
+                            if duration_sec < 10:
+                                continue
+
+                            files = video.get("video_files", [])
+                            best_file = None
+                            min_diff = float("inf")
+
+                            for file in files:
+                                if file.get("quality") == "hd" and file.get(
+                                    "width", 0
+                                ) < file.get("height", 0):
+                                    diff = abs(file.get("height", 0) - 1920)
+                                    if diff < min_diff:
+                                        min_diff = diff
+                                        best_file = file
+
+                            if best_file:
+                                # Calculate quality score
+                                quality_score = self._calculate_video_quality_score(
+                                    best_file, duration_sec, english_keyword, video
+                                )
+
+                                available_videos.append(
+                                    {
+                                        "id": video_id,
+                                        "url": best_file.get("link"),
+                                        "duration": duration_sec,
+                                        "height": best_file.get("height", 0),
+                                        "quality_score": quality_score,
+                                    }
+                                )
+
+                        # Select from top quality videos (prioritize quality score)
+                        if available_videos:
+                            # Sort by quality score (descending), then by height match
+                            available_videos.sort(
+                                key=lambda x: (
+                                    -x["quality_score"],
+                                    abs(x["height"] - 1920),
+                                )
+                            )
+                            # Select from top 5 highest quality videos
+                            top_videos = available_videos[
+                                : min(5, len(available_videos))
+                            ]
+                            video_data = random.choice(top_videos)
+
+                            video_url = video_data["url"]
+                            video_id = video_data["id"]
+                            bg_video_path = os.path.join(
+                                settings.TEMP_DIR, f"bg_video_{index}_{video_id}.mp4"
+                            )
+
+                            video_response = self.http_get_with_retry(
+                                video_url, stream=True
+                            )
+                            if video_response.status_code == 200:
+                                with open(bg_video_path, "wb") as f:
+                                    for chunk in video_response.iter_content(
+                                        chunk_size=1024
+                                    ):
+                                        if chunk:
+                                            f.write(chunk)
+
+                                # 전역 사용 기록에 추가 (중복 방지)
+                                _add_video_id(video_id)
+                                logger.info(
+                                    f"✅ Pexels 배경 영상 다운로드 성공: {english_keyword} (ID: {video_id}, 페이지 {page}, 최신순)"
+                                )
+                                return bg_video_path, video_id
+
+                        # 현재 페이지에서 적합한 영상을 찾지 못했으면 다음 페이지로
+                        if page < max_pages:
+                            logger.debug(
+                                f"   페이지 {page}에서 적합한 영상 없음, 다음 페이지 검색..."
+                            )
                             continue
-
-                        duration_sec = video.get("duration", 0)
-                        if duration_sec < 10:
+                        else:
+                            # 마지막 페이지까지 검색했지만 적합한 영상이 없음
+                            break
+                    else:
+                        # 비디오가 없는 페이지면 다음 페이지로
+                        if page < max_pages:
                             continue
-
-                        files = video.get("video_files", [])
-                        best_file = None
-                        min_diff = float("inf")
-
-                        for file in files:
-                            if file.get("quality") == "hd" and file.get(
-                                "width", 0
-                            ) < file.get("height", 0):
-                                diff = abs(file.get("height", 0) - 1920)
-                                if diff < min_diff:
-                                    min_diff = diff
-                                    best_file = file
-
-                        if best_file:
-                            # Calculate quality score
-                            quality_score = self._calculate_video_quality_score(
-                                best_file, duration_sec, english_keyword, video
-                            )
-
-                            available_videos.append(
-                                {
-                                    "id": video_id,
-                                    "url": best_file.get("link"),
-                                    "duration": duration_sec,
-                                    "height": best_file.get("height", 0),
-                                    "quality_score": quality_score,
-                                }
-                            )
-
-                    # Select from top quality videos (prioritize quality score)
-                    if available_videos:
-                        # Sort by quality score (descending), then by height match
-                        available_videos.sort(
-                            key=lambda x: (
-                                -x["quality_score"],
-                                abs(x["height"] - 1920),
-                            )
+                        else:
+                            break
+                else:
+                    # API 오류 시 다음 페이지로 시도
+                    if page < max_pages:
+                        logger.warning(
+                            f"   ⚠️ 페이지 {page} API 오류 (코드: {response.status_code}), 다음 페이지 시도..."
                         )
-                        # Select from top 5 highest quality videos
-                        top_videos = available_videos[: min(5, len(available_videos))]
-                        video_data = random.choice(top_videos)
-
-                        video_url = video_data["url"]
-                        video_id = video_data["id"]
-                        bg_video_path = os.path.join(
-                            settings.TEMP_DIR, f"bg_video_{index}_{video_id}.mp4"
-                        )
-
-                        video_response = self.http_get_with_retry(
-                            video_url, stream=True
-                        )
-                        if video_response.status_code == 200:
-                            with open(bg_video_path, "wb") as f:
-                                for chunk in video_response.iter_content(
-                                    chunk_size=1024
-                                ):
-                                    if chunk:
-                                        f.write(chunk)
-                            logger.info(
-                                f"✅ Pexels 배경 영상 다운로드 성공: {english_keyword} (ID: {video_id})"
-                            )
-                            return bg_video_path, video_id
+                        continue
+                    else:
+                        break
         except Exception as e:
             logger.warning(f"   Pexels API 실패: {e}", exc_info=True)
             # 상세 에러 정보 로깅

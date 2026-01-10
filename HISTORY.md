@@ -1,5 +1,17 @@
 ## Recent Updates
 
+- **2025-01-10 - 기능 추가: 주제 중복 방지 시스템**
+  - **주제 중복 체크 기능 추가**: 사용자가 직접 주제를 제공할 때도 자동으로 중복 체크 수행
+  - **작동 방식**:
+    - 최근 1년간 업로드된 주제를 `data/upload_log.json`과 `data/videos.db`에서 자동 수집
+    - 새 주제가 기존 주제와 유사도 70% 이상이면 중복으로 판단하여 생성 중단
+    - 정확히 일치하거나 포함 관계인 경우도 중복으로 판단
+  - **적용 위치**:
+    - `create_video_only`: 영상 생성만 할 때 중복 체크
+    - `VideoPipeline._determine_parameters`: 업로드 포함 전체 파이프라인에서 중복 체크
+  - **강제 생성 옵션**: `--force` 플래그로 중복 체크를 건너뛰고 강제 생성 가능
+  - **문서 업데이트**: `README.md`에 주제 중복 방지 기능 설명 추가
+
 - **2025-12-26 - Video Uploaded**
   - **Title**: Test Topic #Shorts
   - **Topic**: Test Topic

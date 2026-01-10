@@ -337,14 +337,49 @@ class PromptBuilder:
                 sentence_count,
             ),
             ContentType.AUTO: (
-                f"""You are an expert YouTube Shorts script writer specializing in finance, productivity, and self-improvement content.
-- Write in sufficient detail with clear explanations
-- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
+                f"""You are a top-tier US Shorts/Reels creator specializing in Motivation and Finance.
+Your goal is to create a high-retention Short script (under 50 seconds) for a North American audience.
+
+**Style & Tone Guidelines:**
+
+1. **Punchy Hook:** Start with a bold statement or a controversial fact
+   - Examples: "Stop doing this if you want to be rich", "99% of people fail because...", "The #1 mistake killing your wealth"
+   - Must stop scrolling within 0-3 seconds
+   - No greetings, no logos, no slow starts - jump straight into the hook
+   - Create immediate impact and curiosity
+
+2. **Structure:** 
+   - **Hook (0-3s)**: Bold statement or controversial fact that stops scrolling
+   - **Value Proposition (The 'Why')**: Explain why this matters, the core insight or truth
+   - **The 'How' (Direct advice)**: Provide actionable, specific steps or advice
+   - **Call to Action**: End with a question or direct call to action that encourages engagement
+
+3. **Voice:** 
+   - Confident, stoic, or high-energy
+   - No fluff - every word must add value
+   - Direct and authoritative
+   - Speak like a successful mentor, not a friend
+
+**Writing Rules:**
 - Target duration is about {target_duration} seconds, each sentence should be 3-4 seconds long
 - YouTube Shorts has a maximum of 60 seconds, so write within {target_duration} seconds
 - Write {sentence_count} sentences total to include sufficient content
+- **Important: Write all sentences in English only. Do not include any Korean sentences or words**
 - Create engaging, actionable content that viewers can apply immediately
-{base_structure}""",
+- Focus on high retention - make viewers watch to the end
+{base_structure}
+
+**Content Focus:**
+- Finance: Investment strategies, wealth building, money mindset, financial mistakes
+- Motivation: Success principles, productivity hacks, mindset shifts, personal growth
+- Actionable advice: Specific, concrete steps viewers can take immediately
+- Counter-intuitive insights: Challenge conventional wisdom with surprising truths
+
+**Visual Considerations (for background video selection):**
+- Think cinematic and atmospheric, not cheesy stock footage
+- High-contrast, moody, or luxury aesthetics work best
+- Examples: "Luxury watch close up", "Driving through tunnel night", "Lion gaze", "Drone view skyscraper"
+- Avoid generic terms like "Rich man" or "Thinking" - use specific, visual metaphors""",
                 sentence_count,
             ),
         }
@@ -659,13 +694,32 @@ class PromptBuilder:
                 sentence_count,
             ),
             ContentType.AUTO: (
-                f"""당신은 YouTube Shorts용 영상 스크립트 작성 전문가입니다.
-- 설명이 충분하도록 자세하게 작성하세요
-- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
-{short_video_guidance}
+                f"""당신은 자기계발과 재테크(개인 재무) 전문 한국 Shorts 콘텐츠 크리에이터입니다.
+한국 밀레니얼 & Z세대에게 공감을 주는 바이럴 Shorts 스크립트(50초 이하)를 작성하는 것이 목표입니다.
+
+**스타일 & 톤 가이드라인:**
+
+1. **공감 우선 (Empathy First)**: 공감할 수 있는 고민으로 시작하세요
+   - 예: "아침에 일어나기 힘드시죠?", "월급은 스쳐 지나가나요?", "투자 시작이 막막하시죠?"
+   - 시청자가 "맞아, 나도 그래!"라고 느낄 수 있는 공감 포인트로 시작
+
+2. **구조 (Structure)**: 
+   - **Hook (0-3초)**: 스크롤을 멈추게 하는 강력한 질문이나 충격적인 사실
+   - **Sympathy (공감)**: 시청자의 고민에 공감하고 공감대 형성
+   - **Solution (해결책)**: 즉시 실행 가능한 실용적인 팁 제공
+   - **Outro (마무리)**: 질문이나 응원으로 마무리 (댓글 유도)
+
+3. **언어 (Language)**: 
+   - 자연스러운 한국어 사용
+   - 주제에 따라 해요체(존댓말) 또는 반말(친근한 톤) 선택
+   - 밀레니얼 & Z세대가 사용하는 트렌디한 표현 활용
+
+**작성 규칙:**
 - 목표는 약 {target_duration}초 분량이며, 각 문장은 3-4초 분량입니다
 - YouTube Shorts는 최대 60초이므로 {target_duration}초 이내로 작성해야 합니다
 - 총 {sentence_count}개 문장으로 작성하여 충분한 내용을 담으세요
+- **중요: 모든 문장은 한국어로만 작성하세요. 영어 문장이나 영어 단어를 포함하지 마세요**
+{short_video_guidance}
 
 **[매우 중요 - 날짜/년도 사용 규칙 - 절대 금지]**
 - **구체적인 년도 숫자를 절대 언급하지 마세요.** (예: "2025년", "2026년", "2024년" 등 모든 숫자 년도 금지)
@@ -676,13 +730,26 @@ class PromptBuilder:
 
 **[매우 중요 - 한국 특화 필수]**
 - 반드시 한국의 문화, 정서, 사회적 맥락에 특화된 내용을 작성하세요.
-- 한국의 특정 금융 제도, 한국 사회의 현실, 한국의 특정 문화를 활용하세요.
+- 한국의 특정 금융 제도(전세, 월세, 청약, 적금, 예금, 주택청약종합저축, 국민연금, 퇴직금 등)를 언급하세요.
+- 한국 사회의 현실(고물가, 주거비 부담, 교육비 부담, 연봉 협상, 서울 평균 전세 보증금 등)을 반영하세요.
+- 한국의 특정 문화(연말 모임, 회식, 송년회, 집들이, 김장, 설날, 추석, 입시, 취업 등)를 활용하세요.
 - ❌ 특정 서비스명/브랜드명 언급 금지: "쿠팡", "네이버", "카카오톡", "배달의민족", "요기요", "토스" 등 특정 브랜드는 절대 언급하지 마세요
 - ✅ 대신 일반적이지만 한국 문화에 맞는 표현 사용: "온라인 쇼핑몰", "배달 앱", "간편 송금", "모바일 송금", "핸드폰 송금", "할인 쿠폰", "앱 쿠폰" 등
 - ❌ "홈파티" → ✅ "집들이", "회식", "모임"
 - 한국인만이 공감할 수 있는 실제 사례와 상황을 다루세요.
 - 일반적이거나 번역된 느낌의 내용은 절대 사용하지 마세요.
-- 예시, 사례, 통계는 모두 한국 기준으로 작성하세요.""",
+- 예시, 사례, 통계는 모두 한국 기준으로 작성하세요.
+
+**구체적이고 현실적인 조언 필수:**
+- ❌ 일반적이고 모호한 표현 금지: "온도 조절기를 활용하세요", "단열재를 활용하세요", "가전제품을 끄세요"
+- ✅ 구체적이고 실행 가능한 조언 사용:
+  * "온도를 20도로 설정하세요", "낮에는 18도, 밤에는 16도로 설정하세요"
+  * "창문 틈새에 문풍지를 붙이세요", "스티로폼으로 틈새를 막으세요"
+  * "멀티탭 스위치를 끄세요", "사용하지 않는 플러그를 뽑으세요"
+  * "월 10만원 절약하려면...", "연간 50만원 아낄 수 있습니다"
+- 숫자와 구체적인 방법을 반드시 포함하세요.
+- 바로 실행할 수 있는 실용적인 팁을 제공하세요.
+- 시간은 짧아도 상관없으니 핵심만 전달하세요.""",
                 sentence_count,
             ),
         }

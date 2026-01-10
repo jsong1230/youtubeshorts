@@ -41,7 +41,8 @@ class SubtitleRenderer:
                     subtitle_text = key_words
 
             font_path = self._get_font_path(language)
-            font_size = 60 if subtitle_mode == "full_sentence" else 80
+            # 폰트 크기 30% 증가: 60 -> 78, 80 -> 104
+            font_size = 78 if subtitle_mode == "full_sentence" else 104
 
             # Try ImageMagick TextClip first
             try:
@@ -282,7 +283,7 @@ class SubtitleRenderer:
                 stroke_color="black",
                 stroke_width=3,
                 method="caption",
-                size=(1000, None),
+                size=(940, None),  # 좌우 30픽셀씩 줄임 (1000 -> 940)
                 align="center",
             )
             txt_clip = txt_clip.set_start(0)
@@ -338,7 +339,7 @@ class SubtitleRenderer:
             pil_font = self._get_pil_font(font_path, font_size, language)
 
             # Wrap text
-            max_width = 1000
+            max_width = 940  # 좌우 30픽셀씩 줄임 (1000 -> 940)
             words = subtitle_text.split()
             lines = []
             current_line: List[str] = []

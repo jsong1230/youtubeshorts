@@ -6,6 +6,7 @@ Refactored to use component-based architecture.
 import os
 import time
 from pathlib import Path
+from typing import List
 
 try:
     from openai import OpenAI
@@ -126,6 +127,8 @@ class AIVideoGenerator:
         content_type: ContentType = None,
         language: str = "ko",
         target_audience: str = None,
+        creative_brief: str = None,
+        preferred_keywords: List[str] = None,
     ) -> tuple:
         """
         AI를 활용하여 YouTube Shorts 영상 생성 (Main Orchestration Method)
@@ -146,6 +149,15 @@ class AIVideoGenerator:
 
         # 2. 스크립트 생성
         logger.info("📝 스크립트 생성 중...")
+        # 기획 의도가 있으면 프롬프트에 추가
+        if creative_brief:
+            brief_prompt = f"\n\n**기획 의도 및 특징:**\n{creative_brief}\n\n위 기획 의도에 맞춰 스크립트를 작성하세요."
+            if performance_prompt:
+                performance_prompt = performance_prompt + brief_prompt
+            else:
+                performance_prompt = brief_prompt
+            logger.info(f"📋 기획 의도 반영: {creative_brief[:50]}...")
+
         script = self.script_generator.generate_script(
             topic,
             performance_prompt=performance_prompt,
@@ -190,6 +202,7 @@ class AIVideoGenerator:
                 output_filename=output_filename,
                 content_type=content_type,
                 language=language,
+                preferred_keywords=preferred_keywords,
             )
         except Exception as e:
             logger.error(f"❌ 영상 합성 실패: {e}", exc_info=True)
