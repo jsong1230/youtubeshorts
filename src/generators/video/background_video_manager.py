@@ -94,29 +94,58 @@ class BackgroundVideoManager:
         language: str = "ko",
         preferred_keywords: List[str] = None,
     ) -> Tuple[List[Tuple[int, int, Optional[str], Optional[str]]], Set[int]]:
-        """배경 클립 준비 (자막과 완전히 독립, 각 문장마다 배경 영상 다운로드)
+        """배경 클립 준비 (5초마다 영상 전환)
 
         Returns:
             tuple: (background_groups, downloaded_video_ids)
             background_groups: List of tuples (start_idx, end_idx, video_path, image_path)
-            각 문장마다 하나의 배경 영상이 할당되며, 영상은 원래 길이만큼 사용됨
+            5초마다 하나의 배경 영상이 할당되며, 영상은 5초 길이로 사용됨
         """
         background_groups: List[Tuple[int, int, Optional[str], Optional[str]]] = []
         use_background_video = settings.USE_BACKGROUND_VIDEO
         downloaded_video_ids: Set[int] = set()
 
-        # 각 문장마다 독립적으로 배경 영상 다운로드 (자막과 완전히 독립)
-        for i, sentence in enumerate(script):
-            sentence_duration = audio_durations[i] if i < len(audio_durations) else 3.0
+        # 총 길이 계산
+        total_duration = sum(audio_durations)
+        change_interval = VideoConstants.BACKGROUND_CHANGE_INTERVAL  # 5초
 
+        # 5초 단위로 그룹화
+        current_time = 0.0
+        segment_index = 0
+
+        while current_time < total_duration:
+            group_end_time = min(current_time + change_interval, total_duration)
+            group_duration = group_end_time - current_time
+
+            # 이 구간에 포함되는 문장 인덱스 찾기
+            accumulated_time = 0.0
+            group_start_idx = len(script)  # 초기값: 마지막 인덱스
+            group_end_idx = 0
+
+            for i, duration in enumerate(audio_durations):
+                sentence_start = accumulated_time
+                sentence_end = accumulated_time + duration
+
+                # 구간과 겹치는 문장 찾기
+                if sentence_start < group_end_time and sentence_end > current_time:
+                    if group_start_idx == len(script):  # 첫 문장
+                        group_start_idx = i
+                    group_end_idx = i + 1
+                accumulated_time += duration
+
+            # 문장이 없으면 스킵
+            if group_start_idx >= len(script):
+                current_time = group_end_time
+                continue
+
+            # 배경 영상 다운로드
             bg_video_path = None
             if use_background_video and settings.PEXELS_API_KEY:
                 # 힐링 키워드 모드: 추천 키워드 무시, 항상 힐링/자연/동물 키워드만 사용
-                # 오디오는 정보성, 비디오는 항상 힐링/자연/동물만 사용
                 bg_video_path, video_id = self._download_with_retry_strategy(
-                    sentence,
-                    i,
-                    sentence_duration,  # 문장 길이만큼 요청 (하지만 영상은 원래 길이 사용)
+                    f"segment_{segment_index}",  # 구간 식별용
+                    group_start_idx,
+                    group_duration,  # 5초 길이
                     topic,
                     downloaded_video_ids,
                     language=language,
@@ -128,7 +157,7 @@ class BackgroundVideoManager:
             if not bg_video_path:
                 # 최종 폴백: 힐링 키워드로 재시도
                 logger.warning(
-                    f"   ⚠️ 배경 영상 다운로드 실패 (문장 {i+1}), 힐링 키워드로 재시도..."
+                    f"   ⚠️ 배경 영상 다운로드 실패 (구간 {current_time:.1f}~{group_end_time:.1f}초), 힐링 키워드로 재시도..."
                 )
                 healing_fallback_keywords = [
                     "nature",
@@ -141,8 +170,8 @@ class BackgroundVideoManager:
                 for final_keyword in healing_fallback_keywords:
                     bg_video_path, video_id = self._download_with_retry_strategy(
                         final_keyword,
-                        i,
-                        sentence_duration,
+                        group_start_idx,
+                        group_duration,
                         topic,
                         downloaded_video_ids,
                         language=language,
@@ -157,18 +186,27 @@ class BackgroundVideoManager:
                 if not bg_video_path:
                     # 최종 폴백: 이미지 사용 (배경 영상 대신)
                     logger.warning(
-                        f"   ⚠️ 배경 영상 다운로드 실패, 이미지 폴백 사용 (문장 {i+1})"
+                        f"   ⚠️ 배경 영상 다운로드 실패, 이미지 폴백 사용 (구간 {current_time:.1f}~{group_end_time:.1f}초)"
                     )
                     bg_image_path = None
-                    background_groups.append((i, i + 1, None, bg_image_path))
+                    background_groups.append(
+                        (group_start_idx, group_end_idx, None, bg_image_path)
+                    )
+                    current_time = group_end_time
+                    segment_index += 1
                     continue
 
-            # 각 문장마다 하나의 배경 영상 (독립적)
-            background_groups.append((i, i + 1, bg_video_path, None))
-            logger.info(
-                f"   📹 배경 영상 {i+1}: 문장 {i+1}, 영상 길이: 원본 길이 사용 (문장 길이: {sentence_duration:.2f}초)"
+            # 5초 구간마다 하나의 배경 영상
+            background_groups.append(
+                (group_start_idx, group_end_idx, bg_video_path, None)
             )
-            logger.debug(f"      문장: {sentence[:50]}...")
+            logger.info(
+                f"   📹 배경 영상 구간 {current_time:.1f}~{group_end_time:.1f}초: 문장 {group_start_idx+1}~{group_end_idx}, 영상 길이: {group_duration:.2f}초"
+            )
+
+            # 다음 구간으로 이동
+            current_time = group_end_time
+            segment_index += 1
 
         return background_groups, downloaded_video_ids
 
@@ -187,32 +225,30 @@ class BackgroundVideoManager:
             source_video = VideoFileClip(bg_video_path)
             source_duration = source_video.duration
             logger.debug(
-                f"   원본 영상 길이: {source_duration:.2f}초 (문장 길이: {group_duration:.2f}초와 독립)"
+                f"   원본 영상 길이: {source_duration:.2f}초 (구간 길이: {group_duration:.2f}초)"
+            )
+            logger.debug(
+                f"   원본 영상 크기: {source_video.size[0]}x{source_video.size[1]} (리사이즈 없이 원본 비율 유지)"
             )
 
-            # Resize to 9:9 square (content area)
-            source_video = source_video.resize(
-                (VideoConstants.CONTENT_WIDTH, VideoConstants.CONTENT_HEIGHT)
-            )
-
-            # 원래 영상 길이만큼 사용 (자막과 완전히 독립)
-            # 영상이 짧으면 반복, 길면 원래 길이만큼만 사용
+            # 5초 구간 길이로 맞춤 (영상이 짧으면 반복, 길면 자르기)
             if source_duration < group_duration:
-                # 영상이 문장보다 짧으면 반복
+                # 영상이 구간보다 짧으면 반복
                 repeat_count = int(group_duration / source_duration) + 1
                 repeated_clips = [source_video] * repeat_count
                 group_clip = concatenate_videoclips(repeated_clips)
                 # 필요한 길이만큼 자르기
                 group_clip = group_clip.subclip(0, group_duration)
-                source_video.close()
+                # source_video는 concatenate_videoclips가 관리하므로 닫지 않음
                 logger.debug(
                     f"   ✅ 배경 영상 반복: {source_duration:.2f}초 × {repeat_count}회 → {group_duration:.2f}초"
                 )
             else:
-                # 영상이 문장보다 길면 원래 길이만큼만 사용 (자르지 않음)
-                group_clip = source_video  # 원래 길이 그대로 사용
+                # 영상이 구간보다 길면 구간 길이만큼만 사용 (자르기)
+                group_clip = source_video.subclip(0, group_duration)
+                # subclip이 새로운 클립을 생성하므로 원본은 닫지 않음
                 logger.debug(
-                    f"   ✅ 배경 영상 원본 길이 사용: {source_duration:.2f}초 (문장 길이와 독립)"
+                    f"   ✅ 배경 영상 자르기: {source_duration:.2f}초 → {group_duration:.2f}초"
                 )
 
             return group_clip

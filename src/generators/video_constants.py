@@ -7,13 +7,15 @@ class VideoConstants:
     """영상 생성 관련 상수"""
 
     # 해상도
-    VIDEO_WIDTH = 1080  # 최종 영상 너비 (9:16 유지)
-    VIDEO_HEIGHT = 1920  # 최종 영상 높이 (9:16 유지)
-    # 콘텐츠 영역: 9:9 정사각형 (위아래 검은색 배경 포함)
-    CONTENT_WIDTH = 1080  # 콘텐츠 영역 너비 (정사각형)
-    CONTENT_HEIGHT = 1080  # 콘텐츠 영역 높이 (정사각형)
-    BLACK_BAR_HEIGHT = 420  # 위아래 검은색 배경 높이 (각각: (1920-1080)/2)
+    VIDEO_WIDTH = 1080  # 최종 영상 너비 (9:16)
+    VIDEO_HEIGHT = 1920  # 최종 영상 높이 (9:16)
+    # 콘텐츠 영역: 9:16 전체 사용 (레거시 호환을 위해 CONTENT_* 유지)
+    CONTENT_WIDTH = 1080  # 콘텐츠 영역 너비 (9:16)
+    CONTENT_HEIGHT = 1920  # 콘텐츠 영역 높이 (9:16)
     VIDEO_FPS = 30
+
+    # 배경 영상 전환 주기
+    BACKGROUND_CHANGE_INTERVAL = 5.0  # 배경 영상 전환 주기 (초)
 
     # 영상 길이
     MIN_DURATION = 15  # 최소 길이 (초)

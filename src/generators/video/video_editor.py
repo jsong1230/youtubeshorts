@@ -101,76 +101,37 @@ class VideoEditor:
         # 최종 설정
         content_video = content_video.set_fps(VideoConstants.VIDEO_FPS)
 
-        # 9:9 정사각형 콘텐츠 영역으로 리사이즈
-        if (
-            content_video.size[0] != VideoConstants.CONTENT_WIDTH
-            or content_video.size[1] != VideoConstants.CONTENT_HEIGHT
-        ):
-            content_video = content_video.resize(
-                (VideoConstants.CONTENT_WIDTH, VideoConstants.CONTENT_HEIGHT)
-            )
+        # 리사이즈 없이 원본 비율 유지
+        logger.debug(
+            f"   배경 영상 원본 크기: {content_video.size[0]}x{content_video.size[1]} (리사이즈 없음)"
+        )
 
-        # 위아래 검은색 배경 추가
-        from moviepy.editor import ColorClip, CompositeVideoClip
-
-        black_bar_height = VideoConstants.BLACK_BAR_HEIGHT
-
-        # 자막을 위 검은색 배경 영역에 배치하기 위해 위치 조정
+        # 자막 위치 조정 (화면 상단에 배치)
         adjusted_subtitle_clips = []
         if subtitle_clips:
-            # 자막을 위 검은색 배경 영역 중앙에 배치
-            # 위 검은색 배경 영역: 0 ~ black_bar_height (420px)
-            # 중앙 위치: black_bar_height // 2 = 210px
-            subtitle_y_position = black_bar_height // 2  # 위 검은색 배경 영역의 중앙
-            logger.info(
-                f"   📝 자막을 위 검은색 배경 영역에 배치 (y: {subtitle_y_position}px, 영역: 0~{black_bar_height}px)"
-            )
+            # 자막을 화면 상단에 배치
+            top_margin = VideoConstants.SUBTITLE_TOP_MARGIN
             for subtitle_clip in subtitle_clips:
-                # 자막의 현재 위치를 무시하고 위 검은색 배경 영역으로 명시적으로 이동
-                # 자막은 원래 콘텐츠 영역(1080x1080) 내에 배치되어 있었지만,
-                # 검은색 배경 추가 후에는 위 검은색 배경 영역으로 이동
-                adjusted_clip = subtitle_clip.set_position(
-                    ("center", subtitle_y_position)
-                )
+                adjusted_clip = subtitle_clip.set_position(("center", top_margin))
                 adjusted_subtitle_clips.append(adjusted_clip)
 
-        top_bar = ColorClip(
-            size=(VideoConstants.VIDEO_WIDTH, black_bar_height),
-            color=(0, 0, 0),  # 검은색
-            duration=total_duration,
-        )
-        bottom_bar = ColorClip(
-            size=(VideoConstants.VIDEO_WIDTH, black_bar_height),
-            color=(0, 0, 0),  # 검은색
-            duration=total_duration,
-        )
+        # 최종 합성: 배경 영상 + 자막
+        final_clips = [content_video]
 
-        # 콘텐츠를 중앙에 배치 (위아래 검은색 배경 사이)
-        content_video = content_video.set_position(("center", black_bar_height))
-
-        # 최종 합성: 위 검은색 배경 + 자막 + 콘텐츠 + 아래 검은색 배경
-        final_clips = [
-            top_bar.set_position(("center", 0)),
-            content_video,
-            bottom_bar.set_position(
-                ("center", VideoConstants.CONTENT_HEIGHT + black_bar_height)
-            ),
-        ]
-
-        # 자막을 위 검은색 배경 영역에 추가
+        # 자막 추가
         if adjusted_subtitle_clips:
             final_clips.extend(adjusted_subtitle_clips)
 
-        final_video = CompositeVideoClip(
-            final_clips, size=(VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT)
-        )
+        # 최종 영상 크기는 배경 영상의 원본 크기 사용 (리사이즈 없음)
+        final_size = content_video.size
+        final_video = CompositeVideoClip(final_clips, size=final_size)
 
         logger.info(
-            f"   ✅ 9:9 정사각형 콘텐츠에 검은색 배경 추가 완료: {VideoConstants.CONTENT_WIDTH}x{VideoConstants.CONTENT_HEIGHT} → {VideoConstants.VIDEO_WIDTH}x{VideoConstants.VIDEO_HEIGHT}"
+            f"   ✅ 원본 비율 유지 완료: {final_size[0]}x{final_size[1]} (리사이즈 없음)"
         )
         if subtitle_clips:
             logger.info(
-                f"   📝 자막을 위 검은색 배경 영역에 배치 완료 (y: {subtitle_y_position}px, 영역: 0~{black_bar_height}px)"
+                f"   📝 자막을 화면 상단에 배치 완료 (상단 여백: {VideoConstants.SUBTITLE_TOP_MARGIN}px)"
             )
 
         return final_video
@@ -321,60 +282,60 @@ class VideoEditor:
     def prepare_background_clips(
         self, background_groups: List[Tuple], sentence_audio_durations: List[float]
     ) -> List[VideoFileClip]:
-        """배경 영상 클립 준비 (각 문장마다 독립적으로, 원래 길이 사용)"""
+        """배경 영상 클립 준비 (5초마다 전환)"""
         background_clips = []
 
         for gs, ge, bg_video_path, bg_image in background_groups:
-            # 각 문장마다 하나의 배경 영상 (ge = gs + 1)
-            sentence_duration = (
-                sentence_audio_durations[gs]
-                if gs < len(sentence_audio_durations)
-                else 3.0
+            # 5초 구간의 총 길이 계산
+            group_duration = sum(
+                sentence_audio_durations[i]
+                for i in range(gs, min(ge, len(sentence_audio_durations)))
             )
 
             if bg_video_path and os.path.exists(bg_video_path):
                 try:
-                    # 배경 영상은 원래 길이만큼 사용 (문장 길이와 독립)
+                    # 배경 영상은 5초 구간 길이로 사용
                     group_clip = self.background_manager.create_background_video_clip(
-                        bg_video_path, sentence_duration, gs, ge
+                        bg_video_path, group_duration, gs, ge
                     )
-                    # 실제 영상 길이 확인 (원래 길이 사용)
+                    # 실제 영상 길이 확인
                     actual_duration = group_clip.duration
                     logger.debug(
-                        f"   📹 배경 영상 {gs+1}: 원본 길이 {actual_duration:.2f}초 사용 (문장 길이: {sentence_duration:.2f}초와 독립)"
+                        f"   📹 배경 영상 구간 {gs+1}~{ge}: 길이 {actual_duration:.2f}초 (목표: {group_duration:.2f}초)"
                     )
                     background_clips.append(group_clip)
                 except Exception as e:
                     logger.error(f"   ❌ 배경 영상 사용 실패: {e}", exc_info=True)
                     raise ValueError(
-                        f"문장 {gs+1}의 배경 영상을 로드할 수 없습니다: {e}"
+                        f"구간 {gs+1}~{ge}의 배경 영상을 로드할 수 없습니다: {e}"
                     )
             else:
                 # 배경 영상이 없으면 단색 배경으로 폴백
-                logger.warning(f"   ⚠️ 배경 영상 없음, 단색 배경으로 폴백 (문장 {gs+1})")
+                logger.warning(
+                    f"   ⚠️ 배경 영상 없음, 단색 배경으로 폴백 (구간 {gs+1}~{ge})"
+                )
                 try:
                     # 단색 배경 이미지 생성 (동기부여/힐링 콘텐츠에 맞는 차분한 색상)
                     from moviepy.editor import ColorClip
 
                     # 차분한 어두운 배경 (동기부여/힐링 콘텐츠에 적합)
-                    # 배경 영상은 원래 길이 사용하지만, 폴백은 문장 길이만큼
-                    # 9:9 정사각형 콘텐츠 영역 크기
+                    # 9:16 전체 영역 크기
                     bg_clip = ColorClip(
                         size=(
-                            VideoConstants.CONTENT_WIDTH,
-                            VideoConstants.CONTENT_HEIGHT,
-                        ),  # 9:9 정사각형
+                            VideoConstants.VIDEO_WIDTH,
+                            VideoConstants.VIDEO_HEIGHT,
+                        ),  # 9:16 전체
                         color=(20, 20, 30),  # 어두운 남색 계열
-                        duration=sentence_duration,
+                        duration=group_duration,
                     )
                     background_clips.append(bg_clip)
                     logger.info(
-                        f"   ✅ 단색 배경 생성 및 사용 (문장 {gs+1}, 9:9 정사각형)"
+                        f"   ✅ 단색 배경 생성 및 사용 (구간 {gs+1}~{ge}, 9:16 전체)"
                     )
                 except Exception as e:
                     logger.error(f"   ❌ 단색 배경 생성 실패: {e}")
                     raise ValueError(
-                        f"문장 {gs+1}에 배경 영상/이미지가 없습니다. 배경 미디어 생성이 필요합니다."
+                        f"구간 {gs+1}~{ge}에 배경 영상/이미지가 없습니다. 배경 미디어 생성이 필요합니다."
                     )
 
         return background_clips

@@ -1,5 +1,44 @@
 ## Recent Updates
 
+- **2026-01-11 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
+- **2026-01-11 - 기능 개선: 영상 비율 및 전환 주기 변경**
+  - **9:16 비율로 변경**: 9:9 정사각형 콘텐츠 영역 제거, 9:16 전체 영역 사용
+  - **5초마다 영상 전환**: 배경 영상이 5초마다 자동으로 전환되도록 변경
+  - **원본 비율 유지**: 배경 영상 리사이즈 제거, 원본 비율 그대로 사용
+  - **자막 위치 변경**: 화면 중앙에서 상단으로 변경 (상단 여백 200px)
+  - **변경된 파일**:
+    - `src/generators/video_constants.py`: `BACKGROUND_CHANGE_INTERVAL = 5.0` 추가
+    - `src/generators/video/background_video_manager.py`: 5초 단위 그룹화 로직 구현, 리사이즈 제거
+    - `src/generators/video/video_editor.py`: 9:9 콘텐츠 영역 및 검은색 배경 제거, 자막 상단 배치
+
+- **2026-01-11 - Video Uploaded (한글 3개, 영문 3개)**
+  - **한국어 영상 1**: 월세 vs 전세: 2026년 기준 어떤 게 유리할까? #Shorts
+    - Video ID: `XRBR1XvKsu4`
+    - URL: <https://www.youtube.com/watch?v=XRBR1XvKsu4>
+  - **한국어 영상 2**: 연봉 협상 타이밍: 언제 말해야 성공할까? #Shorts
+    - Video ID: `--dpV5HauQ4`
+    - URL: <https://www.youtube.com/watch?v=--dpV5HauQ4>
+  - **한국어 영상 3**: 주 52시간 근무제, 실제로 지키는 회사 찾는 법 #Shorts
+    - Video ID: `xX4wsxvlUZQ`
+    - URL: <https://www.youtube.com/watch?v=xX4wsxvlUZQ>
+  - **영어 영상 1**: The One Receipt You Should Always Keep (And Why) #Shorts
+    - Video ID: `PigxzdaXxfs`
+    - URL: <https://www.youtube.com/watch?v=PigxzdaXxfs>
+  - **영어 영상 2**: How to Actually Use Your Paid Time Off (Most People Waste It) #Shorts
+    - Video ID: `aZPv-9-tb4A`
+    - URL: <https://www.youtube.com/watch?v=aZPv-9-tb4A>
+  - **영어 영상 3**: How to Actually Calculate Your Work-Life Balance (The Real Numbers) #Shorts
+    - Video ID: `yLovPnWhcdU`
+    - URL: <https://www.youtube.com/watch?v=yLovPnWhcdU>
+  - **특이사항**: 모든 영상은 다음날 0시(한국 시간)에 공개되도록 예약 업로드됨
+
 - **2026-01-10 - Video Uploaded**
   - **Title**: Test Topic #Shorts
   - **Topic**: Test Topic
