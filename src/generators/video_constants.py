@@ -82,13 +82,13 @@ class VideoConstants:
 
     # 제목/훅 강조 표시
     HOOK_TITLE_ENABLED = True  # 맨 위에 제목/훅 표시 활성화
-    HOOK_TITLE_FONT_SIZE = 100  # 제목/훅 폰트 크기 (줄바꿈 가능하도록 줄임)
-    HOOK_TITLE_TOP_MARGIN = 80  # 제목/훅 상단 여백 (px) - 맨 위에 가깝게
+    HOOK_TITLE_FONT_SIZE = 130  # 제목/훅 폰트 크기 (더 크게)
+    HOOK_TITLE_TOP_MARGIN = 50  # 제목/훅 상단 여백 (px) - 여유 있게
     HOOK_TITLE_DURATION = None  # 제목/훅 표시 시간 (None이면 영상 끝까지 유지)
     HOOK_TITLE_COLOR = "white"  # 제목/훅 텍스트 색상 (흰색)
     HOOK_TITLE_STROKE_WIDTH = 8  # 제목/훅 테두리 두께 (강한 테두리)
     HOOK_TITLE_BACKGROUND_COLOR = (255, 255, 255)  # 훅 배경 색상 (흰색)
-    HOOK_TITLE_HEIGHT = 300  # 훅 영역 높이 (px) - 위쪽 crop 영역
+    HOOK_TITLE_HEIGHT = 350  # 훅 영역 높이 (px) - 3줄 텍스트 수용 가능하도록 증가
 
     # 루프(Loop) 설계
     ENABLE_LOOP_DESIGN = True  # 루프 설계 활성화

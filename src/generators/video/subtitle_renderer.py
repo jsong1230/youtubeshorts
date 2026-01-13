@@ -235,40 +235,65 @@ class SubtitleRenderer:
         return None
 
     def _get_font_paths(self, language: str) -> list:
-        """언어별 폰트 경로 목록"""
+        """언어별 폰트 경로 목록 (더 부드럽고 모던한 폰트 우선)"""
         if language == "en":
             return [
-                "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-                "/System/Library/Fonts/Supplemental/Arial.ttf",
-                "/System/Library/Fonts/Supplemental/Arial Italic.ttf",
+                # Helvetica Neue (부드럽고 모던한 느낌)
+                "/System/Library/Fonts/HelveticaNeue.ttc",
+                "/System/Library/Fonts/Supplemental/HelveticaNeue.ttc",
+                # Helvetica (클래식하지만 깔끔)
                 "/System/Library/Fonts/Helvetica.ttc",
                 "/System/Library/Fonts/Supplemental/Helvetica.ttc",
+                # 폴백: Arial
+                "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+                "/System/Library/Fonts/Supplemental/Arial.ttf",
                 "/Library/Fonts/Arial.ttf",
             ]
         else:
             return [
+                # Apple SD Gothic Neo (더 부드럽고 모던한 한글 폰트) - .ttc 파일
+                "/System/Library/Fonts/AppleSDGothicNeo.ttc",
+                # Nanum Gothic (깔끔하고 읽기 좋음)
+                "/System/Library/Fonts/Supplemental/NanumGothic.ttf",
+                "/System/Library/Fonts/Supplemental/NanumGothicBold.ttf",
+                # 폴백: AppleGothic
                 "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
                 "/System/Library/Fonts/AppleGothic.ttf",
-                "/System/Library/Fonts/Supplemental/NanumGothic.ttf",
                 "/Library/Fonts/AppleGothic.ttf",
             ]
 
     def _get_default_font(self, language: str, font_size: int):
-        """기본 폰트 반환"""
+        """기본 폰트 반환 (더 부드럽고 모던한 폰트)"""
         if language == "en":
-            try:
-                return ImageFont.truetype(
-                    "/System/Library/Fonts/Supplemental/Arial Bold.ttf", font_size
-                )
-            except BaseException:
-                return ImageFont.load_default()
+            # Helvetica Neue 우선 시도 (부드럽고 모던)
+            font_paths = [
+                "/System/Library/Fonts/HelveticaNeue.ttc",
+                "/System/Library/Fonts/Helvetica.ttc",
+                "/System/Library/Fonts/Supplemental/Helvetica.ttc",
+                "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+            ]
+            for font_path in font_paths:
+                try:
+                    if os.path.exists(font_path):
+                        return ImageFont.truetype(font_path, font_size)
+                except BaseException:
+                    continue
+            return ImageFont.load_default()
         else:
-            try:
-                return ImageFont.truetype(
-                    "/System/Library/Fonts/Supplemental/AppleGothic.ttf", font_size
-                )
-            except BaseException:
-                return ImageFont.load_default()
+            # Apple SD Gothic Neo 또는 Nanum Gothic 우선 시도
+            font_paths = [
+                "/System/Library/Fonts/AppleSDGothicNeo.ttc",  # .ttc 파일 사용
+                "/System/Library/Fonts/Supplemental/NanumGothicBold.ttf",
+                "/System/Library/Fonts/Supplemental/NanumGothic.ttf",
+                "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+            ]
+            for font_path in font_paths:
+                try:
+                    if os.path.exists(font_path):
+                        return ImageFont.truetype(font_path, font_size)
+                except BaseException:
+                    continue
+            return ImageFont.load_default()
 
     def _create_imagemagick_subtitle(
         self,

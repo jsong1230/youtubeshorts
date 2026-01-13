@@ -557,18 +557,19 @@ class VideoEditor:
             if topic and len(topic) < len(first_sentence):
                 hook_text = topic
 
-            # 텍스트 길이 제한 (훅 영역 높이 300px 내에 맞도록)
-            # 폰트 크기와 줄 간격을 고려하여 최대 2줄까지 허용
-            # 훅 영역 높이: 300px, 폰트 크기: 100px, 줄 간격: 20px
-            # 계산: (100px * 2줄) + (20px * 1줄 간격) = 220px < 300px (안전)
-            max_chars_per_line = 18 if language == "ko" else 28  # 훅 영역에 맞게 조정
-            max_total_chars = max_chars_per_line * 2  # 최대 2줄까지
+            # 텍스트 길이 제한 (훅 영역 높이 350px 내에 맞도록)
+            # 폰트 크기와 줄 간격을 고려하여 최대 3줄까지 허용
+            # 훅 영역 높이: 350px, 폰트 크기: 130px, 줄 간격: 20px
+            # 계산: (130px * 3줄) + (20px * 2줄 간격) = 430px > 350px이므로 폰트 크기 조정 필요
+            max_chars_per_line = 20 if language == "ko" else 30  # 훅 영역에 맞게 조정
+            max_total_chars = max_chars_per_line * 3  # 최대 3줄까지
 
             if len(hook_text) > max_total_chars:
-                # 2줄로 나누기
+                # 3줄로 나누기
                 words = hook_text.split()
                 line1: list[str] = []
                 line2: list[str] = []
+                line3: list[str] = []
                 current_line = line1
 
                 for word in words:
@@ -579,24 +580,58 @@ class VideoEditor:
                         if current_line == line1:
                             current_line = line2
                             current_line.append(word)
+                        elif current_line == line2:
+                            current_line = line3
+                            current_line.append(word)
                         else:
                             break
 
-                if line1 and line2:
+                if line1 and line2 and line3:
+                    hook_text = (
+                        " ".join(line1)
+                        + "\n"
+                        + " ".join(line2)
+                        + "\n"
+                        + " ".join(line3)
+                    )
+                elif line1 and line2:
                     hook_text = " ".join(line1) + "\n" + " ".join(line2)
                 elif line1:
                     hook_text = " ".join(line1)
                 else:
                     hook_text = hook_text[:max_total_chars] + "..."
 
-            # 폰트 경로
+            # 폰트 경로 (더 부드럽고 모던한 폰트 우선)
             font_path = self.subtitle_renderer._get_font_path(language)
             if not font_path:
-                font_path = (
-                    "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
-                    if language == "en"
-                    else "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
-                )
+                # 폴백 폰트 (더 부드러운 폰트 우선)
+                if language == "en":
+                    # Helvetica Neue (부드럽고 모던)
+                    fallback_paths = [
+                        "/System/Library/Fonts/HelveticaNeue.ttc",
+                        "/System/Library/Fonts/Helvetica.ttc",
+                        "/System/Library/Fonts/Supplemental/Helvetica.ttc",
+                        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+                    ]
+                else:
+                    # Apple SD Gothic Neo 또는 Nanum Gothic
+                    fallback_paths = [
+                        "/System/Library/Fonts/AppleSDGothicNeo.ttc",  # .ttc 파일
+                        "/System/Library/Fonts/Supplemental/NanumGothicBold.ttf",
+                        "/System/Library/Fonts/Supplemental/NanumGothic.ttf",
+                        "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+                    ]
+                font_path = None
+                for path in fallback_paths:
+                    if os.path.exists(path):
+                        font_path = path
+                        break
+                if not font_path:
+                    font_path = (
+                        "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+                        if language == "en"
+                        else "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
+                    )
 
             # 제목/훅 클립 생성 (큰 폰트, 강한 스타일, 강렬한 색상, 영상 끝까지 유지)
             hook_duration = total_duration  # 영상 끝까지 유지
@@ -604,8 +639,10 @@ class VideoEditor:
                 hook_duration = min(VideoConstants.HOOK_TITLE_DURATION, total_duration)
             try:
                 # 훅 영역 높이에 맞게 텍스트 크기 조정
-                hook_height = VideoConstants.HOOK_TITLE_HEIGHT  # 300px
-                max_text_height = hook_height - 40  # 상하 여백 20px씩
+                hook_height = VideoConstants.HOOK_TITLE_HEIGHT  # 350px
+                max_text_height = (
+                    hook_height - 60
+                )  # 상하 여백 30px씩 (3줄 수용을 위해 여유 확보)
 
                 hook_clip = TextClip(
                     hook_text,
@@ -658,14 +695,37 @@ class VideoEditor:
             from moviepy.editor import ImageClip
             from moviepy.video.fx.all import fadein, fadeout
 
-            # PIL 폰트 로드
+            # PIL 폰트 로드 (더 부드럽고 모던한 폰트 우선)
             font_path = self.subtitle_renderer._get_font_path(language)
             if not font_path:
-                font_path = (
-                    "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
-                    if language == "en"
-                    else "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
-                )
+                # 폴백 폰트 (더 부드러운 폰트 우선)
+                if language == "en":
+                    # Helvetica Neue (부드럽고 모던)
+                    fallback_paths = [
+                        "/System/Library/Fonts/HelveticaNeue.ttc",
+                        "/System/Library/Fonts/Helvetica.ttc",
+                        "/System/Library/Fonts/Supplemental/Helvetica.ttc",
+                        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+                    ]
+                else:
+                    # Apple SD Gothic Neo 또는 Nanum Gothic
+                    fallback_paths = [
+                        "/System/Library/Fonts/AppleSDGothicNeo.ttc",  # .ttc 파일
+                        "/System/Library/Fonts/Supplemental/NanumGothicBold.ttf",
+                        "/System/Library/Fonts/Supplemental/NanumGothic.ttf",
+                        "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+                    ]
+                font_path = None
+                for path in fallback_paths:
+                    if os.path.exists(path):
+                        font_path = path
+                        break
+                if not font_path:
+                    font_path = (
+                        "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+                        if language == "en"
+                        else "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
+                    )
 
             pil_font = self.subtitle_renderer._get_pil_font(
                 font_path, VideoConstants.HOOK_TITLE_FONT_SIZE, language
@@ -710,12 +770,14 @@ class VideoEditor:
                 line_widths.append(bbox[2] - bbox[0])
 
             total_text_height = (
-                sum(line_heights) + (len(lines) - 1) * 15
-            )  # 줄 간격 15px (훅 영역에 맞게 조정)
+                sum(line_heights) + (len(lines) - 1) * 20
+            )  # 줄 간격 20px (3줄 수용을 위해 증가)
 
             # 훅 영역 높이 확인 및 텍스트 크기 조정
-            hook_img_height = VideoConstants.HOOK_TITLE_HEIGHT  # 300px
-            max_allowed_height = hook_img_height - 40  # 상하 여백 20px씩
+            hook_img_height = VideoConstants.HOOK_TITLE_HEIGHT  # 350px
+            max_allowed_height = (
+                hook_img_height - 60
+            )  # 상하 여백 30px씩 (3줄 수용을 위해 여유 확보)
 
             # 텍스트가 훅 영역을 벗어나면 폰트 크기 조정
             if total_text_height > max_allowed_height:
@@ -737,7 +799,7 @@ class VideoEditor:
                     bbox = temp_draw.textbbox((0, 0), line, font=adjusted_pil_font)
                     line_heights.append(bbox[3] - bbox[1])
                     line_widths.append(bbox[2] - bbox[0])
-                total_text_height = sum(line_heights) + (len(lines) - 1) * 15
+                total_text_height = sum(line_heights) + (len(lines) - 1) * 20
                 pil_font = adjusted_pil_font
                 logger.debug(
                     f"   훅 텍스트 폰트 크기 조정: {VideoConstants.HOOK_TITLE_FONT_SIZE}px -> {adjusted_font_size}px (훅 영역에 맞춤)"

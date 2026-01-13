@@ -1,5 +1,36 @@
 ## Recent Updates
 
+- **2026-01-13 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
+- **2026-01-13 - Video Uploaded (한국어 1개, 영어 1개)**
+  - **한국어 영상**: 남들보다 뒤처진 것 같아 불안할 때 꼭 기억할 한 가지 #Shorts
+    - Video ID: `tY_wE_ax8vc`
+    - URL: <https://www.youtube.com/watch?v=tY_wE_ax8vc>
+    - 상태: 비공개 업로드 완료
+  - **영어 영상**: Nobody Is Coming To Save You (It's All On You) #Shorts
+    - Video ID: `Vtcr2C6cMVE`
+    - URL: <https://www.youtube.com/watch?v=Vtcr2C6cMVE>
+    - 상태: 비공개 업로드 완료
+
+- **2026-01-13 - 기능 개선: 훅 영역 및 폰트 최적화**
+  - **훅 영역**: 350px 높이로 조정, 3줄 텍스트 지원, 위쪽 글자 잘림 현상 해결
+  - **훅 텍스트**: 폰트 크기 130px로 증가, 최대 3줄까지 줄바꿈 지원, 영역을 벗어나면 자동 폰트 크기 조정
+  - **폰트 개선**: 딱딱한 느낌의 기본 폰트를 더 예쁜 폰트로 변경
+    - 영어: Helvetica Neue (HelveticaNeue.ttc) 우선 사용
+    - 한국어: Apple SD Gothic Neo (AppleSDGothicNeo.ttc) 우선 사용
+  - **흰색 배경 최대 활용**: 훅 영역과 하단 여백을 최대한 활용하여 텍스트 가독성 향상
+  - **전체 영상 구조**: 9:16 (1080x1920) 유지, 위쪽 훅 배경(350px, 흰색) + 배경 영상(9:9, 가운데) + 아래쪽 흰색 배경
+  - **변경된 파일**:
+    - `src/generators/video_constants.py`: 훅 영역 높이 350px, 폰트 크기 130px, 상단 여백 30px
+    - `src/generators/video/video_editor.py`: 3줄 텍스트 지원, 동적 폰트 크기 조정 로직 개선
+    - `src/generators/video/subtitle_renderer.py`: 폰트 경로 우선순위 변경 (Helvetica Neue, Apple SD Gothic Neo)
+
 - **2026-01-13 - 기능 개선: 영상 포맷 및 훅 영역 최적화**
   - **훅 영역**: 300px 높이로 설정, 두 줄 텍스트도 영역 내에 배치되도록 자동 조정
   - **훅 텍스트**: 폰트 크기 100px, 최대 2줄까지 줄바꿈 지원, 영역을 벗어나면 자동 폰트 크기 조정
