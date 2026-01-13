@@ -46,44 +46,10 @@ class TestImageGenerator:
                     assert canvas_path is not None
                     assert isinstance(canvas_path, str)
 
-    def test_generate_thumbnail_with_dalle(
-        self, image_generator, mock_openai_client, tmp_path
-    ):
-        """Test thumbnail generation using DALL-E"""
+    def test_generate_thumbnail_from_video_frame(self, image_generator, tmp_path):
+        """Test thumbnail generation from video frame (DALL-E not used)"""
         video_path = str(tmp_path / "test_video.mp4")
         title = "Test Video Title"
-        # output_path = str(tmp_path / "thumbnail.jpg")
-
-        # Mock DALL-E response
-        mock_response = Mock()
-        mock_response.data = [Mock()]
-        mock_response.data[0].url = "https://example.com/image.png"
-        mock_openai_client.images.generate.return_value = mock_response
-
-        # Mock image download
-        with patch("src.generators.image_generator.requests.get") as mock_get:
-            mock_get.return_value.content = b"fake image data"
-
-            with patch("src.generators.image_generator.Image.open") as mock_open:
-                mock_img = Mock(spec=Image.Image)
-                mock_img.size = (1024, 1024)
-                mock_img.resize.return_value = mock_img
-                mock_img.crop.return_value = mock_img
-                mock_open.return_value = mock_img
-
-                image_generator.generate_thumbnail(video_path=video_path, title=title)
-
-                # Should attempt DALL-E generation
-                assert mock_openai_client.images.generate.called
-
-    def test_generate_thumbnail_fallback_to_frame(self, image_generator, tmp_path):
-        """Test thumbnail generation falls back to video frame extraction"""
-        video_path = str(tmp_path / "test_video.mp4")
-        title = "Test Video"
-        # output_path = str(tmp_path / "thumbnail.jpg")
-
-        # Mock DALL-E failure
-        image_generator.openai_client = None
 
         with patch("src.generators.image_generator.VideoFileClip") as mock_video:
             mock_clip = Mock()
@@ -97,14 +63,16 @@ class TestImageGenerator:
             ) as mock_fromarray:
                 mock_img = Mock(spec=Image.Image)
                 mock_img.size = (1920, 1080)
-                mock_img.resize.return_value = mock_img
-                mock_img.crop.return_value = mock_img
                 mock_fromarray.return_value = mock_img
 
-                image_generator.generate_thumbnail(video_path=video_path, title=title)
+                result = image_generator.generate_thumbnail(
+                    video_path=video_path, title=title
+                )
 
-                # Should extract frame from video
+                # Should extract frame from video (not use DALL-E)
                 assert mock_video.called
+                # Result should be a path string or None
+                assert result is None or isinstance(result, str)
 
     def test_embed_thumbnail_frame(self, image_generator, tmp_path):
         """Test embedding thumbnail into video first frame"""

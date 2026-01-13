@@ -300,49 +300,36 @@ class ImageGenerator:
         language: str = "ko",
     ) -> str:
         """
-        매력적인 썸네일 이미지 생성
+        영상 프레임에서 썸네일 이미지 추출 (DALL-E 사용 안 함)
 
         Args:
             video_path: 영상 파일 경로
-            title: 영상 제목
-            topic: 영상 주제 (선택)
-            script: 영상 스크립트 (선택, 핵심 내용 추출용)
-            language: 언어 코드 ('ko' 또는 'en', 기본값: 'ko')
+            title: 영상 제목 (사용 안 함, 호환성 유지)
+            topic: 영상 주제 (사용 안 함, 호환성 유지)
+            script: 영상 스크립트 (사용 안 함, 호환성 유지)
+            language: 언어 코드 (사용 안 함, 호환성 유지)
         """
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         thumbnail_path = os.path.join(
             settings.THUMBNAIL_OUTPUT_DIR, f"thumb_{timestamp}.jpg"
         )
 
-        # DALL-E 3로 썸네일 이미지 생성 시도 (OpenAI API 사용)
-        dalle_img = self._generate_dalle3_thumbnail(
-            title, topic, script, language=language
-        )
+        # 영상 프레임에서 썸네일 추출
+        logger.info("📹 영상 프레임에서 썸네일 추출 중...")
+        try:
+            # 영상에서 여러 프레임 중 가장 좋은 프레임 선택 (중간 부분)
+            video = VideoFileClip(video_path)
+            duration = video.duration
+            # 영상의 중간 지점에서 프레임 추출 (일반적으로 가장 매력적인 부분)
+            frame_time = duration * VideoConstants.THUMBNAIL_FRAME_RATIO
+            frame = video.get_frame(frame_time)
 
-        if dalle_img:
-            # DALL-E 3로 생성된 이미지 사용
-            img = dalle_img
+            img = Image.fromarray(frame)
             img.save(thumbnail_path, "JPEG", quality=95)
-            logger.info(f"✅ 썸네일 저장 완료: {thumbnail_path}")
+
+            video.close()
+            logger.info(f"✅ 영상 프레임 썸네일 저장 완료: {thumbnail_path}")
             return thumbnail_path
-        else:
-            # DALL-E 3 실패 시 기존 방식 (영상 프레임에서 추출)
-            logger.info("📹 영상 프레임에서 썸네일 추출 중...")
-            try:
-                # 영상에서 여러 프레임 중 가장 좋은 프레임 선택 (중간 부분)
-                # 자막이 없는 원본 배경을 사용하기 위해 영상에서 프레임 추출 후 자막 영역 제거
-                video = VideoFileClip(video_path)
-                duration = video.duration
-                # 영상의 중간 지점에서 프레임 추출 (일반적으로 가장 매력적인 부분)
-                frame_time = duration * VideoConstants.THUMBNAIL_FRAME_RATIO
-                frame = video.get_frame(frame_time)
-
-                img = Image.fromarray(frame)
-                img.save(thumbnail_path, "JPEG", quality=95)
-
-                video.close()
-                logger.info(f"✅ 영상 프레임 썸네일 저장 완료: {thumbnail_path}")
-                return thumbnail_path
-            except Exception as e:
-                logger.warning(f"⚠️ 영상 프레임 썸네일 추출 실패: {e}")
-                return None
+        except Exception as e:
+            logger.warning(f"⚠️ 영상 프레임 썸네일 추출 실패: {e}")
+            return None

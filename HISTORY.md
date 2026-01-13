@@ -24,6 +24,30 @@
   - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
 
 
+- **2026-01-13 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
+- **2026-01-13 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
+- **2026-01-13 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
 - **2026-01-13 - Video Uploaded (한국어 1개, 영어 1개)**
   - **한국어 영상**: 남들보다 뒤처진 것 같아 불안할 때 꼭 기억할 한 가지 #Shorts
     - Video ID: `tY_wE_ax8vc`
