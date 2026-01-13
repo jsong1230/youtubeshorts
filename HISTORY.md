@@ -8,6 +8,42 @@
   - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
 
 
+- **2026-01-13 - 배경 영상 선택 로직 개선: 고해상도 영상 우선 선택**
+  - **변경 사항**: 배경 영상 선택 시 1080x1080 이상의 고해상도 영상을 우선적으로 선택하도록 개선
+  - **개선 내용**:
+    - 최소 해상도 요구사항: 1080x1080 이상
+    - 더 큰 해상도 우선 선택 (해상도 점수 = crop_width × crop_height)
+    - 리사이즈 없이 원본 크기로 crop하여 최대 품질 유지
+  - **변경된 파일**:
+    - `src/generators/video/background_video_manager.py`: 해상도 점수 계산 로직 변경, 정렬 로직 개선
+  - **효과**: 중앙 배경 영상의 화질 향상 및 시각적 품질 개선
+
+- **2026-01-13 - Video Uploaded (한국어 2개, 영어 2개)**
+  - **영어 영상 1**: Your Attention Span Is Broken #Shorts
+    - Video ID: `rBovrcpPyUM`
+    - URL: <https://www.youtube.com/watch?v=rBovrcpPyUM>
+    - 상태: 비공개 업로드 완료
+  - **한국어 영상 1**: 1월 카드값 보고 놀란 가슴 진정하세요 #Shorts
+    - Video ID: `6V2SbpJEX5U`
+    - URL: <https://www.youtube.com/watch?v=6V2SbpJEX5U>
+    - 상태: 비공개 업로드 완료
+  - **영어 영상 2**: Why Your 2026 Resolutions Already Failed #Shorts
+    - Video ID: `PYflzoJRAz8`
+    - URL: <https://www.youtube.com/watch?v=PYflzoJRAz8>
+    - 상태: 비공개 업로드 완료
+  - **한국어 영상 2**: 작심삼일 이미 끝났다면 필수 시청 #Shorts
+    - Video ID: `bm99vMbs8_E`
+    - URL: <https://www.youtube.com/watch?v=bm99vMbs8_E>
+    - 상태: 비공개 업로드 완료
+
+- **2026-01-13 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
 - **2026-01-13 - 썸네일 생성 방식 변경: DALL-E 제거, 영상 프레임에서 추출**
   - **변경 사항**: DALL-E 3를 사용한 썸네일 생성 기능 제거
   - **새로운 방식**: 항상 영상 프레임에서 썸네일을 추출하도록 변경

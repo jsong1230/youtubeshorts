@@ -810,7 +810,11 @@ class BackgroundVideoManager:
 
                             files = video.get("video_files", [])
                             best_file = None
-                            min_diff = float("inf")
+                            best_crop_width = 0
+                            best_crop_height = 0
+                            max_resolution_score = (
+                                0  # 더 큰 해상도를 선택하기 위한 최대 해상도 점수
+                            )
 
                             # 9:9 정사각형 비율에 맞는 영상만 선택
                             target_width = 1080  # 9:9 정사각형 너비
@@ -834,24 +838,25 @@ class BackgroundVideoManager:
                                     crop_height = 0
 
                                     if abs(current_aspect - target_aspect) < 0.01:
-                                        # 이미 9:9 비율에 가까움
+                                        # 이미 9:9 비율에 가까움 - 최대 크기로 crop 가능
                                         can_crop_to_9_9 = (
                                             file_width >= target_width
                                             and file_height >= target_height
                                         )
-                                        crop_width = min(file_width, target_width)
-                                        crop_height = min(file_height, target_height)
+                                        # 최대 크기로 crop (1080 이상, 클수록 좋음)
+                                        crop_width = file_width
+                                        crop_height = file_height
                                     elif current_aspect > target_aspect:
-                                        # 영상이 더 넓음: 높이를 기준으로 crop
-                                        crop_height = min(file_height, target_height)
+                                        # 영상이 더 넓음: 높이를 기준으로 crop (최대 높이 사용)
+                                        crop_height = file_height
                                         crop_width = int(crop_height * target_aspect)
                                         can_crop_to_9_9 = (
                                             crop_width <= file_width
                                             and crop_height >= target_height
                                         )
                                     else:
-                                        # 영상이 더 좁음: 너비를 기준으로 crop
-                                        crop_width = min(file_width, target_width)
+                                        # 영상이 더 좁음: 너비를 기준으로 crop (최대 너비 사용)
+                                        crop_width = file_width
                                         crop_height = int(crop_width / target_aspect)
                                         can_crop_to_9_9 = (
                                             crop_width >= target_width
@@ -864,13 +869,14 @@ class BackgroundVideoManager:
                                         and crop_width >= target_width
                                         and crop_height >= target_height
                                     ):
-                                        # 해상도 차이 계산 (1080x1080에 가까울수록 좋음)
-                                        diff = abs(crop_width - target_width) + abs(
-                                            crop_height - target_height
-                                        )
-                                        if diff < min_diff:
-                                            min_diff = diff
+                                        # 더 큰 해상도를 우선적으로 선택 (1080 이상, 클수록 좋음)
+                                        # 해상도 점수 = crop_width * crop_height (더 큰 해상도일수록 높은 점수)
+                                        resolution_score = crop_width * crop_height
+                                        if resolution_score > max_resolution_score:
+                                            max_resolution_score = resolution_score
                                             best_file = file
+                                            best_crop_width = crop_width
+                                            best_crop_height = crop_height
 
                             if best_file:
                                 # Calculate quality score
@@ -878,23 +884,30 @@ class BackgroundVideoManager:
                                     best_file, duration_sec, english_keyword, video
                                 )
 
+                                # crop 가능한 해상도 정보 (이미 계산된 값 사용)
+
                                 available_videos.append(
                                     {
                                         "id": video_id,
                                         "url": best_file.get("link"),
                                         "duration": duration_sec,
                                         "height": best_file.get("height", 0),
+                                        "width": best_file.get("width", 0),
+                                        "crop_width": best_crop_width,
+                                        "crop_height": best_crop_height,
                                         "quality_score": quality_score,
                                     }
                                 )
 
-                        # Select from top quality videos (prioritize quality score)
+                        # Select from top quality videos (prioritize quality score and resolution)
                         if available_videos:
-                            # Sort by quality score (descending), then by height match
+                            # Sort by quality score (descending), then by resolution (larger is better)
                             available_videos.sort(
                                 key=lambda x: (
                                     -x["quality_score"],
-                                    abs(x["height"] - 1920),
+                                    -(
+                                        x["crop_width"] * x["crop_height"]
+                                    ),  # 더 큰 해상도 우선
                                 )
                             )
                             # Select from top 5 highest quality videos
