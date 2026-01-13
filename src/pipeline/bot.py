@@ -91,6 +91,7 @@ class ShortsBot:
         language: str = None,
         creative_brief: str = None,
         preferred_keywords: List[str] = None,
+        force: bool = False,
     ):
         """영상 생성만 (업로드 없음)"""
         # This method could also be moved to VideoPipeline or refactored to use it
@@ -124,8 +125,8 @@ class ShortsBot:
             # AI로 영상 생성 (매번 새로운 아이디어로)
             logger.info("📹 영상 생성 중...")
 
-            # 주제 중복 체크 (사용자가 직접 주제를 제공한 경우)
-            if topic:
+            # 주제 중복 체크 (사용자가 직접 주제를 제공한 경우, force가 False일 때만)
+            if topic and not force:
                 try:
                     from src.analytics.channel_history_collector import (
                         ChannelHistoryCollector,
@@ -161,6 +162,8 @@ class ShortsBot:
                             logger.info(f"✅ 주제 중복 체크 통과: '{topic}'")
                 except Exception as e:
                     logger.warning(f"⚠️ 주제 중복 체크 실패 (계속 진행): {e}")
+            elif force:
+                logger.info("✅ 주제 중복 체크 통과: '--force'")
 
             # 언어별 타겟 오디언스 설정
             from src.core.config import settings

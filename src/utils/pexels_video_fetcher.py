@@ -103,6 +103,7 @@ def get_unique_pexels_videos(
     count: int = 1,
     orientation: str = "portrait",
     max_pages: int = 10,
+    exclude_people: bool = True,
 ) -> List[Dict[str, Any]]:
     """
     Pexels API에서 중복 없는 최신 비디오를 가져옵니다.
@@ -198,6 +199,36 @@ def get_unique_pexels_videos(
                 # 비디오 ID가 없으면 건너뛰기
                 if not video_id:
                     continue
+
+                # 사람이 나오지 않는 영상만 선택 (exclude_people가 True인 경우)
+                if exclude_people:
+                    # Pexels API는 사람이 포함된 영상에 대해 "people" 태그를 제공하지 않지만,
+                    # 키워드에 "no people", "without people", "nature", "landscape" 등을 추가하여 필터링
+                    video_url = video.get("url", "").lower()
+                    video_tags = [tag.lower() for tag in video.get("tags", [])]
+
+                    # 사람 관련 키워드가 포함된 경우 건너뛰기
+                    people_keywords = [
+                        "person",
+                        "people",
+                        "human",
+                        "man",
+                        "woman",
+                        "face",
+                        "portrait",
+                        "crowd",
+                    ]
+                    if any(
+                        keyword in video_url
+                        or any(keyword in tag for tag in video_tags)
+                        for keyword in people_keywords
+                    ):
+                        continue
+
+                    # 제목이나 설명에 사람 관련 키워드가 있는지 확인
+                    video_title = video.get("title", "").lower()
+                    if any(keyword in video_title for keyword in people_keywords):
+                        continue
 
                 # 이미 사용된 비디오인지 확인
                 if video_id in used_video_ids:

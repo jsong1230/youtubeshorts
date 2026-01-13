@@ -1,5 +1,28 @@
 ## Recent Updates
 
+- **2026-01-13 - 기능 개선: 영상 포맷 및 훅 영역 최적화**
+  - **훅 영역**: 300px 높이로 설정, 두 줄 텍스트도 영역 내에 배치되도록 자동 조정
+  - **훅 텍스트**: 폰트 크기 100px, 최대 2줄까지 줄바꿈 지원, 영역을 벗어나면 자동 폰트 크기 조정
+  - **전체 영상 구조**: 9:16 (1080x1920), 위쪽 훅 배경(300px, 흰색) + 배경 영상(9:9, 가운데) + 아래쪽 흰색 배경
+  - **배경 영상 필터링**: 9:9 비율로 crop 가능하고 최소 1080x1080 이상인 영상만 선택
+  - **사람 없는 영상**: 배경 영상 선택 시 사람이 나오는 영상 자동 제외
+  - **자막 색상**: 한국어는 노란색, 영어는 빨간색으로 눈에 띄게 표시
+  - **변경된 파일**:
+    - `src/generators/video_constants.py`: 훅 영역 높이 300px, 자막 색상 설정
+    - `src/generators/video/video_editor.py`: 훅 영역 내 텍스트 배치 로직, 9:9 crop 로직
+    - `src/generators/video/background_video_manager.py`: 해상도 필터링, 사람 필터링 추가
+    - `src/utils/pexels_video_fetcher.py`: 사람 필터링 추가
+    - `src/generators/video/subtitle_renderer.py`: 자막 색상 설정
+    - `src/pipeline/bot.py`: 주제 선정, 중복 체크, 썸네일/메타데이터 생성 복구
+
+- **2026-01-13 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
 - **2026-01-11 - Video Uploaded**
   - **Title**: Test Topic #Shorts
   - **Topic**: Test Topic

@@ -182,6 +182,8 @@ class VideoCompositor:
             total_duration=total_video_duration,
             content_type=content_type,
             topic=topic,
+            script=script,
+            language=language,
         )
 
         # 영상 저장 (VideoEditor 사용)

@@ -271,7 +271,12 @@ class SubtitleRenderer:
                 return ImageFont.load_default()
 
     def _create_imagemagick_subtitle(
-        self, text: str, duration: float, font_path: str, font_size: int
+        self,
+        text: str,
+        duration: float,
+        font_path: str,
+        font_size: int,
+        color: str = "white",
     ) -> Optional[TextClip]:
         """ImageMagick을 사용한 자막 생성"""
         try:
@@ -279,9 +284,9 @@ class SubtitleRenderer:
                 text,
                 fontsize=font_size,
                 font=font_path,
-                color="white",
+                color=color,  # 강렬한 색상 사용
                 stroke_color="black",
-                stroke_width=3,
+                stroke_width=5,  # 더 강한 테두리
                 method="caption",
                 size=(940, None),  # 좌우 30픽셀씩 줄임 (1000 -> 940)
                 align="center",
@@ -292,11 +297,18 @@ class SubtitleRenderer:
                 try:
                     # frame = txt_clip.get_frame(0)
                     # clip_height = frame.shape[0]
-                    # 성공 공식: 자막을 화면 중앙/상단 배치 (기본값: 중앙)
+                    # 성공 공식: 자막을 화면 중앙/하단 배치 (기본값: 하단)
                     position = VideoConstants.SUBTITLE_PREFERRED_POSITION
                     if position == "top":
                         raised_y = VideoConstants.SUBTITLE_TOP_MARGIN
                         txt_clip = txt_clip.set_position(("center", raised_y))
+                    elif position == "bottom":
+                        # 하단 배치: 화면 높이에서 하단 여백을 뺀 위치
+                        bottom_y = (
+                            VideoConstants.VIDEO_HEIGHT
+                            - VideoConstants.SUBTITLE_BOTTOM_MARGIN
+                        )
+                        txt_clip = txt_clip.set_position(("center", bottom_y))
                     else:  # center (기본값)
                         txt_clip = txt_clip.set_position(("center", "center"))
                 except Exception:
@@ -385,10 +397,11 @@ class SubtitleRenderer:
                                     font=pil_font,
                                 )
 
-                    # Draw main text
-                    draw.text(
-                        (x_pos, y_offset), line, fill=(255, 255, 255), font=pil_font
-                    )
+                    # Draw main text (눈에 띄는 색상: 밝은 노란색 또는 밝은 빨간색)
+                    text_color = (
+                        (255, 255, 0) if language == "ko" else (255, 0, 0)
+                    )  # 노란색 또는 빨간색
+                    draw.text((x_pos, y_offset), line, fill=text_color, font=pil_font)
                     y_offset += text_height + 10
 
             # Save and create clip
@@ -399,7 +412,19 @@ class SubtitleRenderer:
 
             txt_clip = ImageClip(temp_subtitle_path)
             txt_clip = txt_clip.set_duration(duration)
-            txt_clip = txt_clip.set_position(("center", 250))
+            # 자막 위치 설정 (기본값: 하단)
+            position = VideoConstants.SUBTITLE_PREFERRED_POSITION
+            if position == "bottom":
+                bottom_y = (
+                    VideoConstants.VIDEO_HEIGHT - VideoConstants.SUBTITLE_BOTTOM_MARGIN
+                )
+                txt_clip = txt_clip.set_position(("center", bottom_y))
+            elif position == "top":
+                txt_clip = txt_clip.set_position(
+                    ("center", VideoConstants.SUBTITLE_TOP_MARGIN)
+                )
+            else:  # center
+                txt_clip = txt_clip.set_position(("center", "center"))
             txt_clip = txt_clip.set_start(0)
 
             fade_duration = min(0.3, duration * 0.1)

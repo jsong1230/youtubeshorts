@@ -780,6 +780,30 @@ class BackgroundVideoManager:
                             if video_id in all_excluded_ids:
                                 continue
 
+                            # 사람이 나오지 않는 영상만 선택
+                            video_url = video.get("url", "").lower()
+                            video_tags = [tag.lower() for tag in video.get("tags", [])]
+                            video_title = video.get("title", "").lower()
+
+                            # 사람 관련 키워드가 포함된 경우 건너뛰기
+                            people_keywords = [
+                                "person",
+                                "people",
+                                "human",
+                                "man",
+                                "woman",
+                                "face",
+                                "portrait",
+                                "crowd",
+                            ]
+                            if any(
+                                keyword in video_url
+                                or any(keyword in tag for tag in video_tags)
+                                or keyword in video_title
+                                for keyword in people_keywords
+                            ):
+                                continue
+
                             duration_sec = video.get("duration", 0)
                             if duration_sec < 10:
                                 continue
@@ -788,14 +812,65 @@ class BackgroundVideoManager:
                             best_file = None
                             min_diff = float("inf")
 
+                            # 9:9 정사각형 비율에 맞는 영상만 선택
+                            target_width = 1080  # 9:9 정사각형 너비
+                            target_height = 1080  # 9:9 정사각형 높이
+                            target_aspect = 1.0  # 9:9 = 1.0
+
                             for file in files:
-                                if file.get("quality") == "hd" and file.get(
-                                    "width", 0
-                                ) < file.get("height", 0):
-                                    diff = abs(file.get("height", 0) - 1920)
-                                    if diff < min_diff:
-                                        min_diff = diff
-                                        best_file = file
+                                if file.get("quality") == "hd":
+                                    file_width = file.get("width", 0)
+                                    file_height = file.get("height", 0)
+
+                                    if file_width == 0 or file_height == 0:
+                                        continue
+
+                                    # 현재 영상의 비율 계산
+                                    current_aspect = file_width / file_height
+
+                                    # 9:9 정사각형으로 crop 가능한지 확인
+                                    can_crop_to_9_9 = False
+                                    crop_width = 0
+                                    crop_height = 0
+
+                                    if abs(current_aspect - target_aspect) < 0.01:
+                                        # 이미 9:9 비율에 가까움
+                                        can_crop_to_9_9 = (
+                                            file_width >= target_width
+                                            and file_height >= target_height
+                                        )
+                                        crop_width = min(file_width, target_width)
+                                        crop_height = min(file_height, target_height)
+                                    elif current_aspect > target_aspect:
+                                        # 영상이 더 넓음: 높이를 기준으로 crop
+                                        crop_height = min(file_height, target_height)
+                                        crop_width = int(crop_height * target_aspect)
+                                        can_crop_to_9_9 = (
+                                            crop_width <= file_width
+                                            and crop_height >= target_height
+                                        )
+                                    else:
+                                        # 영상이 더 좁음: 너비를 기준으로 crop
+                                        crop_width = min(file_width, target_width)
+                                        crop_height = int(crop_width / target_aspect)
+                                        can_crop_to_9_9 = (
+                                            crop_width >= target_width
+                                            and crop_height <= file_height
+                                        )
+
+                                    # 9:9로 crop 가능하고, 최소 해상도 요구사항을 만족하는 경우만 선택
+                                    if (
+                                        can_crop_to_9_9
+                                        and crop_width >= target_width
+                                        and crop_height >= target_height
+                                    ):
+                                        # 해상도 차이 계산 (1080x1080에 가까울수록 좋음)
+                                        diff = abs(crop_width - target_width) + abs(
+                                            crop_height - target_height
+                                        )
+                                        if diff < min_diff:
+                                            min_diff = diff
+                                            best_file = file
 
                             if best_file:
                                 # Calculate quality score

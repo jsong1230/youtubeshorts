@@ -199,18 +199,21 @@ def main():
 
         if command == "test" or command == "generate":
             # 영상 생성만 (업로드 없음)
-            # --ko, --en 플래그 확인
+            # --ko, --en, --force 플래그 확인
             args = sys.argv[2:] if len(sys.argv) > 2 else []
             language = None
+            force = "--force" in args or "-f" in args
             if "--ko" in args:
                 language = "ko"
-                args = [arg for arg in args if arg != "--ko"]
+                args = [arg for arg in args if arg not in ["--ko", "--force", "-f"]]
             elif "--en" in args:
                 language = "en"
-                args = [arg for arg in args if arg != "--en"]
+                args = [arg for arg in args if arg not in ["--en", "--force", "-f"]]
+            else:
+                args = [arg for arg in args if arg not in ["--force", "-f"]]
 
             topic = args[0] if args else None
-            bot.create_video_only(topic=topic, language=language)
+            bot.create_video_only(topic=topic, language=language, force=force)
 
         elif command == "upload":
             # 즉시 업로드

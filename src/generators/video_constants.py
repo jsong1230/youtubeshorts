@@ -9,9 +9,9 @@ class VideoConstants:
     # 해상도
     VIDEO_WIDTH = 1080  # 최종 영상 너비 (9:16)
     VIDEO_HEIGHT = 1920  # 최종 영상 높이 (9:16)
-    # 콘텐츠 영역: 9:16 전체 사용 (레거시 호환을 위해 CONTENT_* 유지)
-    CONTENT_WIDTH = 1080  # 콘텐츠 영역 너비 (9:16)
-    CONTENT_HEIGHT = 1920  # 콘텐츠 영역 높이 (9:16)
+    # 콘텐츠 영역: 9:9 정사각형 (가운데 배치, 위아래 흰색 배경)
+    CONTENT_WIDTH = 1080  # 콘텐츠 영역 너비 (9:9)
+    CONTENT_HEIGHT = 1080  # 콘텐츠 영역 높이 (9:9)
     VIDEO_FPS = 30
 
     # 배경 영상 전환 주기
@@ -72,11 +72,23 @@ class VideoConstants:
     CRITICAL_FIRST_3_SECONDS = 3.0  # 초반 3초 (가장 중요한 구간)
     HOOK_MAX_DURATION = 3.0  # Hook 최대 길이 (초)
 
-    # 자막 배치 (성공 공식: 화면 중앙/상단 배치)
+    # 자막 배치 (세로 가운데에 맨 윗줄이 오도록)
     SUBTITLE_POSITION_CENTER = "center"  # 중앙 배치
     SUBTITLE_POSITION_TOP = "top"  # 상단 배치
-    SUBTITLE_PREFERRED_POSITION = SUBTITLE_POSITION_CENTER  # 기본값: 중앙
+    SUBTITLE_POSITION_BOTTOM = "bottom"  # 하단 배치
+    SUBTITLE_PREFERRED_POSITION = SUBTITLE_POSITION_CENTER  # 기본값: 중앙 (세로 가운데)
     SUBTITLE_TOP_MARGIN = 200  # 상단 여백 (px) - 상단 배치 시 사용
+    SUBTITLE_BOTTOM_MARGIN = 500  # 하단 여백 (px) - 하단 배치 시 사용
+
+    # 제목/훅 강조 표시
+    HOOK_TITLE_ENABLED = True  # 맨 위에 제목/훅 표시 활성화
+    HOOK_TITLE_FONT_SIZE = 100  # 제목/훅 폰트 크기 (줄바꿈 가능하도록 줄임)
+    HOOK_TITLE_TOP_MARGIN = 80  # 제목/훅 상단 여백 (px) - 맨 위에 가깝게
+    HOOK_TITLE_DURATION = None  # 제목/훅 표시 시간 (None이면 영상 끝까지 유지)
+    HOOK_TITLE_COLOR = "white"  # 제목/훅 텍스트 색상 (흰색)
+    HOOK_TITLE_STROKE_WIDTH = 8  # 제목/훅 테두리 두께 (강한 테두리)
+    HOOK_TITLE_BACKGROUND_COLOR = (255, 255, 255)  # 훅 배경 색상 (흰색)
+    HOOK_TITLE_HEIGHT = 300  # 훅 영역 높이 (px) - 위쪽 crop 영역
 
     # 루프(Loop) 설계
     ENABLE_LOOP_DESIGN = True  # 루프 설계 활성화

@@ -7,6 +7,7 @@ from typing import List, Optional, Tuple
 from moviepy.editor import (
     AudioFileClip,
     CompositeVideoClip,
+    VideoClip,
     concatenate_videoclips,
     VideoFileClip,
 )
@@ -45,6 +46,8 @@ class VideoEditor:
         total_duration: float,
         content_type: Optional[ContentType] = None,
         topic: str = None,
+        script: List[str] = None,
+        language: str = "ko",
     ) -> CompositeVideoClip:
         """최종 영상 합성
 
@@ -101,38 +104,120 @@ class VideoEditor:
         # 최종 설정
         content_video = content_video.set_fps(VideoConstants.VIDEO_FPS)
 
-        # 리사이즈 없이 원본 비율 유지
+        # 배경 영상을 9:9 정사각형 비율로 crop (resize 대신)
+        content_video = self._crop_to_9_9(content_video)
+
+        # 리사이즈 없이 원본 비율 유지 (crop 후)
         logger.debug(
-            f"   배경 영상 원본 크기: {content_video.size[0]}x{content_video.size[1]} (리사이즈 없음)"
+            f"   배경 영상 크기: {content_video.size[0]}x{content_video.size[1]} (9:9 crop 적용)"
         )
 
-        # 자막 위치 조정 (화면 상단에 배치)
+        # 위쪽 훅 영역을 위해 영상 위쪽을 crop (resize 없이)
+        hook_height = VideoConstants.HOOK_TITLE_HEIGHT
+        if content_video.size[1] > VideoConstants.VIDEO_HEIGHT - hook_height:
+            # 영상 높이가 훅 영역을 제외한 높이보다 크면 위쪽을 crop
+            crop_height = content_video.size[1] - (
+                VideoConstants.VIDEO_HEIGHT - hook_height
+            )
+            content_video = content_video.crop(
+                x1=0, y1=crop_height, x2=content_video.size[0], y2=content_video.size[1]
+            )
+            logger.debug(f"   영상 위쪽 crop: {crop_height}px 제거 (훅 영역 확보)")
+
+        # 제목/훅 클립 생성 (맨 위에 강조 표시)
+        hook_title_clip = None
+        if VideoConstants.HOOK_TITLE_ENABLED and script and len(script) > 0:
+            hook_title_clip = self._create_hook_title_clip(
+                script[0], topic, total_duration, language
+            )
+
+        # 자막 위치 조정 (세로 가운데에 맨 윗줄이 오도록)
         adjusted_subtitle_clips = []
         if subtitle_clips:
-            # 자막을 화면 상단에 배치
-            top_margin = VideoConstants.SUBTITLE_TOP_MARGIN
-            for subtitle_clip in subtitle_clips:
-                adjusted_clip = subtitle_clip.set_position(("center", top_margin))
-                adjusted_subtitle_clips.append(adjusted_clip)
+            # 자막을 세로 가운데에 배치 (맨 윗줄이 중앙에 오도록)
+            position = VideoConstants.SUBTITLE_PREFERRED_POSITION
+            if position == "center":
+                # 중앙 배치 (세로 가운데)
+                for subtitle_clip in subtitle_clips:
+                    adjusted_clip = subtitle_clip.set_position(("center", "center"))
+                    adjusted_subtitle_clips.append(adjusted_clip)
+            elif position == "bottom":
+                # 하단 배치
+                bottom_y = (
+                    VideoConstants.VIDEO_HEIGHT - VideoConstants.SUBTITLE_BOTTOM_MARGIN
+                )
+                for subtitle_clip in subtitle_clips:
+                    adjusted_clip = subtitle_clip.set_position(("center", bottom_y))
+                    adjusted_subtitle_clips.append(adjusted_clip)
+            else:  # top
+                top_margin = VideoConstants.SUBTITLE_TOP_MARGIN
+                for subtitle_clip in subtitle_clips:
+                    adjusted_clip = subtitle_clip.set_position(("center", top_margin))
+                    adjusted_subtitle_clips.append(adjusted_clip)
 
-        # 최종 합성: 배경 영상 + 자막
-        final_clips = [content_video]
+        # 9:16 전체 영상에 위아래 흰색 배경 추가, 배경 영상(9:9)은 가운데에 배치
+        from moviepy.editor import ColorClip
+
+        # 위쪽 훅 영역 배경 (흰색 또는 검은색)
+        hook_height = VideoConstants.HOOK_TITLE_HEIGHT
+        hook_background = ColorClip(
+            size=(VideoConstants.VIDEO_WIDTH, hook_height),
+            color=VideoConstants.HOOK_TITLE_BACKGROUND_COLOR,
+            duration=total_duration,
+        )
+
+        # 아래쪽 흰색 배경 클립 생성 (나머지 영역)
+        bottom_height = VideoConstants.VIDEO_HEIGHT - hook_height
+        white_background = ColorClip(
+            size=(VideoConstants.VIDEO_WIDTH, bottom_height),
+            color=(255, 255, 255),  # 흰색
+            duration=total_duration,
+        )
+
+        # 배경 영상(9:9)을 가운데에 배치 (훅 영역 아래, 위아래 공백)
+        # 훅 영역 아래에서 시작하도록 위치 조정
+        content_y = hook_height + (bottom_height - content_video.size[1]) // 2
+        content_video = content_video.set_position(("center", content_y))
+
+        # 최종 합성: 훅 배경 + 아래쪽 흰색 배경 + 배경 영상(9:9, 가운데) + 제목/훅 + 자막
+        hook_background = hook_background.set_position(("center", 0))  # 맨 위
+        white_background = white_background.set_position(
+            ("center", hook_height)
+        )  # 훅 아래
+
+        final_clips = [hook_background, white_background, content_video]
+
+        # 제목/훅 추가 (맨 위, 영상 끝까지 유지)
+        if hook_title_clip:
+            final_clips.append(hook_title_clip)
 
         # 자막 추가
         if adjusted_subtitle_clips:
             final_clips.extend(adjusted_subtitle_clips)
 
-        # 최종 영상 크기는 배경 영상의 원본 크기 사용 (리사이즈 없음)
-        final_size = content_video.size
+        # 최종 영상 크기는 9:16
+        final_size = (VideoConstants.VIDEO_WIDTH, VideoConstants.VIDEO_HEIGHT)
         final_video = CompositeVideoClip(final_clips, size=final_size)
 
         logger.info(
-            f"   ✅ 원본 비율 유지 완료: {final_size[0]}x{final_size[1]} (리사이즈 없음)"
+            f"   ✅ 9:16 전체 영상 완료: {final_size[0]}x{final_size[1]} (배경 영상 9:9 crop, 가운데 배치, 위쪽 훅 배경, 아래쪽 흰색 배경)"
         )
-        if subtitle_clips:
+        if hook_title_clip:
             logger.info(
-                f"   📝 자막을 화면 상단에 배치 완료 (상단 여백: {VideoConstants.SUBTITLE_TOP_MARGIN}px)"
+                f"   📌 제목/훅을 맨 위에 강조 표시 완료 (폰트 크기: {VideoConstants.HOOK_TITLE_FONT_SIZE}px)"
             )
+        if subtitle_clips:
+            position_str = VideoConstants.SUBTITLE_PREFERRED_POSITION
+            if position_str == "bottom":
+                logger.info(
+                    f"   📝 자막을 화면 하단에 배치 완료 (하단 여백: {VideoConstants.SUBTITLE_BOTTOM_MARGIN}px)"
+                )
+            elif position_str == "center":
+                logger.info("   📝 자막을 화면 중앙에 배치 완료")
+            else:
+                logger.info(
+                    f"   📝 자막을 화면 상단에 배치 완료 (상단 여백: {VideoConstants.SUBTITLE_TOP_MARGIN}px)"
+                )
 
         return final_video
 
@@ -367,7 +452,7 @@ class VideoEditor:
                 if subtitle_clip:
                     subtitle_clip = subtitle_clip.set_duration(actual_audio_duration)
                     if getattr(subtitle_clip, "pos", None) is None:
-                        # 성공 공식: 자막을 중앙/상단 배치 (VideoConstants 설정 사용)
+                        # 성공 공식: 자막을 중앙/하단 배치 (VideoConstants 설정 사용)
                         position = VideoConstants.SUBTITLE_PREFERRED_POSITION
                         if position == "top":
                             subtitle_clip = subtitle_clip.set_position(
@@ -375,6 +460,17 @@ class VideoEditor:
                             )
                             position_str = (
                                 f"상단 ({VideoConstants.SUBTITLE_TOP_MARGIN}px)"
+                            )
+                        elif position == "bottom":
+                            bottom_y = (
+                                VideoConstants.VIDEO_HEIGHT
+                                - VideoConstants.SUBTITLE_BOTTOM_MARGIN
+                            )
+                            subtitle_clip = subtitle_clip.set_position(
+                                ("center", bottom_y)
+                            )
+                            position_str = (
+                                f"하단 ({VideoConstants.SUBTITLE_BOTTOM_MARGIN}px)"
                             )
                         else:  # center (기본값)
                             subtitle_clip = subtitle_clip.set_position(
@@ -400,6 +496,321 @@ class VideoEditor:
             current_time += actual_audio_duration
 
         return subtitle_clips
+
+    def _crop_to_9_9(self, video: VideoClip) -> VideoClip:
+        """배경 영상을 9:9 정사각형 비율로 crop (resize 대신)"""
+        try:
+            video_width, video_height = video.size
+            target_width = VideoConstants.CONTENT_WIDTH  # 1080 (9:9 정사각형)
+            target_height = VideoConstants.CONTENT_HEIGHT  # 1080 (9:9 정사각형)
+            target_aspect = target_width / target_height  # 9:9 = 1.0
+
+            # 현재 영상의 비율 계산
+            current_aspect = video_width / video_height
+
+            # 9:9 정사각형 비율로 crop
+            if abs(current_aspect - target_aspect) > 0.01:  # 비율이 다르면 crop
+                if current_aspect > target_aspect:
+                    # 영상이 더 넓음: 높이를 기준으로 crop
+                    new_height = video_height
+                    new_width = int(new_height * target_aspect)  # 정사각형
+                    x_center = video_width / 2
+                    x1 = int(x_center - new_width / 2)
+                    x2 = int(x_center + new_width / 2)
+                    cropped = video.crop(x1=x1, y1=0, x2=x2, y2=new_height)
+                    logger.debug(
+                        f"   ✂️ 영상 crop: {video_width}x{video_height} -> {new_width}x{new_height} (9:9)"
+                    )
+                    return cropped
+                else:
+                    # 영상이 더 좁음: 너비를 기준으로 crop
+                    new_width = video_width
+                    new_height = int(new_width / target_aspect)  # 정사각형
+                    y_center = video_height / 2
+                    y1 = int(y_center - new_height / 2)
+                    y2 = int(y_center + new_height / 2)
+                    cropped = video.crop(x1=0, y1=y1, x2=new_width, y2=y2)
+                    logger.debug(
+                        f"   ✂️ 영상 crop: {video_width}x{video_height} -> {new_width}x{new_height} (9:9)"
+                    )
+                    return cropped
+            else:
+                # 이미 9:9 비율이면 그대로 사용
+                logger.debug(
+                    f"   ✅ 영상이 이미 9:9 비율입니다: {video_width}x{video_height}"
+                )
+                return video
+        except Exception as e:
+            logger.warning(f"   ⚠️ 영상 crop 실패 (원본 사용): {e}")
+            return video
+
+    def _create_hook_title_clip(
+        self, first_sentence: str, topic: str, total_duration: float, language: str
+    ):
+        """제목/훅 클립 생성 (맨 위에 강조 표시)"""
+        try:
+            from moviepy.editor import TextClip
+            from moviepy.video.fx.all import fadein, fadeout
+
+            # 제목 텍스트: 첫 문장 또는 주제 (짧은 쪽 선택)
+            hook_text = first_sentence
+            if topic and len(topic) < len(first_sentence):
+                hook_text = topic
+
+            # 텍스트 길이 제한 (훅 영역 높이 300px 내에 맞도록)
+            # 폰트 크기와 줄 간격을 고려하여 최대 2줄까지 허용
+            # 훅 영역 높이: 300px, 폰트 크기: 100px, 줄 간격: 20px
+            # 계산: (100px * 2줄) + (20px * 1줄 간격) = 220px < 300px (안전)
+            max_chars_per_line = 18 if language == "ko" else 28  # 훅 영역에 맞게 조정
+            max_total_chars = max_chars_per_line * 2  # 최대 2줄까지
+
+            if len(hook_text) > max_total_chars:
+                # 2줄로 나누기
+                words = hook_text.split()
+                line1: list[str] = []
+                line2: list[str] = []
+                current_line = line1
+
+                for word in words:
+                    test_line = " ".join(current_line + [word])
+                    if len(test_line) <= max_chars_per_line:
+                        current_line.append(word)
+                    else:
+                        if current_line == line1:
+                            current_line = line2
+                            current_line.append(word)
+                        else:
+                            break
+
+                if line1 and line2:
+                    hook_text = " ".join(line1) + "\n" + " ".join(line2)
+                elif line1:
+                    hook_text = " ".join(line1)
+                else:
+                    hook_text = hook_text[:max_total_chars] + "..."
+
+            # 폰트 경로
+            font_path = self.subtitle_renderer._get_font_path(language)
+            if not font_path:
+                font_path = (
+                    "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+                    if language == "en"
+                    else "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
+                )
+
+            # 제목/훅 클립 생성 (큰 폰트, 강한 스타일, 강렬한 색상, 영상 끝까지 유지)
+            hook_duration = total_duration  # 영상 끝까지 유지
+            if VideoConstants.HOOK_TITLE_DURATION is not None:
+                hook_duration = min(VideoConstants.HOOK_TITLE_DURATION, total_duration)
+            try:
+                # 훅 영역 높이에 맞게 텍스트 크기 조정
+                hook_height = VideoConstants.HOOK_TITLE_HEIGHT  # 300px
+                max_text_height = hook_height - 40  # 상하 여백 20px씩
+
+                hook_clip = TextClip(
+                    hook_text,
+                    fontsize=VideoConstants.HOOK_TITLE_FONT_SIZE,
+                    font=font_path,
+                    color=VideoConstants.HOOK_TITLE_COLOR,
+                    stroke_color="black",
+                    stroke_width=VideoConstants.HOOK_TITLE_STROKE_WIDTH,  # 더 강한 테두리
+                    method="caption",
+                    size=(
+                        VideoConstants.VIDEO_WIDTH - 100,
+                        max_text_height,
+                    ),  # 좌우 50px 여백, 최대 높이 제한
+                    align="center",
+                )
+                hook_clip = hook_clip.set_duration(hook_duration)
+                hook_clip = hook_clip.set_position(
+                    ("center", VideoConstants.HOOK_TITLE_TOP_MARGIN)
+                )
+
+                # 페이드 효과
+                fade_duration = min(0.3, hook_duration * 0.1)
+                if hook_duration > fade_duration * 2:
+                    hook_clip = hook_clip.fx(fadein, fade_duration).fx(
+                        fadeout, fade_duration
+                    )
+                    hook_clip = hook_clip.set_duration(hook_duration)
+
+                logger.info(
+                    f"   ✅ 제목/훅 클립 생성 완료: '{hook_text[:30]}...' (폰트: {VideoConstants.HOOK_TITLE_FONT_SIZE}px, 길이: {hook_duration:.2f}초)"
+                )
+                return hook_clip
+            except Exception as e:
+                logger.warning(f"   ⚠️ TextClip 생성 실패, PIL로 대체: {e}")
+                # PIL 폴백 구현 (hook_duration은 이미 계산됨)
+                return self._create_hook_title_clip_pil(
+                    hook_text, hook_duration, language
+                )
+        except Exception as e:
+            logger.warning(f"   ⚠️ 제목/훅 클립 생성 실패: {e}")
+            return None
+
+    def _create_hook_title_clip_pil(
+        self, hook_text: str, hook_duration: float, language: str
+    ):
+        """PIL을 사용한 제목/훅 클립 생성 (폴백)"""
+        try:
+            import time
+            from PIL import Image, ImageDraw
+            from moviepy.editor import ImageClip
+            from moviepy.video.fx.all import fadein, fadeout
+
+            # PIL 폰트 로드
+            font_path = self.subtitle_renderer._get_font_path(language)
+            if not font_path:
+                font_path = (
+                    "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+                    if language == "en"
+                    else "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
+                )
+
+            pil_font = self.subtitle_renderer._get_pil_font(
+                font_path, VideoConstants.HOOK_TITLE_FONT_SIZE, language
+            )
+
+            # 텍스트 줄바꿈 처리
+            max_width = VideoConstants.VIDEO_WIDTH - 100  # 좌우 50px 여백
+            lines = []
+            if "\n" in hook_text:
+                # 이미 줄바꿈이 있으면 그대로 사용
+                lines = hook_text.split("\n")
+            else:
+                # 줄바꿈이 없으면 자동으로 줄바꿈
+                words = hook_text.split()
+                current_line: list[str] = []
+                temp_img = Image.new("RGB", (max_width, 200), (0, 0, 0))
+                temp_draw = ImageDraw.Draw(temp_img)
+
+                for word in words:
+                    test_line = " ".join(current_line + [word])
+                    bbox = temp_draw.textbbox((0, 0), test_line, font=pil_font)
+                    if bbox[2] - bbox[0] <= max_width:
+                        current_line.append(word)
+                    else:
+                        if current_line:
+                            lines.append(" ".join(current_line))
+                        current_line = [word]
+                if current_line:
+                    lines.append(" ".join(current_line))
+
+            if not lines:
+                lines = [hook_text]
+
+            # 텍스트 크기 계산 (여러 줄 고려)
+            temp_img = Image.new("RGB", (VideoConstants.VIDEO_WIDTH, 200), (0, 0, 0))
+            temp_draw = ImageDraw.Draw(temp_img)
+            line_heights = []
+            line_widths = []
+            for line in lines:
+                bbox = temp_draw.textbbox((0, 0), line, font=pil_font)
+                line_heights.append(bbox[3] - bbox[1])
+                line_widths.append(bbox[2] - bbox[0])
+
+            total_text_height = (
+                sum(line_heights) + (len(lines) - 1) * 15
+            )  # 줄 간격 15px (훅 영역에 맞게 조정)
+
+            # 훅 영역 높이 확인 및 텍스트 크기 조정
+            hook_img_height = VideoConstants.HOOK_TITLE_HEIGHT  # 300px
+            max_allowed_height = hook_img_height - 40  # 상하 여백 20px씩
+
+            # 텍스트가 훅 영역을 벗어나면 폰트 크기 조정
+            if total_text_height > max_allowed_height:
+                # 폰트 크기를 줄여서 훅 영역에 맞춤
+                scale_factor = max_allowed_height / total_text_height
+                adjusted_font_size = int(
+                    VideoConstants.HOOK_TITLE_FONT_SIZE * scale_factor * 0.9
+                )  # 10% 여유
+                if adjusted_font_size < 60:  # 최소 폰트 크기
+                    adjusted_font_size = 60
+
+                # 조정된 폰트로 다시 계산
+                adjusted_pil_font = self.subtitle_renderer._get_pil_font(
+                    font_path, adjusted_font_size, language
+                )
+                line_heights = []
+                line_widths = []
+                for line in lines:
+                    bbox = temp_draw.textbbox((0, 0), line, font=adjusted_pil_font)
+                    line_heights.append(bbox[3] - bbox[1])
+                    line_widths.append(bbox[2] - bbox[0])
+                total_text_height = sum(line_heights) + (len(lines) - 1) * 15
+                pil_font = adjusted_pil_font
+                logger.debug(
+                    f"   훅 텍스트 폰트 크기 조정: {VideoConstants.HOOK_TITLE_FONT_SIZE}px -> {adjusted_font_size}px (훅 영역에 맞춤)"
+                )
+
+            hook_img = Image.new(
+                "RGBA", (VideoConstants.VIDEO_WIDTH, hook_img_height), (0, 0, 0, 0)
+            )
+            draw = ImageDraw.Draw(hook_img)
+
+            # 텍스트 위치 (중앙 정렬, 여러 줄, 훅 영역 내에 배치)
+            y_pos = (hook_img_height - total_text_height) // 2
+            # 훅 영역을 벗어나지 않도록 확인
+            if y_pos < 20:
+                y_pos = 20  # 최소 상단 여백
+            if y_pos + total_text_height > hook_img_height - 20:
+                y_pos = hook_img_height - total_text_height - 20  # 최소 하단 여백
+
+            # 여러 줄 텍스트 그리기
+            current_y = y_pos
+            for i, line in enumerate(lines):
+                if not line.strip():
+                    continue
+                line_bbox = temp_draw.textbbox((0, 0), line, font=pil_font)
+                line_width = line_bbox[2] - line_bbox[0]
+                x_pos = (VideoConstants.VIDEO_WIDTH - line_width) // 2
+
+                # 그림자 효과 (강한 테두리)
+                shadow_offset = 5
+                for dx in range(-shadow_offset, shadow_offset + 1):
+                    for dy in range(-shadow_offset, shadow_offset + 1):
+                        if dx != 0 or dy != 0:
+                            draw.text(
+                                (x_pos + dx, current_y + dy),
+                                line,
+                                fill=(0, 0, 0, 255),
+                                font=pil_font,
+                            )
+
+                # 메인 텍스트 (강렬한 흰색)
+                draw.text(
+                    (x_pos, current_y), line, fill=(255, 255, 255, 255), font=pil_font
+                )
+                current_y += line_heights[i] + 20  # 줄 간격
+
+            # 임시 파일로 저장
+            temp_hook_path = os.path.join(
+                settings.TEMP_DIR, f"hook_title_{int(time.time()*1000)}.png"
+            )
+            hook_img.save(temp_hook_path, "PNG")
+
+            # ImageClip 생성
+            hook_clip = ImageClip(temp_hook_path)
+            hook_clip = hook_clip.set_duration(hook_duration)
+            hook_clip = hook_clip.set_position(
+                ("center", VideoConstants.HOOK_TITLE_TOP_MARGIN)
+            )
+
+            # 페이드 효과
+            fade_duration = min(0.3, hook_duration * 0.1)
+            if hook_duration > fade_duration * 2:
+                hook_clip = hook_clip.fx(fadein, fade_duration).fx(
+                    fadeout, fade_duration
+                )
+                hook_clip = hook_clip.set_duration(hook_duration)
+
+            logger.info(
+                f"   ✅ 제목/훅 클립 생성 완료 (PIL): '{hook_text[:30]}...' (폰트: {VideoConstants.HOOK_TITLE_FONT_SIZE}px, 길이: {hook_duration:.2f}초)"
+            )
+            return hook_clip
+        except Exception as e:
+            logger.warning(f"   ⚠️ PIL 제목/훅 클립 생성 실패: {e}")
+            return None
 
     def save_video(
         self,

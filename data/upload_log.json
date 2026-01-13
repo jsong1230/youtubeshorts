@@ -596,5 +596,18 @@
       "youtube": "VIDEO_ID_123"
     },
     "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
+  },
+  {
+    "timestamp": "2026-01-13T08:58:20.824196",
+    "video_id": "VIDEO_ID_123",
+    "title": "Test Topic #Shorts",
+    "topic": "Test Topic",
+    "content_type": "fact",
+    "video_path": "/path/to/video.mp4",
+    "thumbnail_path": "/path/to/thumb.jpg",
+    "upload_results": {
+      "youtube": "VIDEO_ID_123"
+    },
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID_123"
   }
 ]
