@@ -241,7 +241,7 @@ class SubtitleRenderer:
                 return path
         return None
 
-    def _get_font_paths(self, language: str) -> list:
+    def _get_font_paths(self, language: str) -> List[str]:
         """언어별 폰트 경로 목록 (.ttf 파일만 반환, .ttc 파일은 완전히 제외)"""
         from pathlib import Path
 
@@ -250,11 +250,12 @@ class SubtitleRenderer:
         fonts_dir = project_root / "fonts"
 
         # 프로젝트 fonts 폴더의 폰트를 최우선으로 사용
-        project_fonts = []
+        project_fonts: List[str] = []
         if fonts_dir.exists():
+            project_font_paths: List[Path] = []
             if language == "en":
                 # 영문 폰트 우선순위
-                project_fonts = [
+                project_font_paths = [
                     fonts_dir / "Roboto-Bold.ttf",
                     fonts_dir / "Roboto-Regular.ttf",
                     fonts_dir / "Arial-Bold.ttf",
@@ -263,7 +264,7 @@ class SubtitleRenderer:
                 ]
             else:
                 # 한글 폰트 우선순위 (나눔고딕만 사용)
-                project_fonts = [
+                project_font_paths = [
                     fonts_dir / "NanumGothicBold.ttf",
                     fonts_dir / "NanumGothic.ttf",
                     # 나눔고딕이 없을 경우에만 다른 폰트 시도
@@ -272,7 +273,7 @@ class SubtitleRenderer:
                 ]
 
             # 존재하는 폰트만 추가
-            project_fonts = [str(f) for f in project_fonts if f.exists()]
+            project_fonts = [str(f) for f in project_font_paths if f.exists()]
 
         # 시스템 폰트 (폴백)
         if language == "en":
@@ -332,6 +333,7 @@ class SubtitleRenderer:
                     continue
 
         # 시스템 폰트 (폴백)
+        font_paths: List[str]
         if language == "en":
             font_paths = [
                 "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
@@ -349,10 +351,10 @@ class SubtitleRenderer:
                 "/System/Library/Fonts/Supplemental/NanumGothic.ttf",
             ]
 
-        for font_path in font_paths:
+        for font_path_str in font_paths:
             try:
-                if os.path.exists(font_path) and font_path.endswith(".ttf"):
-                    return ImageFont.truetype(font_path, font_size)
+                if os.path.exists(font_path_str) and font_path_str.endswith(".ttf"):
+                    return ImageFont.truetype(font_path_str, font_size)
             except BaseException:
                 continue
         return ImageFont.load_default()

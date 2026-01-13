@@ -1099,18 +1099,18 @@ class VideoEditor:
                     test_lines = split_lines  # 일단 모든 줄 포함
                 else:
                     words = hook_text.split()
-                    current_line: list[str] = []
+                    test_current_line: list[str] = []
                     for word in words:
-                        test_line = " ".join(current_line + [word])
+                        test_line = " ".join(test_current_line + [word])
                         bbox = temp_draw.textbbox((0, 0), test_line, font=test_font)
                         if bbox[2] - bbox[0] <= max_width:
-                            current_line.append(word)
+                            test_current_line.append(word)
                         else:
-                            if current_line:
-                                test_lines.append(" ".join(current_line))
-                            current_line = [word]
-                    if current_line:
-                        test_lines.append(" ".join(current_line))
+                            if test_current_line:
+                                test_lines.append(" ".join(test_current_line))
+                            test_current_line = [word]
+                    if test_current_line:
+                        test_lines.append(" ".join(test_current_line))
 
                 if not test_lines:
                     test_lines = [hook_text]
