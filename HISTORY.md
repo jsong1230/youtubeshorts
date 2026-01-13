@@ -8,6 +8,40 @@
   - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
 
 
+- **2026-01-13 - 썸네일 생성 방식 변경: DALL-E 제거, 영상 프레임에서 추출**
+  - **변경 사항**: DALL-E 3를 사용한 썸네일 생성 기능 제거
+  - **새로운 방식**: 항상 영상 프레임에서 썸네일을 추출하도록 변경
+  - **변경된 파일**:
+    - `src/generators/image_generator.py`: `generate_thumbnail` 메서드에서 DALL-E 호출 제거, 영상 프레임 추출만 사용
+    - `tests/test_image_generator.py`: DALL-E 관련 테스트 제거, 영상 프레임 추출 테스트로 변경
+  - **이유**: DALL-E API 비용 절감 및 안정성 향상 (영상 프레임은 항상 사용 가능)
+
+- **2026-01-13 - .cursorrules에 CI 테스트 필수 규칙 강화**
+  - **변경 사항**: 커밋 및 푸시 전 CI 테스트 필수 확인 규칙 명확화
+  - **추가된 내용**:
+    - 푸시 전 최종 확인 단계 추가
+    - "그냥 푸시해줘" 요청에도 CI 테스트 통과 필수 명시
+    - 작업 흐름에 CI 테스트 실행 단계 추가
+  - **변경된 파일**: `.cursorrules`
+
+- **2026-01-13 - Video Uploaded (한국어 1개, 영어 1개)**
+  - **영어 영상**: Stop Letting Inflation Eat Your Money #Shorts
+    - Video ID: `WocgM3lLf7g`
+    - URL: <https://www.youtube.com/watch?v=WocgM3lLf7g>
+    - 상태: 비공개 업로드 완료
+  - **한국어 영상**: 월급 빼고 다 오르는 시대 생존 치트키 #Shorts
+    - Video ID: `VsBFDz_kUnY`
+    - URL: <https://www.youtube.com/watch?v=VsBFDz_kUnY>
+    - 상태: 비공개 업로드 완료
+
+- **2026-01-13 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
 - **2026-01-13 - Video Uploaded**
   - **Title**: Test Topic #Shorts
   - **Topic**: Test Topic
