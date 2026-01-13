@@ -214,19 +214,21 @@ class AIVideoGenerator:
 
         logger.info(f"✅ 영상 생성 완료: {video_path}")
 
-        # 5. 썸네일 생성 (ImageGenerator 위임)
-        logger.info("🖼️ 썸네일 생성 중...")
+        # 5. 썸네일 생성 비활성화 (DALL-E 사용 안 함, 썸네일 없이 업로드)
+        # logger.info("🖼️ 썸네일 생성 중...")
         thumbnail_path = None
-        try:
-            thumbnail_path = self.image_generator.generate_thumbnail(
-                video_path=video_path, title=topic, topic=topic, script=script
-            )
-            if thumbnail_path:
-                logger.info(f"✅ 썸네일 생성 완료: {thumbnail_path}")
-            else:
-                logger.warning("⚠️ 썸네일 생성 실패")
-        except Exception as e:
-            logger.warning(f"⚠️ 썸네일 생성 중 오류: {e}")
+        # 썸네일 생성 비활성화 - YouTube가 자동으로 영상에서 추출
+        # try:
+        #     thumbnail_path = self.image_generator.generate_thumbnail(
+        #         video_path=video_path, title=topic, topic=topic, script=script
+        #     )
+        #     if thumbnail_path:
+        #         logger.info(f"✅ 썸네일 생성 완료: {thumbnail_path}")
+        #     else:
+        #         logger.warning("⚠️ 썸네일 생성 실패")
+        # except Exception as e:
+        #     logger.warning(f"⚠️ 썸네일 생성 중 오류: {e}")
+        logger.info("ℹ️ 썸네일 생성 건너뜀 (YouTube 자동 추출 사용)")
 
         end_time = time.time()
         elapsed_time = end_time - start_time

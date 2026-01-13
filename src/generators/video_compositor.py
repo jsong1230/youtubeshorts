@@ -110,6 +110,10 @@ class VideoCompositor:
         total_audio_duration = sum(sentence_audio_durations)
         logger.info(f"📏 실제 음성 총 길이: {total_audio_duration:.2f}초")
 
+        # duration이 None이면 실제 음성 길이 사용
+        if duration is None:
+            duration = total_audio_duration
+
         # 음성 길이를 기준으로 영상 길이 조정 (60초 초과 방지)
         max_safe_duration = 58  # 60초 초과 방지를 위한 안전 마진
         if total_audio_duration > max_safe_duration:
