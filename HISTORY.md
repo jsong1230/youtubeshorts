@@ -8,6 +8,14 @@
   - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
 
 
+- **2026-01-14 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
 - **2026-01-14 - 폰트 시스템 개선: 모든 폰트 굵기 적용**
   - **변경 사항**: fonts 폴더의 모든 폰트를 확인하여 모든 굵기를 적용하도록 개선
   - **적용된 폰트**:
