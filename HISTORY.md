@@ -1,5 +1,35 @@
 ## Recent Updates
 
+- **2026-01-14 - Video Uploaded**
+  - **Title**: Test Topic #Shorts
+  - **Topic**: Test Topic
+  - **Type**: fact
+  - **Video ID**: VIDEO_ID_123
+  - **URL**: https://www.youtube.com/watch?v=VIDEO_ID_123
+
+
+- **2026-01-14 - 폰트 시스템 개선: 모든 폰트 굵기 적용**
+  - **변경 사항**: fonts 폴더의 모든 폰트를 확인하여 모든 굵기를 적용하도록 개선
+  - **적용된 폰트**:
+    - **한글 제목/훅**: Gmarket Sans (TTF/OTF: Bold, Medium, Light), Pretendard (Bold, ExtraBold, Black)
+    - **한글 본문**: Pretendard (Bold, Regular, Medium, SemiBold, ExtraBold, Light, ExtraLight, Thin, Black, Variable)
+    - **영문 제목/훅**: Bebas Neue (Regular), Montserrat (Bold, ExtraBold, Black)
+    - **영문 본문**: Montserrat (Bold, Regular, Medium, SemiBold, ExtraBold, Light, ExtraLight, Thin, Black, Variable)
+  - **변경된 파일**:
+    - `src/generators/video/subtitle_renderer.py`: `_get_body_font_paths()`, `_get_hook_font_paths()`, `_get_default_font()` 메서드에 모든 폰트 굵기 추가
+    - `src/generators/video/video_editor.py`: `_create_hook_title_clip()`에서 `_get_hook_font_path()` 사용
+  - **효과**: 다양한 폰트 굵기 옵션 제공으로 더 나은 시각적 표현 가능
+
+- **2026-01-14 - Video Uploaded (한국어 1개, 영어 1개)**
+  - **영어 영상**: Why You Are Always Tired #Shorts
+    - Video ID: `VDWEKeK7W4M`
+    - URL: <https://www.youtube.com/watch?v=VDWEKeK7W4M>
+    - 상태: 비공개 업로드 완료
+  - **한국어 영상**: 갓생 살려다가 골병드는 이유 #Shorts
+    - Video ID: `IJaEbxvoJjk`
+    - URL: <https://www.youtube.com/watch?v=IJaEbxvoJjk>
+    - 상태: 비공개 업로드 완료
+
 - **2026-01-13 - Video Uploaded**
   - **Title**: Test Topic #Shorts
   - **Topic**: Test Topic

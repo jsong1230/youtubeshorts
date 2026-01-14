@@ -710,8 +710,8 @@ class VideoEditor:
                 else:
                     hook_text = hook_text[:max_total_chars] + "..."
 
-            # 폰트 경로 (.ttf 파일 우선, .ttc 파일은 PIL에서 직접 사용 불가)
-            font_path = self.subtitle_renderer._get_font_path(language)
+            # 폰트 경로: 제목/훅용 폰트 사용 (Gmarket Sans, Bebas Neue)
+            font_path = self.subtitle_renderer._get_hook_font_path(language)
             if not font_path or (font_path and font_path.endswith(".ttc")):
                 # 폴백 폰트 (.ttf 파일 우선)
                 if language == "en":

@@ -40,7 +40,7 @@ class SubtitleRenderer:
                 if key_words:
                     subtitle_text = key_words
 
-            font_path = self._get_font_path(language)
+            font_path = self._get_body_font_path(language)  # 본문 자막용 폰트
             # 폰트 크기 30% 증가: 60 -> 78, 80 -> 104
             font_size = 78 if subtitle_mode == "full_sentence" else 104
 
@@ -233,8 +233,27 @@ class SubtitleRenderer:
         return lines if lines else [text]
 
     def _get_font_path(self, language: str) -> Optional[str]:
-        """언어에 맞는 폰트 경로 반환 (.ttf 파일만)"""
-        font_paths = self._get_font_paths(language)
+        """언어에 맞는 폰트 경로 반환 (.ttf 파일만) - 하위 호환성 유지"""
+        return self._get_body_font_path(language)
+
+    def _get_body_font_path(self, language: str) -> Optional[str]:
+        """본문 자막용 폰트 경로 반환 (.ttf 파일만)
+        - 한글: Pretendard
+        - 영문: Montserrat
+        """
+        font_paths = self._get_body_font_paths(language)
+        for path in font_paths:
+            # .ttf 파일만 반환 (.ttc 파일은 제외)
+            if os.path.exists(path) and path.endswith(".ttf"):
+                return path
+        return None
+
+    def _get_hook_font_path(self, language: str) -> Optional[str]:
+        """제목/훅용 폰트 경로 반환 (.ttf 파일만)
+        - 한글: Gmarket Sans (Bold 우선)
+        - 영문: Bebas Neue
+        """
+        font_paths = self._get_hook_font_paths(language)
         for path in font_paths:
             # .ttf 파일만 반환 (.ttc 파일은 제외)
             if os.path.exists(path) and path.endswith(".ttf"):
@@ -242,7 +261,14 @@ class SubtitleRenderer:
         return None
 
     def _get_font_paths(self, language: str) -> List[str]:
-        """언어별 폰트 경로 목록 (.ttf 파일만 반환, .ttc 파일은 완전히 제외)"""
+        """언어별 폰트 경로 목록 (.ttf 파일만 반환, .ttc 파일은 완전히 제외) - 하위 호환성 유지"""
+        return self._get_body_font_paths(language)
+
+    def _get_body_font_paths(self, language: str) -> List[str]:
+        """본문 자막용 폰트 경로 목록 (.ttf 파일만 반환)
+        - 한글: Pretendard (Regular, Bold)
+        - 영문: Montserrat (Regular, Bold)
+        """
         from pathlib import Path
 
         # 프로젝트 루트의 fonts 폴더 경로
@@ -254,8 +280,21 @@ class SubtitleRenderer:
         if fonts_dir.exists():
             project_font_paths: List[Path] = []
             if language == "en":
-                # 영문 폰트 우선순위
+                # 영문 본문 폰트: Montserrat (모든 굵기 포함)
                 project_font_paths = [
+                    # 우선순위: Bold, Regular, Medium, SemiBold
+                    fonts_dir / "Montserrat" / "static" / "Montserrat-Bold.ttf",
+                    fonts_dir / "Montserrat" / "static" / "Montserrat-Regular.ttf",
+                    fonts_dir / "Montserrat" / "static" / "Montserrat-Medium.ttf",
+                    fonts_dir / "Montserrat" / "static" / "Montserrat-SemiBold.ttf",
+                    fonts_dir / "Montserrat" / "Montserrat-VariableFont_wght.ttf",
+                    # 추가 굵기: ExtraBold, Light, ExtraLight, Thin, Black
+                    fonts_dir / "Montserrat" / "static" / "Montserrat-ExtraBold.ttf",
+                    fonts_dir / "Montserrat" / "static" / "Montserrat-Light.ttf",
+                    fonts_dir / "Montserrat" / "static" / "Montserrat-ExtraLight.ttf",
+                    fonts_dir / "Montserrat" / "static" / "Montserrat-Thin.ttf",
+                    fonts_dir / "Montserrat" / "static" / "Montserrat-Black.ttf",
+                    # 폴백: 기존 폰트
                     fonts_dir / "Roboto-Bold.ttf",
                     fonts_dir / "Roboto-Regular.ttf",
                     fonts_dir / "Arial-Bold.ttf",
@@ -263,11 +302,72 @@ class SubtitleRenderer:
                     fonts_dir / "Arial.ttf",
                 ]
             else:
-                # 한글 폰트 우선순위 (나눔고딕만 사용)
+                # 한글 본문 폰트: Pretendard (모든 굵기 포함)
                 project_font_paths = [
+                    # 우선순위: Bold, Regular, Medium, SemiBold
+                    fonts_dir
+                    / "Pretendard"
+                    / "public"
+                    / "static"
+                    / "alternative"
+                    / "Pretendard-Bold.ttf",
+                    fonts_dir
+                    / "Pretendard"
+                    / "public"
+                    / "static"
+                    / "alternative"
+                    / "Pretendard-Regular.ttf",
+                    fonts_dir
+                    / "Pretendard"
+                    / "public"
+                    / "static"
+                    / "alternative"
+                    / "Pretendard-Medium.ttf",
+                    fonts_dir
+                    / "Pretendard"
+                    / "public"
+                    / "static"
+                    / "alternative"
+                    / "Pretendard-SemiBold.ttf",
+                    fonts_dir
+                    / "Pretendard"
+                    / "public"
+                    / "variable"
+                    / "PretendardVariable.ttf",
+                    # 추가 굵기: ExtraBold, Light, ExtraLight, Thin, Black
+                    fonts_dir
+                    / "Pretendard"
+                    / "public"
+                    / "static"
+                    / "alternative"
+                    / "Pretendard-ExtraBold.ttf",
+                    fonts_dir
+                    / "Pretendard"
+                    / "public"
+                    / "static"
+                    / "alternative"
+                    / "Pretendard-Light.ttf",
+                    fonts_dir
+                    / "Pretendard"
+                    / "public"
+                    / "static"
+                    / "alternative"
+                    / "Pretendard-ExtraLight.ttf",
+                    fonts_dir
+                    / "Pretendard"
+                    / "public"
+                    / "static"
+                    / "alternative"
+                    / "Pretendard-Thin.ttf",
+                    fonts_dir
+                    / "Pretendard"
+                    / "public"
+                    / "static"
+                    / "alternative"
+                    / "Pretendard-Black.ttf",
+                    # 폴백: 기존 폰트
                     fonts_dir / "NanumGothicBold.ttf",
                     fonts_dir / "NanumGothic.ttf",
-                    # 나눔고딕이 없을 경우에만 다른 폰트 시도
                     fonts_dir / "NotoSansKR-Bold.ttf",
                     fonts_dir / "NotoSansKR-Regular.ttf",
                 ]
@@ -299,8 +399,99 @@ class SubtitleRenderer:
         # 프로젝트 폰트를 먼저, 그 다음 시스템 폰트
         return project_fonts + system_fonts
 
-    def _get_default_font(self, language: str, font_size: int):
-        """기본 폰트 반환 (.ttf 파일만 사용, 프로젝트 fonts 폴더 우선)"""
+    def _get_hook_font_paths(self, language: str) -> List[str]:
+        """제목/훅용 폰트 경로 목록 (.ttf 파일만 반환)
+        - 한글: Gmarket Sans (Bold, Medium, Light)
+        - 영문: Bebas Neue
+        """
+        from pathlib import Path
+
+        # 프로젝트 루트의 fonts 폴더 경로
+        project_root = Path(__file__).parent.parent.parent.parent
+        fonts_dir = project_root / "fonts"
+
+        # 프로젝트 fonts 폴더의 폰트를 최우선으로 사용
+        project_fonts: List[str] = []
+        if fonts_dir.exists():
+            project_font_paths: List[Path] = []
+            if language == "en":
+                # 영문 제목/훅 폰트: Bebas Neue (우선), Montserrat Bold도 사용 가능
+                project_font_paths = [
+                    fonts_dir / "Bebas_Neue" / "BebasNeue-Regular.ttf",
+                    # Montserrat Bold도 제목용으로 사용 가능
+                    fonts_dir / "Montserrat" / "static" / "Montserrat-Bold.ttf",
+                    fonts_dir / "Montserrat" / "static" / "Montserrat-ExtraBold.ttf",
+                    fonts_dir / "Montserrat" / "static" / "Montserrat-Black.ttf",
+                    # 폴백: 기존 폰트
+                    fonts_dir / "Roboto-Bold.ttf",
+                    fonts_dir / "Arial-Bold.ttf",
+                    fonts_dir / "Arial Black.ttf",
+                ]
+            else:
+                # 한글 제목/훅 폰트: Gmarket Sans (우선), Pretendard Bold도 사용 가능
+                project_font_paths = [
+                    # Gmarket Sans 모든 굵기
+                    fonts_dir / "GmarketSans" / "TTF" / "GmarketSansTTFBold.ttf",
+                    fonts_dir / "GmarketSans" / "TTF" / "GmarketSansTTFMedium.ttf",
+                    fonts_dir / "GmarketSans" / "TTF" / "GmarketSansTTFLight.ttf",
+                    fonts_dir / "GmarketSans" / "OTF" / "GmarketSansBold.otf",
+                    fonts_dir / "GmarketSans" / "OTF" / "GmarketSansMedium.otf",
+                    fonts_dir / "GmarketSans" / "OTF" / "GmarketSansLight.otf",
+                    # Pretendard Bold도 제목용으로 사용 가능
+                    fonts_dir
+                    / "Pretendard"
+                    / "public"
+                    / "static"
+                    / "alternative"
+                    / "Pretendard-Bold.ttf",
+                    fonts_dir
+                    / "Pretendard"
+                    / "public"
+                    / "static"
+                    / "alternative"
+                    / "Pretendard-ExtraBold.ttf",
+                    fonts_dir
+                    / "Pretendard"
+                    / "public"
+                    / "static"
+                    / "alternative"
+                    / "Pretendard-Black.ttf",
+                    # 폴백: 기존 폰트
+                    fonts_dir / "NanumGothicBold.ttf",
+                    fonts_dir / "NanumGothic.ttf",
+                ]
+
+            # 존재하는 폰트만 추가
+            project_fonts = [str(f) for f in project_font_paths if f.exists()]
+
+        # 시스템 폰트 (폴백)
+        if language == "en":
+            system_fonts = [
+                # .ttf 파일만 사용 (PIL 호환성 보장)
+                "/System/Library/Fonts/Supplemental/Arial Black.ttf",
+                "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+                "/System/Library/Fonts/Supplemental/Arial.ttf",
+                "/Library/Fonts/Arial.ttf",
+            ]
+        else:
+            system_fonts = [
+                # .ttf 파일만 사용 (PIL 호환성 보장)
+                "/System/Library/Fonts/Supplemental/NanumGothicBold.ttf",
+                "/System/Library/Fonts/Supplemental/NanumGothic.ttf",
+                "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+                "/System/Library/Fonts/AppleGothic.ttf",
+            ]
+
+        # 프로젝트 폰트를 먼저, 그 다음 시스템 폰트
+        return project_fonts + system_fonts
+
+    def _get_default_font(self, language: str, font_size: int, is_hook: bool = False):
+        """기본 폰트 반환 (.ttf 파일만 사용, 프로젝트 fonts 폴더 우선)
+        Args:
+            language: 언어 코드 ("ko" 또는 "en")
+            font_size: 폰트 크기
+            is_hook: 제목/훅용 폰트인지 여부 (True: 제목/훅, False: 본문)
+        """
         from pathlib import Path
 
         # 프로젝트 루트의 fonts 폴더 경로
@@ -309,25 +500,150 @@ class SubtitleRenderer:
 
         # 프로젝트 fonts 폴더의 폰트를 최우선으로
         if fonts_dir.exists():
-            if language == "en":
-                project_fonts = [
-                    fonts_dir / "Roboto-Bold.ttf",
-                    fonts_dir / "Roboto-Regular.ttf",
-                    fonts_dir / "Arial-Bold.ttf",
-                    fonts_dir / "Arial Bold.ttf",
-                    fonts_dir / "Arial.ttf",
-                ]
+            if is_hook:
+                # 제목/훅용 폰트
+                if language == "en":
+                    project_fonts = [
+                        fonts_dir / "Bebas_Neue" / "BebasNeue-Regular.ttf",
+                        # Montserrat Bold도 제목용으로 사용 가능
+                        fonts_dir / "Montserrat" / "static" / "Montserrat-Bold.ttf",
+                        fonts_dir
+                        / "Montserrat"
+                        / "static"
+                        / "Montserrat-ExtraBold.ttf",
+                        fonts_dir / "Montserrat" / "static" / "Montserrat-Black.ttf",
+                        fonts_dir / "Roboto-Bold.ttf",
+                        fonts_dir / "Arial-Bold.ttf",
+                        fonts_dir / "Arial Black.ttf",
+                    ]
+                else:
+                    project_fonts = [
+                        # Gmarket Sans 모든 굵기
+                        fonts_dir / "GmarketSans" / "TTF" / "GmarketSansTTFBold.ttf",
+                        fonts_dir / "GmarketSans" / "TTF" / "GmarketSansTTFMedium.ttf",
+                        fonts_dir / "GmarketSans" / "TTF" / "GmarketSansTTFLight.ttf",
+                        fonts_dir / "GmarketSans" / "OTF" / "GmarketSansBold.otf",
+                        fonts_dir / "GmarketSans" / "OTF" / "GmarketSansMedium.otf",
+                        fonts_dir / "GmarketSans" / "OTF" / "GmarketSansLight.otf",
+                        # Pretendard Bold도 제목용으로 사용 가능
+                        fonts_dir
+                        / "Pretendard"
+                        / "public"
+                        / "static"
+                        / "alternative"
+                        / "Pretendard-Bold.ttf",
+                        fonts_dir
+                        / "Pretendard"
+                        / "public"
+                        / "static"
+                        / "alternative"
+                        / "Pretendard-ExtraBold.ttf",
+                        fonts_dir
+                        / "Pretendard"
+                        / "public"
+                        / "static"
+                        / "alternative"
+                        / "Pretendard-Black.ttf",
+                        fonts_dir / "NanumGothicBold.ttf",
+                        fonts_dir / "NanumGothic.ttf",
+                    ]
             else:
-                project_fonts = [
-                    fonts_dir / "NanumGothicBold.ttf",
-                    fonts_dir / "NanumGothic.ttf",
-                    fonts_dir / "NotoSansKR-Bold.ttf",
-                    fonts_dir / "NotoSansKR-Regular.ttf",
-                ]
+                # 본문 자막용 폰트
+                if language == "en":
+                    project_fonts = [
+                        # Montserrat 모든 굵기
+                        fonts_dir / "Montserrat" / "static" / "Montserrat-Bold.ttf",
+                        fonts_dir / "Montserrat" / "static" / "Montserrat-Regular.ttf",
+                        fonts_dir / "Montserrat" / "static" / "Montserrat-Medium.ttf",
+                        fonts_dir / "Montserrat" / "static" / "Montserrat-SemiBold.ttf",
+                        fonts_dir / "Montserrat" / "Montserrat-VariableFont_wght.ttf",
+                        fonts_dir
+                        / "Montserrat"
+                        / "static"
+                        / "Montserrat-ExtraBold.ttf",
+                        fonts_dir / "Montserrat" / "static" / "Montserrat-Light.ttf",
+                        fonts_dir
+                        / "Montserrat"
+                        / "static"
+                        / "Montserrat-ExtraLight.ttf",
+                        fonts_dir / "Montserrat" / "static" / "Montserrat-Thin.ttf",
+                        fonts_dir / "Montserrat" / "static" / "Montserrat-Black.ttf",
+                        fonts_dir / "Roboto-Bold.ttf",
+                        fonts_dir / "Roboto-Regular.ttf",
+                        fonts_dir / "Arial-Bold.ttf",
+                        fonts_dir / "Arial.ttf",
+                    ]
+                else:
+                    project_fonts = [
+                        # Pretendard 모든 굵기
+                        fonts_dir
+                        / "Pretendard"
+                        / "public"
+                        / "static"
+                        / "alternative"
+                        / "Pretendard-Bold.ttf",
+                        fonts_dir
+                        / "Pretendard"
+                        / "public"
+                        / "static"
+                        / "alternative"
+                        / "Pretendard-Regular.ttf",
+                        fonts_dir
+                        / "Pretendard"
+                        / "public"
+                        / "static"
+                        / "alternative"
+                        / "Pretendard-Medium.ttf",
+                        fonts_dir
+                        / "Pretendard"
+                        / "public"
+                        / "static"
+                        / "alternative"
+                        / "Pretendard-SemiBold.ttf",
+                        fonts_dir
+                        / "Pretendard"
+                        / "public"
+                        / "variable"
+                        / "PretendardVariable.ttf",
+                        fonts_dir
+                        / "Pretendard"
+                        / "public"
+                        / "static"
+                        / "alternative"
+                        / "Pretendard-ExtraBold.ttf",
+                        fonts_dir
+                        / "Pretendard"
+                        / "public"
+                        / "static"
+                        / "alternative"
+                        / "Pretendard-Light.ttf",
+                        fonts_dir
+                        / "Pretendard"
+                        / "public"
+                        / "static"
+                        / "alternative"
+                        / "Pretendard-ExtraLight.ttf",
+                        fonts_dir
+                        / "Pretendard"
+                        / "public"
+                        / "static"
+                        / "alternative"
+                        / "Pretendard-Thin.ttf",
+                        fonts_dir
+                        / "Pretendard"
+                        / "public"
+                        / "static"
+                        / "alternative"
+                        / "Pretendard-Black.ttf",
+                        fonts_dir / "NanumGothicBold.ttf",
+                        fonts_dir / "NanumGothic.ttf",
+                        fonts_dir / "NotoSansKR-Bold.ttf",
+                        fonts_dir / "NotoSansKR-Regular.ttf",
+                    ]
 
             for font_path in project_fonts:
                 try:
-                    if font_path.exists() and font_path.suffix == ".ttf":
+                    if font_path.exists() and font_path.suffix in [".ttf", ".otf"]:
                         return ImageFont.truetype(str(font_path), font_size)
                 except BaseException:
                     continue
@@ -335,11 +651,18 @@ class SubtitleRenderer:
         # 시스템 폰트 (폴백)
         font_paths: List[str]
         if language == "en":
-            font_paths = [
-                "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-                "/System/Library/Fonts/Supplemental/Arial.ttf",
-                "/Library/Fonts/Arial.ttf",
-            ]
+            if is_hook:
+                font_paths = [
+                    "/System/Library/Fonts/Supplemental/Arial Black.ttf",
+                    "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+                    "/System/Library/Fonts/Supplemental/Arial.ttf",
+                ]
+            else:
+                font_paths = [
+                    "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+                    "/System/Library/Fonts/Supplemental/Arial.ttf",
+                    "/Library/Fonts/Arial.ttf",
+                ]
         else:
             font_paths = [
                 # AppleGothic을 우선 사용
@@ -357,7 +680,7 @@ class SubtitleRenderer:
                     return ImageFont.truetype(font_path_str, font_size)
             except BaseException:
                 continue
-        return ImageFont.load_default()
+                return ImageFont.load_default()
 
     def _create_imagemagick_subtitle(
         self,
@@ -670,7 +993,7 @@ class SubtitleRenderer:
                             logger.info(
                                 f"   ✅ 시스템 폰트에서 한글 폰트 발견: {path} (크기: {font_size}px)"
                             )
-                            break
+                        break
                     except Exception as e:
                         logger.debug(f"   ⚠️ 시스템 폰트 로드 실패: {path} - {e}")
                         continue
